@@ -127,17 +127,6 @@ class HomePage2 extends StatelessWidget {
                       ),
                       Text('2021017401', style: TextStyle(color: Colors.grey)),
                       SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Icon(Icons.star, color: Colors.orange, size: 16),
-                          Icon(Icons.star, color: Colors.orange, size: 16),
-                          Icon(Icons.star, color: Colors.orange, size: 16),
-                          Icon(Icons.star, color: Colors.orange, size: 16),
-                          Icon(Icons.star_half, color: Colors.orange, size: 16),
-                          SizedBox(width: 4),
-                          Text('4.5', style: TextStyle(fontSize: 14)),
-                        ],
-                      ),
                     ],
                   ),
                 ),

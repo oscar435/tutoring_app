@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CalendarioPage extends StatefulWidget {
   const CalendarioPage({Key? key}) : super(key: key);
@@ -11,6 +12,7 @@ class CalendarioPage extends StatefulWidget {
 class _CalendarioPageState extends State<CalendarioPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+
   final Map<DateTime, List<String>> _events = {
     DateTime.utc(2025, 6, 5): ['Tutoría con Psicopedagoga - 5:00 p.m.'],
   };
@@ -22,61 +24,110 @@ class _CalendarioPageState extends State<CalendarioPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Calendario Académico'),
         backgroundColor: Colors.deepPurple,
+        title: Text(
+          'Calendario Académico',
+          style: GoogleFonts.poppins(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
       ),
       body: Column(
         children: [
-          TableCalendar<String>(
-            firstDay: DateTime.utc(2024, 1, 1),
-            lastDay: DateTime.utc(2026, 12, 31),
-            focusedDay: _focusedDay,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
-            },
-            calendarStyle: const CalendarStyle(
-              todayDecoration: BoxDecoration(
-                color: Colors.orange,
-                shape: BoxShape.circle,
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.deepPurple[50],
+            child: TableCalendar<String>(
+              firstDay: DateTime.utc(2024, 1, 1),
+              lastDay: DateTime.utc(2026, 12, 31),
+              focusedDay: _focusedDay,
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                  _focusedDay = focusedDay;
+                });
+              },
+              calendarStyle: const CalendarStyle(
+                todayDecoration: BoxDecoration(
+                  color: Colors.orange,
+                  shape: BoxShape.circle,
+                ),
+                selectedDecoration: BoxDecoration(
+                  color: Colors.deepPurple,
+                  shape: BoxShape.circle,
+                ),
+                markerDecoration: BoxDecoration(
+                  color: Colors.pink,
+                  shape: BoxShape.circle,
+                ),
+                todayTextStyle: TextStyle(color: Colors.white),
               ),
-              selectedDecoration: BoxDecoration(
-                color: Colors.deepPurple,
-                shape: BoxShape.circle,
+              headerStyle: HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+                titleTextStyle: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.deepPurple,
+                ),
+                leftChevronIcon: const Icon(
+                  Icons.chevron_left,
+                  color: Colors.deepPurple,
+                ),
+                rightChevronIcon: const Icon(
+                  Icons.chevron_right,
+                  color: Colors.deepPurple,
+                ),
               ),
-              markerDecoration: BoxDecoration(
-                color: Colors.pink,
-                shape: BoxShape.circle,
-              ),
-            ),
-            eventLoader: _getEventsForDay,
-            headerStyle: const HeaderStyle(
-              formatButtonVisible: false,
-              titleCentered: true,
+              eventLoader: _getEventsForDay,
             ),
           ),
           const SizedBox(height: 10),
           Expanded(
             child: _selectedDay == null
-                ? const Center(child: Text("Selecciona una fecha"))
+                ? Center(
+                    child: Text(
+                      "Selecciona una fecha",
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  )
                 : ListView(
                     children: _getEventsForDay(_selectedDay!).map((event) {
-                      return Card(
-                        color: Colors.amber[100],
-                        margin: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 16,
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 8.0,
                         ),
-                        child: ListTile(
-                          leading: const Icon(
-                            Icons.event_available,
-                            color: Colors.deepPurple,
+                        child: Card(
+                          elevation: 3,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          title: Text(event),
+                          color: Colors.deepPurple[100],
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.event_note,
+                              color: Colors.deepPurple,
+                            ),
+                            title: Text(
+                              event,
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.deepPurple[900],
+                              ),
+                            ),
+                          ),
                         ),
                       );
                     }).toList(),
