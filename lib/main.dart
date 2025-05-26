@@ -1,4 +1,5 @@
 import 'package:tutoring_app/firebase_options.dart';
+import 'package:tutoring_app/pages/CalendarioPage.dart';
 import 'package:tutoring_app/pages/RoleSelectorPage.dart';
 import 'package:tutoring_app/pages/SplashPage.dart';
 import 'package:tutoring_app/pages/inicio.dart';
@@ -34,6 +35,7 @@ class MyApp extends StatelessWidget {
         HomePage2.routeName: (Context) => HomePage2(),
         RegisterCredentialsPage.routeName: (_) =>
             const RegisterCredentialsPage(),
+        '/calendario': (context) => const CalendarioPage(),
       },
     );
   }

@@ -3,6 +3,7 @@ import 'package:tutoring_app/pages/login_pages.dart';
 import 'package:tutoring_app/pages/register_credentials_page.dart';
 
 class RoleSelectorPage extends StatelessWidget {
+  static const routeName = '/rol';
   const RoleSelectorPage({super.key});
 
   @override

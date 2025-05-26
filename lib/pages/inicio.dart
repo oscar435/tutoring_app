@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tutoring_app/pages/CalendarioPage.dart';
+import 'package:tutoring_app/pages/login_pages.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -169,7 +171,13 @@ class HomePage2 extends StatelessWidget {
                     Icons.logout,
                     'Cerrar sesión',
                     context,
-                    null,
+                    () async {
+                      await FirebaseAuth.instance.signOut();
+                      Navigator.pushReplacementNamed(
+                        context,
+                        LoginPage.routeName,
+                      );
+                    },
                   ),
                 ],
               ),
