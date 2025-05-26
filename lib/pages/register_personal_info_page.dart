@@ -37,7 +37,6 @@ class _RegisterPersonalInfoPageState extends State<RegisterPersonalInfoPage> {
                 validator: FormBuilderValidators.required(),
               ),
               const SizedBox(height: 20),
-
               FormBuilderTextField(
                 name: 'apellidos',
                 decoration: const InputDecoration(
@@ -47,7 +46,6 @@ class _RegisterPersonalInfoPageState extends State<RegisterPersonalInfoPage> {
                 validator: FormBuilderValidators.required(),
               ),
               const SizedBox(height: 20),
-
               FormBuilderTextField(
                 name: 'edad',
                 keyboardType: TextInputType.number,
@@ -63,27 +61,37 @@ class _RegisterPersonalInfoPageState extends State<RegisterPersonalInfoPage> {
                 ]),
               ),
               const Spacer(),
-
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState?.saveAndValidate() ?? false) {
-                    final combinedData = {
-                      ...widget.userData, // copia de los datos anteriores
-                      ..._formKey
-                          .currentState!
-                          .value, // agrega los nuevos campos del formulario
-                    };
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            RegisterAcademicInfoPage(userData: combinedData),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Siguiente'),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState?.saveAndValidate() ?? false) {
+                      final combinedData = {
+                        ...widget.userData,
+                        ..._formKey.currentState!.value,
+                      };
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              RegisterAcademicInfoPage(userData: combinedData),
+                        ),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: const Text(
+                    'Siguiente',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
               ),
             ],
           ),

@@ -55,6 +55,15 @@ class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
               const Spacer(),
 
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      Colors.orange, // O prueba con Colors.deepOrange
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 15,
+                  ),
+                  shape: const StadiumBorder(),
+                ),
                 onPressed: () {
                   if (_formKey.currentState?.saveAndValidate() ?? false) {
                     final data = _formKey.currentState!.value;
@@ -67,7 +76,10 @@ class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
                     );
                   }
                 },
-                child: const Text('Siguiente'),
+                child: const Text(
+                  'Siguiente',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),

@@ -16,30 +16,50 @@ class RoleSelectorPage extends StatelessWidget {
           children: [
             Image.asset('assets/logo_transparente.png', height: 250),
             const SizedBox(height: 40),
+
+            // Botón Estudiante
             ElevatedButton(
               onPressed: () {
                 Navigator.pushNamed(context, RegisterCredentialsPage.routeName);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
+                foregroundColor: Colors.white, // color del texto
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 minimumSize: const Size.fromHeight(60),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
               ),
-              child: const Text('Ingresar como Estudiante'),
+              child: const Text(
+                'Ingresar como Estudiante',
+                style: TextStyle(fontSize: 16),
+              ),
             ),
             const SizedBox(height: 20),
+
+            // Botón Profesor
             ElevatedButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/login-teacher');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 minimumSize: const Size.fromHeight(60),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
               ),
-              child: const Text('Ingresar como Profesor'),
+              child: const Text(
+                'Ingresar como Profesor',
+                style: TextStyle(fontSize: 16),
+              ),
             ),
             const SizedBox(height: 40),
+
+            // Enlace a iniciar sesión
             GestureDetector(
               onTap: () {
                 Navigator.pushNamed(context, LoginPage.routeName);

@@ -57,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 25),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade900,
+                  backgroundColor: Colors.orange,
                   shape: const StadiumBorder(),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 40,

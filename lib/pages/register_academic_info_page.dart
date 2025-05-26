@@ -107,6 +107,19 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
               const Spacer(),
 
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange, // fondo naranja
+                  foregroundColor: Colors.white, // texto blanco
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      20,
+                    ), // bordes redondeados
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 15,
+                    horizontal: 30,
+                  ),
+                ),
                 onPressed: () async {
                   if (_formKey.currentState?.saveAndValidate() ?? false) {
                     final allData = {

@@ -8,7 +8,7 @@ class SplashPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xfff7f7f7),
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
@@ -31,9 +31,13 @@ class SplashPage extends StatelessWidget {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white, // texto blanco
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
-                child: const Text('Empezar'),
+                child: const Text('Empezar', style: TextStyle(fontSize: 16)),
               ),
             ),
           ],

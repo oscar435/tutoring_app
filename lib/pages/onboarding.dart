@@ -24,14 +24,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
     },
     {
       "image": "assets/resources.png",
-      "title": " Materiales y Recursos",
-      "description": "Guías, videos y tips sobre estudio y bienestar.hh",
+      "title": "Materiales y Recursos",
+      "description": "Guías, videos y tips sobre estudio y bienestar.",
     },
     {
       "image": "assets/talleres.png",
       "title": "Talleres, Charlas y Campañas",
       "description":
-          "Informate de talleres, charlas y eventos que apoyan tu desarrollo académico.",
+          "Infórmate de talleres, charlas y eventos que apoyan tu desarrollo académico.",
     },
   ];
 
@@ -94,12 +94,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 onPressed: _nextPage,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
                 child: Text(
                   _currentIndex == onboardingData.length - 1
                       ? 'Comenzar'
                       : 'Siguiente',
+                  style: const TextStyle(fontSize: 16),
                 ),
               ),
             ),
