@@ -1,0 +1,61 @@
+import 'package:flutter/material.dart';
+import 'package:tutoring_app/pages/login_pages.dart';
+import 'package:tutoring_app/pages/register_credentials_page.dart';
+
+class RoleSelectorPage extends StatelessWidget {
+  const RoleSelectorPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xfff7f7f7),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 64.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/logo_transparente.png', height: 250),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, RegisterCredentialsPage.routeName);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                minimumSize: const Size.fromHeight(60),
+              ),
+              child: const Text('Ingresar como Estudiante'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/login-teacher');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                minimumSize: const Size.fromHeight(60),
+              ),
+              child: const Text('Ingresar como Profesor'),
+            ),
+            const SizedBox(height: 40),
+            GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, LoginPage.routeName);
+              },
+              child: const Text(
+                '¿Ya tienes una cuenta? Inicia sesión',
+                style: TextStyle(
+                  color: Colors.blueAccent,
+                  decoration: TextDecoration.underline,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -1,14 +1,10 @@
 import 'package:tutoring_app/firebase_options.dart';
+import 'package:tutoring_app/pages/RoleSelectorPage.dart';
+import 'package:tutoring_app/pages/SplashPage.dart';
+import 'package:tutoring_app/pages/inicio.dart';
 import 'package:tutoring_app/pages/login_pages.dart';
-//import 'package:app3/pages/home1_pages.dart';
-//import 'package:app3/pages/onboarding.dart';
-//import 'package:app3/pages/home_pages.dart';
-//import 'package:app3/pages/login_pages.dart';
-//import 'package:app3/pages/registro_pages.dart';
-//import 'package:app3/pages/screens/age_screen.dart';
-//import 'package:app3/pages/screens/alias_screen.dart';
-//import 'package:app3/pages/screens/eleccion_categoria.dart';
-//import 'package:app3/pages/screens/welcome_screen.dart';
+import 'package:tutoring_app/pages/onboarding.dart';
+import 'package:tutoring_app/pages/register_credentials_page.dart';
 import 'package:tutoring_app/preferences/pref_usuarios.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -29,8 +25,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: prefs.ultimaPagina, //prefs.ultimaPagina,
-      routes: {LoginPage.routename: (context) => const LoginPage()},
+      initialRoute: SplashPage.routeName, //prefs.ultimaPagina,
+      routes: {
+        SplashPage.routeName: (_) => const SplashPage(),
+        '/onboarding': (_) => const OnboardingPage(),
+        '/role-selector': (_) => const RoleSelectorPage(),
+        LoginPage.routeName: (context) => LoginPage(),
+        HomePage2.routeName: (Context) => HomePage2(),
+        RegisterCredentialsPage.routeName: (_) =>
+            const RegisterCredentialsPage(),
+      },
     );
   }
 }
