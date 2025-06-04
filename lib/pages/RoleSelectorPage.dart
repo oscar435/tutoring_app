@@ -17,60 +17,126 @@ class RoleSelectorPage extends StatelessWidget {
             Image.asset('assets/logo_transparente.png', height: 250),
             const SizedBox(height: 40),
 
-            // Botón Estudiante
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.registerCredentials);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white, // color del texto
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                minimumSize: const Size.fromHeight(60),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
+            // Sección Estudiante
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                  ),
+                ],
               ),
-              child: const Text(
-                'Ingresar como Estudiante',
-                style: TextStyle(fontSize: 16),
+              child: Column(
+                children: [
+                  const Text(
+                    'Estudiante',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.registerCredentials);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: const Text(
+                      'Registrarse',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.login);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        side: const BorderSide(color: Colors.orange),
+                      ),
+                    ),
+                    child: const Text(
+                      'Iniciar Sesión',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
               ),
             ),
+
             const SizedBox(height: 20),
 
-            // Botón Profesor
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.loginTeacher);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                minimumSize: const Size.fromHeight(60),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
+            // Sección Profesor
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                  ),
+                ],
               ),
-              child: const Text(
-                'Ingresar como Profesor',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
-            const SizedBox(height: 40),
-
-            // Enlace a iniciar sesión
-            GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.login);
-              },
-              child: const Text(
-                '¿Ya tienes una cuenta? Inicia sesión',
-                style: TextStyle(
-                  color: Colors.blueAccent,
-                  decoration: TextDecoration.underline,
-                  fontSize: 16,
-                ),
+              child: Column(
+                children: [
+                  const Text(
+                    'Profesor',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.loginTeacher);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: const Text(
+                      'Iniciar Sesión',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Si eres profesor y no tienes cuenta,\ncontacta con el administrador',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

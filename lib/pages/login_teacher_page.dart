@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:tutoring_app/pages/inicio.dart';
+import 'package:tutoring_app/pages/teacher_home_page.dart';
 import 'package:tutoring_app/service/auth.dart';
 import 'package:tutoring_app/util/snackbar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -155,7 +155,7 @@ class _LoginTeacherPageState extends State<LoginTeacherPage> {
                         "Esta cuenta no tiene permisos de profesor",
                       );
                     } else if (result != null) {
-                      Navigator.popAndPushNamed(context, HomePage2.routeName);
+                      Navigator.popAndPushNamed(context, TeacherHomePage.routeName);
                     }
                   }
                 },

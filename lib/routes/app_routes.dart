@@ -7,6 +7,7 @@ import 'package:tutoring_app/pages/login_pages.dart';
 import 'package:tutoring_app/pages/login_teacher_page.dart';
 import 'package:tutoring_app/pages/onboarding.dart';
 import 'package:tutoring_app/pages/register_credentials_page.dart';
+import 'package:tutoring_app/pages/teacher_home_page.dart';
 
 class AppRoutes {
   static const String splash = 'Splash';
@@ -17,6 +18,7 @@ class AppRoutes {
   static const String registerCredentials = '/register_credentials';
   static const String calendario = '/calendario';
   static const String loginTeacher = '/login-teacher';
+  static const String teacherHome = '/teacher-home';
 
   static Map<String, Widget Function(BuildContext)> routes = {
     splash: (_) => const SplashPage(),
@@ -27,5 +29,6 @@ class AppRoutes {
     registerCredentials: (_) => const RegisterCredentialsPage(),
     calendario: (context) => const CalendarioPage(),
     loginTeacher: (context) => const LoginTeacherPage(),
+    teacherHome: (context) => const TeacherHomePage(),
   };
 } 
