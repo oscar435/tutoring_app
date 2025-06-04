@@ -19,6 +19,7 @@ class RegisterAcademicInfoPage extends StatefulWidget {
 class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
   final _formKey = GlobalKey<FormBuilderState>();
   final AuthService _auth = AuthService();
+  bool _isLoading = false;
 
   final List<String> especialidades = [
     'Ingeniería Informática',
@@ -106,60 +107,87 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
               ),
               const Spacer(),
 
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange, // fondo naranja
-                  foregroundColor: Colors.white, // texto blanco
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      20,
-                    ), // bordes redondeados
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 15,
+                      horizontal: 30,
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 15,
-                    horizontal: 30,
-                  ),
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          if (_formKey.currentState?.saveAndValidate() ?? false) {
+                            setState(() => _isLoading = true);
+
+                            try {
+                              final allData = {
+                                ...widget.userData,
+                                ..._formKey.currentState!.value,
+                              };
+
+                              // Obtener el usuario actual
+                              final currentUser = _auth.getCurrentUser();
+                              if (currentUser == null) {
+                                showSnackBar(
+                                    context, "Error: No se encontró el usuario");
+                                return;
+                              }
+
+                              // Actualizar datos en Firestore
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(currentUser.uid)
+                                  .set({
+                                'nombre': allData['nombre'],
+                                'apellidos': allData['apellidos'],
+                                'email': allData['email'],
+                                'edad': allData['edad'],
+                                'codigo_estudiante': allData['codigo_estudiante'],
+                                'especialidad': allData['especialidad'],
+                                'ciclo': allData['ciclo'],
+                                'universidad': allData['universidad'],
+                                'updatedAt': FieldValue.serverTimestamp(),
+                              }, SetOptions(merge: true));
+
+                              if (!mounted) return;
+
+                              // Navegar a la página de inicio
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (_) => const HomePage2(),
+                                ),
+                                (route) => false,
+                              );
+                            } catch (e) {
+                              showSnackBar(context,
+                                  "Error al guardar los datos: ${e.toString()}");
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isLoading = false);
+                              }
+                            }
+                          }
+                        },
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Finalizar registro'),
                 ),
-                onPressed: () async {
-                  if (_formKey.currentState?.saveAndValidate() ?? false) {
-                    final allData = {
-                      ...widget.userData,
-                      ..._formKey.currentState!.value,
-                    };
-
-                    var result = await _auth.createAccount(
-                      allData['email'],
-                      allData['password'],
-                    );
-
-                    if (result == 1) {
-                      showSnackBar(context, "Error: Contraseña muy débil");
-                    } else if (result == 2) {
-                      showSnackBar(context, "Error: Email ya en uso");
-                    } else if (result != null) {
-                      await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(result)
-                          .set({
-                            'nombre': allData['nombre'],
-                            'apellidos': allData['apellidos'],
-                            'email': allData['email'],
-                            'edad': allData['edad'],
-                            'codigo_estudiante': allData['codigo_estudiante'],
-                            'especialidad': allData['especialidad'],
-                            'ciclo': allData['ciclo'],
-                            'universidad': allData['universidad'],
-                            'createdAt': FieldValue.serverTimestamp(),
-                          });
-
-                      Navigator.pushReplacementNamed(
-                        context,
-                        HomePage2.routeName,
-                      );
-                    }
-                  }
-                },
-                child: const Text('Registrar y continuar'),
               ),
             ],
           ),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:tutoring_app/pages/email_verification_page.dart';
+import 'package:tutoring_app/service/auth.dart';
+import 'package:tutoring_app/util/snackbar.dart';
 import 'register_personal_info_page.dart';
 
 class RegisterCredentialsPage extends StatefulWidget {
@@ -8,12 +11,61 @@ class RegisterCredentialsPage extends StatefulWidget {
   const RegisterCredentialsPage({super.key});
 
   @override
-  State<RegisterCredentialsPage> createState() =>
-      _RegisterCredentialsPageState();
+  State<RegisterCredentialsPage> createState() => _RegisterCredentialsPageState();
 }
 
 class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
   final _formKey = GlobalKey<FormBuilderState>();
+  final _auth = AuthService();
+  bool _isLoading = false;
+
+  String? _validateInstitutionalEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'El correo es requerido';
+    }
+    if (!value.endsWith('@unfv.edu.pe')) {
+      return 'Debe ser un correo institucional (@unfv.edu.pe)';
+    }
+    // Validar formato de correo
+    final emailRegex = RegExp(r'^[\w-\.]+@unfv\.edu\.pe$');
+    if (!emailRegex.hasMatch(value)) {
+      return 'Formato de correo inválido';
+    }
+    return null;
+  }
+
+  Future<void> _handleRegistration() async {
+    if (_formKey.currentState?.saveAndValidate() ?? false) {
+      setState(() => _isLoading = true);
+      
+      final data = _formKey.currentState!.value;
+      final result = await _auth.createAccount(
+        data['email'],
+        data['password'],
+      );
+
+      setState(() => _isLoading = false);
+
+      if (!mounted) return;
+
+      if (result['success']) {
+        // Navegar a la página de verificación con email y contraseña
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => EmailVerificationPage(
+              email: data['email'],
+              userData: {
+                'email': data['email'],
+                'password': data['password'],
+              },
+            ),
+          ),
+        );
+      } else {
+        showSnackBar(context, result['message']);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +85,14 @@ class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
               FormBuilderTextField(
                 name: 'email',
                 decoration: const InputDecoration(
-                  labelText: 'Correo electrónico',
+                  labelText: 'Correo institucional',
                   prefixIcon: Icon(Icons.email),
+                  hintText: 'ejemplo@unfv.edu.pe',
+                  helperText: 'Usa tu correo institucional (@unfv.edu.pe)',
                 ),
-                validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(),
-                  FormBuilderValidators.email(),
-                ]),
+                validator: _validateInstitutionalEmail,
+                keyboardType: TextInputType.emailAddress,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
               const SizedBox(height: 20),
 
@@ -49,36 +102,41 @@ class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
                 decoration: const InputDecoration(
                   labelText: 'Contraseña',
                   prefixIcon: Icon(Icons.lock),
+                  helperText: 'Mínimo 6 caracteres',
                 ),
-                validator: FormBuilderValidators.minLength(6),
+                validator: FormBuilderValidators.compose([
+                  FormBuilderValidators.required(errorText: 'La contraseña es requerida'),
+                  FormBuilderValidators.minLength(6, errorText: 'La contraseña debe tener al menos 6 caracteres'),
+                ]),
+                autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
               const Spacer(),
 
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      Colors.orange, // O prueba con Colors.deepOrange
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 15,
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 15,
+                    ),
+                    shape: const StadiumBorder(),
                   ),
-                  shape: const StadiumBorder(),
-                ),
-                onPressed: () {
-                  if (_formKey.currentState?.saveAndValidate() ?? false) {
-                    final data = _formKey.currentState!.value;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            RegisterPersonalInfoPage(userData: data),
-                      ),
-                    );
-                  }
-                },
-                child: const Text(
-                  'Siguiente',
-                  style: TextStyle(color: Colors.white),
+                  onPressed: _isLoading ? null : _handleRegistration,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Siguiente',
+                          style: TextStyle(color: Colors.white),
+                        ),
                 ),
               ),
             ],
