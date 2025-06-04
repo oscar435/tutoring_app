@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tutoring_app/routes/app_routes.dart';
 
 class CalendarioPage extends StatefulWidget {
+  static const String routeName = AppRoutes.calendario;
   const CalendarioPage({Key? key}) : super(key: key);
 
   @override

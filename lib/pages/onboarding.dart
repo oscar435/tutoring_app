@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:tutoring_app/routes/app_routes.dart';
 
 class OnboardingPage extends StatefulWidget {
+  static const String routeName = AppRoutes.onboarding;
   const OnboardingPage({super.key});
 
   @override
@@ -42,7 +44,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         curve: Curves.easeInOut,
       );
     } else {
-      Navigator.pushReplacementNamed(context, '/role-selector');
+      Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
     }
   }
 

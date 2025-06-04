@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:tutoring_app/routes/app_routes.dart';
 
 class SplashPage extends StatelessWidget {
-  static const String routeName = 'Splash';
+  static const String routeName = AppRoutes.splash;
 
   const SplashPage({super.key});
 
@@ -27,7 +28,7 @@ class SplashPage extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/onboarding');
+                  Navigator.pushNamed(context, AppRoutes.onboarding);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,

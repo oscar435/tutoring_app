@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:tutoring_app/pages/login_pages.dart';
-import 'package:tutoring_app/pages/register_credentials_page.dart';
+import 'package:tutoring_app/routes/app_routes.dart';
 
 class RoleSelectorPage extends StatelessWidget {
-  static const routeName = '/rol';
+  static const String routeName = AppRoutes.roleSelector;
   const RoleSelectorPage({super.key});
 
   @override
@@ -21,7 +20,7 @@ class RoleSelectorPage extends StatelessWidget {
             // Botón Estudiante
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, RegisterCredentialsPage.routeName);
+                Navigator.pushNamed(context, AppRoutes.registerCredentials);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
@@ -42,7 +41,7 @@ class RoleSelectorPage extends StatelessWidget {
             // Botón Profesor
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/login-teacher');
+                Navigator.pushNamed(context, AppRoutes.loginTeacher);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
@@ -63,7 +62,7 @@ class RoleSelectorPage extends StatelessWidget {
             // Enlace a iniciar sesión
             GestureDetector(
               onTap: () {
-                Navigator.pushNamed(context, LoginPage.routeName);
+                Navigator.pushNamed(context, AppRoutes.login);
               },
               child: const Text(
                 '¿Ya tienes una cuenta? Inicia sesión',
