@@ -4,6 +4,7 @@ import 'package:tutoring_app/pages/RoleSelectorPage.dart';
 import 'package:tutoring_app/pages/SplashPage.dart';
 import 'package:tutoring_app/pages/inicio.dart';
 import 'package:tutoring_app/pages/login_pages.dart';
+import 'package:tutoring_app/pages/login_teacher_page.dart';
 import 'package:tutoring_app/pages/onboarding.dart';
 import 'package:tutoring_app/pages/register_credentials_page.dart';
 
@@ -25,5 +26,6 @@ class AppRoutes {
     home: (context) => HomePage2(),
     registerCredentials: (_) => const RegisterCredentialsPage(),
     calendario: (context) => const CalendarioPage(),
+    loginTeacher: (context) => const LoginTeacherPage(),
   };
 } 

@@ -2,20 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:tutoring_app/pages/inicio.dart';
-import 'package:tutoring_app/pages/register_credentials_page.dart';
 import 'package:tutoring_app/service/auth.dart';
 import 'package:tutoring_app/util/snackbar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class LoginPage extends StatefulWidget {
-  static const routeName = '/login';
-  const LoginPage({super.key});
+class LoginTeacherPage extends StatefulWidget {
+  static const routeName = '/login-teacher';
+  const LoginTeacherPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<LoginTeacherPage> createState() => _LoginTeacherPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginTeacherPageState extends State<LoginTeacherPage> {
   final _formKey = GlobalKey<FormBuilderState>();
   final AuthService _auth = AuthService();
 
@@ -51,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
         content: TextField(
           controller: emailController,
           decoration: const InputDecoration(
-            labelText: 'Correo electrónico',
+            labelText: 'Email Institucional',
             prefixIcon: Icon(Icons.email),
           ),
           keyboardType: TextInputType.emailAddress,
@@ -79,7 +78,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff7f7f7),
-      appBar: AppBar(title: const Text('Inicio de Sesión')),
+      appBar: AppBar(title: const Text('Inicio de Sesión - Profesor')),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: FormBuilder(
@@ -92,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
               FormBuilderTextField(
                 name: 'email',
                 decoration: const InputDecoration(
-                  labelText: 'Email',
+                  labelText: 'Email Institucional',
                   prefixIcon: Icon(Icons.email),
                 ),
                 validator: FormBuilderValidators.compose([
@@ -137,6 +136,7 @@ class _LoginPageState extends State<LoginPage> {
                     var result = await _auth.signInEmailAndPassword(
                       v?['email'],
                       v?['password'],
+                      requireTeacher: true,
                     );
 
                     if (result == 1) {
@@ -149,6 +149,11 @@ class _LoginPageState extends State<LoginPage> {
                         context,
                         "Usuario o contraseña incorrectos",
                       );
+                    } else if (result == 3) {
+                      showSnackBar(
+                        context,
+                        "Esta cuenta no tiene permisos de profesor",
+                      );
                     } else if (result != null) {
                       Navigator.popAndPushNamed(context, HomePage2.routeName);
                     }
@@ -160,12 +165,10 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              TextButton(
-                onPressed: () => Navigator.pushReplacementNamed(
-                  context,
-                  RegisterCredentialsPage.routeName,
-                ),
-                child: const Text("¿No tienes cuenta? Crear nueva cuenta"),
+              const Text(
+                "Si eres profesor y no tienes cuenta,\ncontacta con el administrador",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
               ),
             ],
           ),
@@ -173,4 +176,4 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-}
+} 
