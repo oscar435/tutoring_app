@@ -39,13 +39,26 @@ class AuthService {
         // Enviar correo de verificación
         await userCredential.user!.sendEmailVerification();
 
-        // Guardar datos en Firestore
+        // Datos básicos del usuario
+        final userData = {
+          'email': correo,
+          'createdAt': FieldValue.serverTimestamp(),
+          'emailVerified': false,
+        };
+
+        // Guardar en la colección correspondiente
+        if (isTeacher) {
+          await _firestore.collection('tutores').doc(userCredential.user!.uid).set(userData);
+        } else {
+          await _firestore.collection('estudiantes').doc(userCredential.user!.uid).set(userData);
+        }
+
+        // También guardar referencia en users
         await _firestore.collection('users').doc(userCredential.user!.uid).set({
           'email': correo,
           'isTeacher': isTeacher,
           'createdAt': FieldValue.serverTimestamp(),
-          'emailVerified': false,
-        }, SetOptions(merge: true));
+        });
 
         return {
           'success': true,
@@ -84,28 +97,6 @@ class AuthService {
     }
   }
 
-  // Método para verificar si el correo está verificado
-  Future<bool> isEmailVerified() async {
-    User? user = _auth.currentUser;
-    await user?.reload();
-    return user?.emailVerified ?? false;
-  }
-
-  // Método para reenviar el correo de verificación
-  Future<bool> resendVerificationEmail() async {
-    try {
-      User? user = _auth.currentUser;
-      if (user != null && !user.emailVerified) {
-        await user.sendEmailVerification();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      print('Error al reenviar correo: $e');
-      return false;
-    }
-  }
-
   // Método para iniciar sesión con email y contraseña
   Future signInEmailAndPassword(String email, String password, {bool requireTeacher = false}) async {
     try {
@@ -116,18 +107,31 @@ class AuthService {
 
       final user = userCredential.user;
       if (user?.uid != null) {
-        // Verificar si el correo está verificado
-        if (!user!.emailVerified) {
-          await _auth.signOut();
-          return 4; // Código para correo no verificado
-        }
-
-        // Verificar el tipo de usuario en Firestore
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+        // Primero verificar el tipo de usuario
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user!.uid).get();
         
         if (userDoc.exists) {
           Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
           bool isTeacher = userData['isTeacher'] ?? false;
+
+          // Obtener datos específicos según el tipo de usuario
+          DocumentSnapshot specificDoc;
+          if (isTeacher) {
+            specificDoc = await _firestore.collection('tutores').doc(user.uid).get();
+          } else {
+            specificDoc = await _firestore.collection('estudiantes').doc(user.uid).get();
+          }
+
+          if (!specificDoc.exists) {
+            await _auth.signOut();
+            return null;
+          }
+
+          // Solo verificar email si NO es profesor
+          if (!isTeacher && !user.emailVerified) {
+            await _auth.signOut();
+            return 4; // Código para correo no verificado
+          }
 
           if (requireTeacher && !isTeacher) {
             await _auth.signOut();
@@ -150,5 +154,27 @@ class AuthService {
   // Método para obtener el usuario actual
   User? getCurrentUser() {
     return _auth.currentUser;
+  }
+
+  // Método para verificar si el correo está verificado
+  Future<bool> isEmailVerified() async {
+    User? user = _auth.currentUser;
+    await user?.reload();
+    return user?.emailVerified ?? false;
+  }
+
+  // Método para reenviar el correo de verificación
+  Future<bool> resendVerificationEmail() async {
+    try {
+      User? user = _auth.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Error al reenviar correo: $e');
+      return false;
+    }
   }
 }

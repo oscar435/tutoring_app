@@ -141,9 +141,9 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                                 return;
                               }
 
-                              // Actualizar datos en Firestore
+                              // Actualizar datos en la colección estudiantes
                               await FirebaseFirestore.instance
-                                  .collection('users')
+                                  .collection('estudiantes')
                                   .doc(currentUser.uid)
                                   .set({
                                 'nombre': allData['nombre'],
@@ -155,6 +155,16 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                                 'ciclo': allData['ciclo'],
                                 'universidad': allData['universidad'],
                                 'updatedAt': FieldValue.serverTimestamp(),
+                              }, SetOptions(merge: true));
+
+                              // Mantener solo los datos básicos en users
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(currentUser.uid)
+                                  .set({
+                                'email': allData['email'],
+                                'isTeacher': false,
+                                'createdAt': FieldValue.serverTimestamp(),
                               }, SetOptions(merge: true));
 
                               if (!mounted) return;
