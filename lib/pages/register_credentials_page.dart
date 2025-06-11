@@ -11,7 +11,8 @@ class RegisterCredentialsPage extends StatefulWidget {
   const RegisterCredentialsPage({super.key});
 
   @override
-  State<RegisterCredentialsPage> createState() => _RegisterCredentialsPageState();
+  State<RegisterCredentialsPage> createState() =>
+      _RegisterCredentialsPageState();
 }
 
 class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
@@ -37,12 +38,9 @@ class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
   Future<void> _handleRegistration() async {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
       setState(() => _isLoading = true);
-      
+
       final data = _formKey.currentState!.value;
-      final result = await _auth.createAccount(
-        data['email'],
-        data['password'],
-      );
+      final result = await _auth.createAccount(data['email'], data['password']);
 
       setState(() => _isLoading = false);
 
@@ -54,10 +52,7 @@ class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
           MaterialPageRoute(
             builder: (_) => EmailVerificationPage(
               email: data['email'],
-              userData: {
-                'email': data['email'],
-                'password': data['password'],
-              },
+              userData: {'email': data['email'], 'password': data['password']},
             ),
           ),
         );
@@ -105,8 +100,13 @@ class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
                   helperText: 'Mínimo 6 caracteres',
                 ),
                 validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(errorText: 'La contraseña es requerida'),
-                  FormBuilderValidators.minLength(6, errorText: 'La contraseña debe tener al menos 6 caracteres'),
+                  FormBuilderValidators.required(
+                    errorText: 'La contraseña es requerida',
+                  ),
+                  FormBuilderValidators.minLength(
+                    6,
+                    errorText: 'La contraseña debe tener al menos 6 caracteres',
+                  ),
                 ]),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
               ),
@@ -130,7 +130,9 @@ class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text(

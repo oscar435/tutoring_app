@@ -7,7 +7,7 @@ import 'package:tutoring_app/util/snackbar.dart';
 class EmailVerificationPage extends StatefulWidget {
   final String email;
   final Map<String, dynamic> userData;
-  
+
   const EmailVerificationPage({
     Key? key,
     required this.email,
@@ -38,24 +38,19 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
   }
 
   Future<void> _checkEmailVerification() async {
-    _timer = Timer.periodic(
-      const Duration(seconds: 3),
-      (_) async {
-        final isVerified = await _auth.isEmailVerified();
-        if (isVerified) {
-          setState(() => _isVerified = true);
-          _timer?.cancel();
-          // Navegar a la página de registro de información personal con todos los datos
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => RegisterPersonalInfoPage(
-                userData: widget.userData,
-              ),
-            ),
-          );
-        }
-      },
-    );
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      final isVerified = await _auth.isEmailVerified();
+      if (isVerified) {
+        setState(() => _isVerified = true);
+        _timer?.cancel();
+        // Navegar a la página de registro de información personal con todos los datos
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => RegisterPersonalInfoPage(userData: widget.userData),
+          ),
+        );
+      }
+    });
   }
 
   Future<void> _resendVerificationEmail() async {
@@ -68,40 +63,29 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
     final result = await _auth.resendVerificationEmail();
     if (result) {
-      showSnackBar(
-        context,
-        'Correo de verificación reenviado',
-      );
+      showSnackBar(context, 'Correo de verificación reenviado');
     } else {
-      showSnackBar(
-        context,
-        'Error al reenviar el correo',
-      );
+      showSnackBar(context, 'Error al reenviar el correo');
     }
 
     // Iniciar countdown para permitir reenvío
-    Timer.periodic(
-      const Duration(seconds: 1),
-      (timer) {
-        setState(() {
-          if (_resendCooldown > 0) {
-            _resendCooldown--;
-          } else {
-            _canResendEmail = true;
-            timer.cancel();
-          }
-        });
-      },
-    );
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_resendCooldown > 0) {
+          _resendCooldown--;
+        } else {
+          _canResendEmail = true;
+          timer.cancel();
+        }
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff7f7f7),
-      appBar: AppBar(
-        title: const Text('Verificar correo'),
-      ),
+      appBar: AppBar(title: const Text('Verificar correo')),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -115,10 +99,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             const SizedBox(height: 20),
             const Text(
               'Verifica tu correo',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             Text(
@@ -163,4 +144,4 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       ),
     );
   }
-} 
+}

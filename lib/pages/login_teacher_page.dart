@@ -27,15 +27,9 @@ class _LoginTeacherPageState extends State<LoginTeacherPage> {
       );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        showSnackBar(
-          context,
-          "No existe una cuenta con ese correo",
-        );
+        showSnackBar(context, "No existe una cuenta con ese correo");
       } else {
-        showSnackBar(
-          context,
-          "Error al enviar el correo de restablecimiento",
-        );
+        showSnackBar(context, "Error al enviar el correo de restablecimiento");
       }
     }
   }
@@ -140,22 +134,19 @@ class _LoginTeacherPageState extends State<LoginTeacherPage> {
                     );
 
                     if (result == 1) {
-                      showSnackBar(
-                        context,
-                        "Usuario o contraseña incorrectos",
-                      );
+                      showSnackBar(context, "Usuario o contraseña incorrectos");
                     } else if (result == 2) {
-                      showSnackBar(
-                        context,
-                        "Usuario o contraseña incorrectos",
-                      );
+                      showSnackBar(context, "Usuario o contraseña incorrectos");
                     } else if (result == 3) {
                       showSnackBar(
                         context,
                         "Esta cuenta no tiene permisos de profesor",
                       );
                     } else if (result != null) {
-                      Navigator.popAndPushNamed(context, TeacherHomePage.routeName);
+                      Navigator.popAndPushNamed(
+                        context,
+                        TeacherHomePage.routeName,
+                      );
                     }
                   }
                 },
@@ -176,4 +167,4 @@ class _LoginTeacherPageState extends State<LoginTeacherPage> {
       ),
     );
   }
-} 
+}
