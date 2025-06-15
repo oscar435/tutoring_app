@@ -6,6 +6,7 @@ import 'package:tutoring_app/pages/register_credentials_page.dart';
 import 'package:tutoring_app/service/auth.dart';
 import 'package:tutoring_app/util/snackbar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tutoring_app/pages/RoleSelectorPage.dart';
 
 class LoginPage extends StatefulWidget {
   static const routeName = '/login';
@@ -161,11 +162,22 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 20),
               TextButton(
-                onPressed: () => Navigator.pushReplacementNamed(
+                onPressed: () => Navigator.push(
                   context,
-                  RegisterCredentialsPage.routeName,
+                  MaterialPageRoute(
+                    builder: (context) => const RegisterCredentialsPage(),
+                  ),
                 ),
                 child: const Text("¿No tienes cuenta? Crear nueva cuenta"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RoleSelectorPage(),
+                  ),
+                ),
+                child: const Text("Volver a selección de rol"),
               ),
             ],
           ),

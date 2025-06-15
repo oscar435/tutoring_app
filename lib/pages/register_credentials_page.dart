@@ -5,6 +5,8 @@ import 'package:tutoring_app/pages/email_verification_page.dart';
 import 'package:tutoring_app/service/auth.dart';
 import 'package:tutoring_app/util/snackbar.dart';
 import 'register_personal_info_page.dart';
+import 'package:tutoring_app/pages/login_pages.dart';
+import 'package:tutoring_app/pages/RoleSelectorPage.dart';
 
 class RegisterCredentialsPage extends StatefulWidget {
   static const routeName = '/register_credentials';
@@ -140,6 +142,24 @@ class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
                           style: TextStyle(color: Colors.white),
                         ),
                 ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginPage(),
+                  ),
+                ),
+                child: const Text("¿Ya tienes cuenta? Iniciar sesión"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RoleSelectorPage(),
+                  ),
+                ),
+                child: const Text("Volver a selección de rol"),
               ),
             ],
           ),
