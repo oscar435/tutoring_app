@@ -6,6 +6,7 @@ import 'package:tutoring_app/pages/login_pages.dart';
 import 'package:tutoring_app/pages/student_profile_page.dart';
 import 'package:tutoring_app/pages/material_educativo_page.dart';
 import 'package:tutoring_app/pages/notificaciones_page.dart';
+import 'package:tutoring_app/pages/TodasTutoriasPage.dart';
 import 'agendar_tutoria_page.dart';
 import '../service/solicitud_tutoria_service.dart';
 import '../models/solicitud_tutoria.dart';
@@ -32,7 +33,18 @@ class HomePage2 extends StatelessWidget {
               children: [
                 _buildTopBar(context),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Tutorías agendadas', trailing: 'Todas'),
+                _buildSectionTitle(
+                  'Tutorías agendadas',
+                  trailing: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const TodasTutoriasPage()),
+                      );
+                    },
+                    child: const Text('Ver todas'),
+                  ),
+                ),
                 _buildSolicitudesEstudiante(user.uid),
                 const SizedBox(height: 20),
                 _buildSectionTitle('Nuestros Servicios'),
@@ -60,7 +72,12 @@ class HomePage2 extends StatelessWidget {
                 const SizedBox(height: 20),
                 _buildSectionTitle(
                   'Noticias recientes',
-                  trailing: 'Todas las noticias',
+                  trailing: TextButton(
+                    onPressed: () {
+                      // TODO: Implementar navegación a noticias
+                    },
+                    child: const Text('Todas las noticias'),
+                  ),
                 ),
                 _buildNewsList(),
                 const SizedBox(height: 20),
@@ -69,7 +86,12 @@ class HomePage2 extends StatelessWidget {
                 const SizedBox(height: 20),
                 _buildSectionTitle(
                   'Materiales disponibles',
-                  trailing: 'All Courses',
+                  trailing: TextButton(
+                    onPressed: () {
+                      // TODO: Implementar navegación a cursos
+                    },
+                    child: const Text('All Courses'),
+                  ),
                 ),
                 _buildMaterialsRow(),
               ],
@@ -358,7 +380,7 @@ class HomePage2 extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title, {String? trailing}) {
+  Widget _buildSectionTitle(String title, {Widget? trailing}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -366,18 +388,14 @@ class HomePage2 extends StatelessWidget {
           title,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        if (trailing != null)
-          Text(
-            trailing,
-            style: const TextStyle(color: Colors.orange, fontSize: 14),
-          ),
+        if (trailing != null) trailing,
       ],
     );
   }
 
   Widget _buildSolicitudesEstudiante(String estudianteId) {
-    return FutureBuilder<List<SolicitudTutoria>>(
-      future: _obtenerSolicitudesPorEstudiante(estudianteId),
+    return StreamBuilder<List<SolicitudTutoria>>(
+      stream: _streamSolicitudesPorEstudiante(estudianteId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -470,6 +488,19 @@ class HomePage2 extends StatelessWidget {
     );
   }
 
+  Stream<List<SolicitudTutoria>> _streamSolicitudesPorEstudiante(String estudianteId) {
+    return FirebaseFirestore.instance
+        .collection('solicitudes_tutoria')
+        .where('estudianteId', isEqualTo: estudianteId)
+        .orderBy('fechaHora', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => SolicitudTutoria.fromMap(doc.data() as Map<String, dynamic>))
+          .toList();
+    });
+  }
+
   void _mostrarDetalleSolicitud(BuildContext context, SolicitudTutoria solicitud) async {
     // Obtener nombre del tutor
     String nombreTutor = 'Tutor';
@@ -541,15 +572,6 @@ class HomePage2 extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Future<List<SolicitudTutoria>> _obtenerSolicitudesPorEstudiante(String estudianteId) async {
-    final query = await FirebaseFirestore.instance
-        .collection('solicitudes_tutoria')
-        .where('estudianteId', isEqualTo: estudianteId)
-        .orderBy('fechaHora', descending: true)
-        .get();
-    return query.docs.map((doc) => SolicitudTutoria.fromMap(doc.data() as Map<String, dynamic>)).toList();
   }
 
   Widget _buildHorizontalCards(List<Widget> cards) {
