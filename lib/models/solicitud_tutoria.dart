@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class SolicitudTutoria {
   final String id;
   final String tutorId;
@@ -50,6 +52,10 @@ class SolicitudTutoria {
     dia: map['dia'],
     horaInicio: map['horaInicio'],
     horaFin: map['horaFin'],
-    fechaSesion: map['fechaSesion'] != null ? DateTime.parse(map['fechaSesion']) : null,
+    fechaSesion: map['fechaSesion'] != null
+        ? (map['fechaSesion'] is String
+            ? DateTime.parse(map['fechaSesion'])
+            : (map['fechaSesion'] as Timestamp).toDate())
+        : null,
   );
 } 

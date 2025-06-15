@@ -50,6 +50,7 @@ class _SolicitudesTutorPageState extends State<SolicitudesTutorPage> {
               final s = solicitudes[index];
               final solicitud = s['solicitud'] as SolicitudTutoria;
               final nombreEstudiante = s['nombreEstudiante'] as String;
+              print('DEBUG: fechaSesion=${solicitud.fechaSesion} horaInicio=${solicitud.horaInicio} horaFin=${solicitud.horaFin}');
               return Card(
                 color: const Color(0xFFF6F3FF),
                 margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -66,7 +67,21 @@ class _SolicitudesTutorPageState extends State<SolicitudesTutorPage> {
                       if (solicitud.curso != null) Text('Curso: ${solicitud.curso}'),
                       if (solicitud.mensaje != null && solicitud.mensaje!.isNotEmpty)
                         Text('Mensaje: ${solicitud.mensaje}'),
-                      Text('Fecha: ' + DateFormat('dd/MM/yyyy HH:mm').format(solicitud.fechaHora), style: const TextStyle(fontSize: 12, color: Colors.black45)),
+                      if (solicitud.fechaSesion != null && solicitud.horaInicio != null && solicitud.horaFin != null)
+                        Text(
+                          'Fecha: ${DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!)} ${solicitud.horaInicio} - ${solicitud.horaFin}',
+                          style: const TextStyle(fontSize: 12, color: Colors.black45),
+                        )
+                      else if (solicitud.fechaSesion != null)
+                        Text(
+                          'Fecha: ${DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!)}',
+                          style: const TextStyle(fontSize: 12, color: Colors.black45),
+                        )
+                      else
+                        Text(
+                          'Fecha: ' + DateFormat('dd/MM/yyyy HH:mm').format(solicitud.fechaHora),
+                          style: const TextStyle(fontSize: 12, color: Colors.black45),
+                        ),
                     ],
                   ),
                   trailing: solicitud.estado == 'pendiente'

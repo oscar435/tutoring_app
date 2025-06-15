@@ -4,12 +4,12 @@ import '../models/disponibilidad.dart';
 import '../models/solicitud_tutoria.dart';
 import '../service/disponibilidad_service.dart';
 import '../service/solicitud_tutoria_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AgendarTutoriaPage extends StatefulWidget {
   final String tutorId;
   final String estudianteId;
-  final String? curso; // opcional, si quieres pasar el curso
-  const AgendarTutoriaPage({required this.tutorId, required this.estudianteId, this.curso, super.key});
+  const AgendarTutoriaPage({required this.tutorId, required this.estudianteId, super.key});
 
   @override
   State<AgendarTutoriaPage> createState() => _AgendarTutoriaPageState();
@@ -21,11 +21,14 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
   bool _cargando = true;
   final _mensajeController = TextEditingController();
   DateTime? _fechaSeleccionada;
+  List<String> _cursosTutor = [];
+  String? _cursoSeleccionado;
 
   @override
   void initState() {
     super.initState();
     _cargarDisponibilidad();
+    _cargarCursosTutor();
   }
 
   Future<void> _cargarDisponibilidad() async {
@@ -37,8 +40,19 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
     });
   }
 
+  Future<void> _cargarCursosTutor() async {
+    final doc = await FirebaseFirestore.instance.collection('tutores').doc(widget.tutorId).get();
+    final data = doc.data() as Map<String, dynamic>?;
+    setState(() {
+      _cursosTutor = (data?['cursos'] as List?)?.cast<String>() ?? [];
+      if (_cursosTutor.isNotEmpty) {
+        _cursoSeleccionado = _cursosTutor.first;
+      }
+    });
+  }
+
   Future<void> _agendarTutoria() async {
-    if (_slotSeleccionado == null || _fechaSeleccionada == null) return;
+    if (_slotSeleccionado == null || _fechaSeleccionada == null || _cursoSeleccionado == null) return;
     final servicio = SolicitudTutoriaService();
     final solicitud = SolicitudTutoria(
       id: const Uuid().v4(),
@@ -46,7 +60,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
       estudianteId: widget.estudianteId,
       fechaHora: DateTime.now(),
       estado: 'pendiente',
-      curso: widget.curso,
+      curso: _cursoSeleccionado,
       mensaje: _mensajeController.text,
       dia: _slotSeleccionado!.dia,
       horaInicio: _slotSeleccionado!.horaInicio,
@@ -73,6 +87,20 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (_cursosTutor.isNotEmpty) ...[
+                        Text('Selecciona el curso:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        SizedBox(height: 10),
+                        DropdownButton<String>(
+                          value: _cursoSeleccionado,
+                          isExpanded: true,
+                          items: _cursosTutor.map((curso) => DropdownMenuItem(
+                            value: curso,
+                            child: Text(curso),
+                          )).toList(),
+                          onChanged: (value) => setState(() => _cursoSeleccionado = value),
+                        ),
+                        SizedBox(height: 20),
+                      ],
                       Text('Selecciona un horario disponible:', style: TextStyle(fontWeight: FontWeight.bold)),
                       SizedBox(height: 10),
                       ..._disponibilidad!.slots.map((slot) => RadioListTile<Slot>(
@@ -110,7 +138,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                       ),
                       SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: _slotSeleccionado == null || _fechaSeleccionada == null ? null : _agendarTutoria,
+                        onPressed: _slotSeleccionado == null || _fechaSeleccionada == null || _cursoSeleccionado == null ? null : _agendarTutoria,
                         child: Text('Agendar Tutoría'),
                       ),
                     ],

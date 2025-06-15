@@ -11,6 +11,7 @@ import '../service/solicitud_tutoria_service.dart';
 import 'package:intl/intl.dart';
 import '../models/sesion_tutoria.dart';
 import '../service/sesion_tutoria_service.dart';
+import 'package:tutoring_app/pages/mis_estudiantes_page.dart';
 
 class TeacherHomePage extends StatefulWidget {
   static const routeName = '/teacher-home';
@@ -111,115 +112,145 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
 
   Widget _buildTeacherDrawer(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const Drawer();
     return Drawer(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            color: Colors.deepPurple,
-            child: Column(
-              children: const [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundImage: AssetImage('assets/teacher_avatar.jpg'),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'Prof. Juan Pérez',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+      child: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('tutores').doc(user.uid).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text('Error al cargar datos'));
+          }
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final nombre = data['nombre'] ?? '';
+          final apellidos = data['apellidos'] ?? '';
+          final escuela = data['escuela'] ?? '';
+          final photoUrl = data['photoUrl'] ?? '';
+          return Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF512DA8), Color(0xFF9575CD)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                Text(
-                  'Ingeniería de Software',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Container(
-              color: const Color(0xFF0B1120),
-              child: ListView(
-                children: [
-                  _buildDrawerItem(Icons.home, 'Inicio', context, null),
-                  _buildDrawerItem(
-                    Icons.calendar_today,
-                    'Calendario de tutorías',
-                    context,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CalendarioPage(),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 44,
+                      backgroundImage: photoUrl.isNotEmpty
+                          ? NetworkImage(photoUrl)
+                          : const AssetImage('assets/teacher_avatar.jpg') as ImageProvider,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      '$nombre $apellidos',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  _buildDrawerItem(
-                    Icons.access_time,
-                    'Disponibilidad',
-                    context,
-                    user != null
-                        ? () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => EditarDisponibilidadPage(tutorId: user.uid),
-                              ),
-                            )
-                        : null,
-                  ),
-                  _buildDrawerItem(
-                    Icons.people,
-                    'Mis estudiantes',
-                    context,
-                    null,
-                  ),
-                  _buildDrawerItem(
-                    Icons.assessment,
-                    'Reportes',
-                    context,
-                    null,
-                  ),
-                  _buildDrawerItem(
-                    Icons.settings,
-                    'Configuración',
-                    context,
-                    null,
-                  ),
-                  _buildDrawerItem(
-                    Icons.notifications,
-                    'Solicitudes',
-                    context,
-                    user != null
-                        ? () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SolicitudesTutorPage(tutorId: user!.uid),
-                              ),
-                            )
-                        : null,
-                  ),
-                  _buildDrawerItem(
-                    Icons.logout,
-                    'Cerrar sesión',
-                    context,
-                    () async {
-                      await FirebaseAuth.instance.signOut();
-                      Navigator.pushReplacementNamed(
-                        context,
-                        LoginTeacherPage.routeName,
-                      );
-                    },
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      escuela,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
-        ],
+              Expanded(
+                child: Container(
+                  color: const Color(0xFF0B1120),
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      _buildDrawerItem(Icons.home, 'Inicio', context, null),
+                      _buildDrawerItem(
+                        Icons.calendar_today,
+                        'Calendario de tutorías',
+                        context,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CalendarioPage(),
+                          ),
+                        ),
+                      ),
+                      _buildDrawerItem(
+                        Icons.access_time,
+                        'Disponibilidad',
+                        context,
+                        user != null
+                            ? () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditarDisponibilidadPage(tutorId: user.uid),
+                                  ),
+                                )
+                            : null,
+                      ),
+                      _buildDrawerItem(
+                        Icons.people,
+                        'Mis estudiantes',
+                        context,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MisEstudiantesPage(tutorId: user.uid),
+                          ),
+                        ),
+                      ),
+                      _buildDrawerItem(
+                        Icons.assessment,
+                        'Reportes',
+                        context,
+                        null,
+                      ),
+                      _buildDrawerItem(
+                        Icons.notifications,
+                        'Solicitudes',
+                        context,
+                        user != null
+                            ? () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SolicitudesTutorPage(tutorId: user.uid),
+                                  ),
+                                )
+                            : null,
+                      ),
+                      _buildDrawerItem(
+                        Icons.logout,
+                        'Cerrar sesión',
+                        context,
+                        () async {
+                          await FirebaseAuth.instance.signOut();
+                          Navigator.pushReplacementNamed(
+                            context,
+                            LoginTeacherPage.routeName,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -453,10 +484,19 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
           children: solicitudes.map((s) {
             final solicitud = s['solicitud'] as SolicitudTutoria;
             final nombreEstudiante = s['nombreEstudiante'] as String;
+            String fechaHoraTexto;
+            if (solicitud.fechaSesion != null && solicitud.horaInicio != null && solicitud.horaFin != null) {
+              final fecha = solicitud.fechaSesion!;
+              final fechaFormateada = DateFormat('dd/MM/yyyy').format(fecha);
+              fechaHoraTexto = '$fechaFormateada ${solicitud.horaInicio} - ${solicitud.horaFin}';
+            } else {
+              final fecha = solicitud.fechaHora;
+              fechaHoraTexto = DateFormat('dd/MM/yyyy HH:mm').format(fecha);
+            }
             return _buildRequestCard(
               nombreEstudiante,
               solicitud.curso ?? 'Sin curso especificado',
-              solicitud.fechaHora.toString(),
+              fechaHoraTexto,
               solicitud.id,
             );
           }).toList(),
