@@ -2,10 +2,47 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tutoring_app/pages/CalendarioPage.dart';
 import 'package:tutoring_app/pages/login_teacher_page.dart';
+import 'package:tutoring_app/pages/notificaciones_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tutoring_app/pages/editar_disponibilidad_page.dart';
+import 'package:tutoring_app/pages/solicitudes_tutor_page.dart';
+import '../models/solicitud_tutoria.dart';
+import '../service/solicitud_tutoria_service.dart';
+import 'package:intl/intl.dart';
+import '../models/sesion_tutoria.dart';
+import '../service/sesion_tutoria_service.dart';
 
-class TeacherHomePage extends StatelessWidget {
+class TeacherHomePage extends StatefulWidget {
   static const routeName = '/teacher-home';
   const TeacherHomePage({Key? key}) : super(key: key);
+
+  @override
+  State<TeacherHomePage> createState() => _TeacherHomePageState();
+}
+
+class _TeacherHomePageState extends State<TeacherHomePage> {
+  late Future<List<Map<String, dynamic>>> _solicitudesFuture;
+  final user = FirebaseAuth.instance.currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    if (user != null) {
+      _solicitudesFuture = SolicitudTutoriaService().obtenerSolicitudesConNombres(user!.uid);
+    }
+  }
+
+  Future<void> _actualizarEstado(String solicitudId, String nuevoEstado) async {
+    await SolicitudTutoriaService().actualizarEstado(solicitudId, nuevoEstado);
+    setState(() {
+      if (user != null) {
+        _solicitudesFuture = SolicitudTutoriaService().obtenerSolicitudesConNombres(user!.uid);
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Solicitud ${nuevoEstado == 'aceptada' ? 'aceptada' : 'rechazada'}')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +75,7 @@ class TeacherHomePage extends StatelessWidget {
   }
 
   Widget _buildTopBar(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -48,10 +86,20 @@ class TeacherHomePage extends StatelessWidget {
           },
         ),
         Row(
-          children: const [
-            Icon(Icons.notifications, size: 28),
-            SizedBox(width: 10),
-            CircleAvatar(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications, size: 28),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SolicitudesTutorPage(tutorId: user?.uid ?? ''),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 10),
+            const CircleAvatar(
               backgroundImage: AssetImage('assets/teacher_avatar.jpg'),
               radius: 18,
             ),
@@ -62,6 +110,7 @@ class TeacherHomePage extends StatelessWidget {
   }
 
   Widget _buildTeacherDrawer(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return Drawer(
       child: Column(
         children: [
@@ -111,6 +160,19 @@ class TeacherHomePage extends StatelessWidget {
                     ),
                   ),
                   _buildDrawerItem(
+                    Icons.access_time,
+                    'Disponibilidad',
+                    context,
+                    user != null
+                        ? () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EditarDisponibilidadPage(tutorId: user.uid),
+                              ),
+                            )
+                        : null,
+                  ),
+                  _buildDrawerItem(
                     Icons.people,
                     'Mis estudiantes',
                     context,
@@ -127,6 +189,19 @@ class TeacherHomePage extends StatelessWidget {
                     'Configuración',
                     context,
                     null,
+                  ),
+                  _buildDrawerItem(
+                    Icons.notifications,
+                    'Solicitudes',
+                    context,
+                    user != null
+                        ? () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SolicitudesTutorPage(tutorId: user!.uid),
+                              ),
+                            )
+                        : null,
                   ),
                   _buildDrawerItem(
                     Icons.logout,
@@ -192,39 +267,54 @@ class TeacherHomePage extends StatelessWidget {
   }
 
   Widget _buildTutoriasGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      childAspectRatio: 1.5,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      children: [
-        _buildTutoriaCard(
-          'Programación I',
-          'Hoy - 3:00 PM',
-          '4 estudiantes',
-          Colors.blue,
-        ),
-        _buildTutoriaCard(
-          'Base de Datos',
-          'Mañana - 2:00 PM',
-          '3 estudiantes',
-          Colors.green,
-        ),
-        _buildTutoriaCard(
-          'Algoritmos',
-          'Vie - 4:00 PM',
-          '5 estudiantes',
-          Colors.orange,
-        ),
-        _buildTutoriaCard(
-          'Estructuras',
-          'Sáb - 10:00 AM',
-          '2 estudiantes',
-          Colors.purple,
-        ),
-      ],
+    if (user == null) return SizedBox.shrink();
+    return StreamBuilder<List<SesionTutoria>>(
+      stream: SesionTutoriaService().streamSesionesFuturasPorTutor(user!.uid),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('No hay próximas tutorías.'));
+        }
+        final sesiones = snapshot.data!;
+        return FutureBuilder<List<Map<String, dynamic>>>(
+          future: Future.wait(sesiones.map((sesion) async {
+            final nombreEstudiante = await SolicitudTutoriaService().obtenerNombreEstudiante(sesion.estudianteId);
+            return {
+              'sesion': sesion,
+              'nombreEstudiante': nombreEstudiante,
+            };
+          })),
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+            if (!snap.hasData || snap.data!.isEmpty) {
+              return Center(child: Text('No hay próximas tutorías.'));
+            }
+            final sesionesConNombres = snap.data!;
+            return GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              childAspectRatio: 1.5,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              children: sesionesConNombres.map((s) {
+                final sesion = s['sesion'] as SesionTutoria;
+                final nombreEstudiante = s['nombreEstudiante'] as String;
+                return _buildTutoriaCard(
+                  sesion.curso ?? 'Sin curso',
+                  '${sesion.dia} - ${sesion.horaInicio}',
+                  nombreEstudiante,
+                  Colors.deepPurple,
+                );
+              }).toList(),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -339,49 +429,74 @@ class TeacherHomePage extends StatelessWidget {
   }
 
   Widget _buildPendingRequestsList() {
-    return Column(
-      children: [
-        _buildRequestCard(
-          'María García',
-          'Programación I',
-          'Mañana - 3:00 PM',
-        ),
-        _buildRequestCard(
-          'Carlos López',
-          'Base de Datos',
-          'Jueves - 2:00 PM',
-        ),
-        _buildRequestCard(
-          'Ana Martínez',
-          'Algoritmos',
-          'Viernes - 4:00 PM',
-        ),
-      ],
+    if (user == null) return SizedBox.shrink();
+    
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _solicitudesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('No hay solicitudes pendientes.'));
+        }
+        
+        final solicitudes = snapshot.data!.where((s) => 
+          (s['solicitud'] as SolicitudTutoria).estado == 'pendiente'
+        ).toList();
+        
+        if (solicitudes.isEmpty) {
+          return Center(child: Text('No hay solicitudes pendientes.'));
+        }
+
+        return Column(
+          children: solicitudes.map((s) {
+            final solicitud = s['solicitud'] as SolicitudTutoria;
+            final nombreEstudiante = s['nombreEstudiante'] as String;
+            return _buildRequestCard(
+              nombreEstudiante,
+              solicitud.curso ?? 'Sin curso especificado',
+              solicitud.fechaHora.toString(),
+              solicitud.id,
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
-  Widget _buildRequestCard(String student, String subject, String time) {
+  Widget _buildRequestCard(String student, String subject, String time, String solicitudId) {
+    final DateTime fecha = DateTime.tryParse(time) ?? DateTime.now();
+    final String fechaFormateada = DateFormat('dd/MM/yyyy HH:mm').format(fecha);
     return Card(
+      color: const Color(0xFFF6F3FF),
       margin: const EdgeInsets.symmetric(vertical: 5),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
         leading: const CircleAvatar(
-          child: Icon(Icons.person),
+          backgroundColor: Color(0xFFD1C4E9),
+          child: Icon(Icons.person, color: Color(0xFF5E35B1)),
         ),
-        title: Text(student),
-        subtitle: Text('$subject\n$time'),
+        title: Text(student, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(subject, style: const TextStyle(color: Colors.black54)),
+            Text(fechaFormateada, style: const TextStyle(fontSize: 12, color: Colors.black45)),
+          ],
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
               icon: const Icon(Icons.check, color: Colors.green),
-              onPressed: () {},
+              onPressed: () => _actualizarEstado(solicitudId, 'aceptada'),
             ),
             IconButton(
               icon: const Icon(Icons.close, color: Colors.red),
-              onPressed: () {},
+              onPressed: () => _actualizarEstado(solicitudId, 'rechazada'),
             ),
           ],
         ),

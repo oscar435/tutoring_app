@@ -6,26 +6,26 @@ import 'dart:io';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
   try {
-    // Inicializar Firebase
     await Firebase.initializeApp();
-    
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     final FirebaseAuth auth = FirebaseAuth.instance;
-    
-    print('Creando cuenta de tutor completa...');
 
-    // Datos del tutor
-    const String email = 'tutor.prueba@unfv.edu.pe';
-    const String password = 'Tutor123!'; // Contraseña segura para pruebas
+    // Cambia estos datos para el nuevo tutor
+    const String nombre = 'Sofía';
+    const String apellidos = 'Gómez Torres';
+    const String especialidad = 'Cálculo y Álgebra';
+    const String carrera = 'Ingeniería Informática';
+    const String email = 'sofia.gomez@unfv.edu.pe';
+    const String password = 'UnfvSofia2024!';
+
+    print('Creando cuenta de tutor...');
 
     // 1. Crear cuenta de autenticación
     final UserCredential userCredential = await auth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
-
     final String tutorId = userCredential.user!.uid;
     print('✅ Cuenta de autenticación creada con ID: $tutorId');
 
@@ -34,10 +34,12 @@ Future<void> main() async {
       'email': email,
       'createdAt': FieldValue.serverTimestamp(),
       'emailVerified': true,
-      'nombre': 'Juan',
-      'apellidos': 'Pérez',
-      'especialidad': 'Matemáticas',
-      'universidad': 'UNFV',
+      'nombre': nombre,
+      'apellidos': apellidos,
+      'especialidad': especialidad,
+      'carrera': carrera,
+      'universidad': 'Universidad Nacional Federico Villarreal',
+      'facultad': 'Facultad de Ingeniería Electrónica e Informática',
     };
 
     // 3. Crear documento en la colección tutores
@@ -52,15 +54,10 @@ Future<void> main() async {
     });
     print('✅ Referencia creada en users');
 
-    print('''
-¡Tutor creado exitosamente!
-Email: $email
-Contraseña: $password
-ID: $tutorId
-''');
+    print('''\n¡Tutor creado exitosamente!\nEmail: $email\nContraseña: $password\nID: $tutorId\n''');
     exit(0);
   } catch (e) {
     print('Error al crear tutor: $e');
     exit(1);
   }
-} 
+}

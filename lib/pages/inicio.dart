@@ -5,6 +5,8 @@ import 'package:tutoring_app/pages/CalendarioPage.dart';
 import 'package:tutoring_app/pages/login_pages.dart';
 import 'package:tutoring_app/pages/student_profile_page.dart';
 import 'package:tutoring_app/pages/material_educativo_page.dart';
+import 'package:tutoring_app/pages/notificaciones_page.dart';
+import 'agendar_tutoria_page.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -46,6 +48,7 @@ class HomePage2 extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _buildServiceCard(
+                        context,
                         'TUTORÍAS',
                         Icons.school,
                         Colors.orange,
@@ -54,6 +57,7 @@ class HomePage2 extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _buildServiceCard(
+                        context,
                         'AYUDA PSICOPEDAGÓGICA',
                         Icons.psychology,
                         Colors.green,
@@ -97,9 +101,9 @@ class HomePage2 extends StatelessWidget {
             },
           ),
           Row(
-            children: const [
-              Icon(Icons.notifications, size: 28),
-              SizedBox(width: 10),
+            children: [
+              _buildNotificationIcon(context, ''),
+              const SizedBox(width: 10),
               CircleAvatar(
                 backgroundImage: AssetImage('assets/avatar.jpg'),
                 radius: 18,
@@ -131,7 +135,7 @@ class HomePage2 extends StatelessWidget {
             ),
             Row(
               children: [
-                const Icon(Icons.notifications, size: 28),
+                _buildNotificationIcon(context, user.uid),
                 const SizedBox(width: 10),
                 GestureDetector(
                   onTap: () {
@@ -151,6 +155,68 @@ class HomePage2 extends StatelessWidget {
                 ),
               ],
             ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildNotificationIcon(BuildContext context, String usuarioId) {
+    if (usuarioId.isEmpty) {
+      return IconButton(
+        icon: const Icon(Icons.notifications, size: 28),
+        onPressed: () {},
+      );
+    }
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('notificaciones')
+          .where('usuarioId', isEqualTo: usuarioId)
+          .where('leida', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        int count = 0;
+        if (snapshot.hasData) {
+          count = snapshot.data!.docs.length;
+        }
+        return Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications, size: 28),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => NotificacionesPage(usuarioId: usuarioId),
+                  ),
+                );
+              },
+            ),
+            if (count > 0)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
           ],
         );
       },
@@ -354,22 +420,36 @@ class HomePage2 extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceCard(String title, IconData icon, Color color) {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(title, style: const TextStyle(color: Colors.white)),
-          ),
-        ],
+  Widget _buildServiceCard(BuildContext context, String title, IconData icon, Color color) {
+    return GestureDetector(
+      onTap: title == 'TUTORÍAS'
+          ? () async {
+              final user = FirebaseAuth.instance.currentUser;
+              if (user == null) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SeleccionarTutorPage(estudianteId: user.uid),
+                ),
+              );
+            }
+          : null,
+      child: Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(title, style: const TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -444,6 +524,61 @@ class HomePage2 extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class SeleccionarTutorPage extends StatelessWidget {
+  final String estudianteId;
+  const SeleccionarTutorPage({required this.estudianteId, Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Seleccionar Tutor')),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance.collection('tutores').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+          final docs = (snapshot.data as QuerySnapshot).docs;
+          if (docs.isEmpty) return Center(child: Text('No hay tutores disponibles.'));
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+              final tutorId = docs[index].id;
+              final nombre = data['nombre'] ?? '';
+              final apellidos = data['apellidos'] ?? '';
+              final especialidad = data['especialidad'] ?? '';
+              final universidad = data['universidad'] ?? '';
+              final photoUrl = data['photoUrl'] ?? '';
+              return Card(
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: photoUrl.isNotEmpty
+                        ? NetworkImage(photoUrl)
+                        : const AssetImage('assets/avatar.jpg') as ImageProvider,
+                  ),
+                  title: Text('$nombre $apellidos'),
+                  subtitle: Text('$especialidad\n$universidad'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AgendarTutoriaPage(
+                          tutorId: tutorId,
+                          estudianteId: estudianteId,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
