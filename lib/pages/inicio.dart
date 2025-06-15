@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tutoring_app/pages/CalendarioPage.dart';
 import 'package:tutoring_app/pages/login_pages.dart';
+import 'package:tutoring_app/pages/student_profile_page.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -131,11 +132,21 @@ class HomePage2 extends StatelessWidget {
               children: [
                 const Icon(Icons.notifications, size: 28),
                 const SizedBox(width: 10),
-                CircleAvatar(
-                  backgroundImage: photoUrl.isNotEmpty
-                      ? NetworkImage(photoUrl)
-                      : const AssetImage('assets/avatar.jpg') as ImageProvider,
-                  radius: 18,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const StudentProfilePage(),
+                      ),
+                    );
+                  },
+                  child: CircleAvatar(
+                    backgroundImage: photoUrl.isNotEmpty
+                        ? NetworkImage(photoUrl)
+                        : const AssetImage('assets/avatar.jpg') as ImageProvider,
+                    radius: 18,
+                  ),
                 ),
               ],
             ),
@@ -231,7 +242,14 @@ class HomePage2 extends StatelessWidget {
                         context,
                         null,
                       ),
-                      _buildDrawerItem(Icons.person, 'Perfil', context, null),
+                      _buildDrawerItem(Icons.person, 'Perfil', context, () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const StudentProfilePage(),
+                          ),
+                        );
+                      }),
                       _buildDrawerItem(
                         Icons.logout,
                         'Cerrar sesión',
