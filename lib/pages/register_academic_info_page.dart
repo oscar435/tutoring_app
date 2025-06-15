@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:tutoring_app/pages/inicio.dart';
+import 'package:tutoring_app/pages/register_profile_photo_page.dart';
 import 'package:tutoring_app/service/auth.dart';
 import 'package:tutoring_app/util/snackbar.dart';
 
@@ -169,12 +170,11 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
 
                               if (!mounted) return;
 
-                              // Navegar a la página de inicio
-                              Navigator.of(context).pushAndRemoveUntil(
+                              // Navegar a la página de subir foto de perfil
+                              Navigator.of(context).pushReplacement(
                                 MaterialPageRoute(
-                                  builder: (_) => const HomePage2(),
+                                  builder: (_) => RegisterProfilePhotoPage(userData: allData),
                                 ),
-                                (route) => false,
                               );
                             } catch (e) {
                               showSnackBar(context,

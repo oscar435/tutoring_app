@@ -83,26 +83,65 @@ class HomePage2 extends StatelessWidget {
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            Scaffold.of(context).openDrawer();
-          },
-        ),
-        Row(
-          children: const [
-            Icon(Icons.notifications, size: 28),
-            SizedBox(width: 10),
-            CircleAvatar(
-              backgroundImage: AssetImage('assets/avatar.jpg'),
-              radius: 18,
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+          Row(
+            children: const [
+              Icon(Icons.notifications, size: 28),
+              SizedBox(width: 10),
+              CircleAvatar(
+                backgroundImage: AssetImage('assets/avatar.jpg'),
+                radius: 18,
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('estudiantes')
+          .doc(user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        String photoUrl = '';
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+          photoUrl = userData['photoUrl'] ?? '';
+        }
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
+            ),
+            Row(
+              children: [
+                const Icon(Icons.notifications, size: 28),
+                const SizedBox(width: 10),
+                CircleAvatar(
+                  backgroundImage: photoUrl.isNotEmpty
+                      ? NetworkImage(photoUrl)
+                      : const AssetImage('assets/avatar.jpg') as ImageProvider,
+                  radius: 18,
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -126,6 +165,7 @@ class HomePage2 extends StatelessWidget {
           final nombre = userData['nombre'] ?? '';
           final apellidos = userData['apellidos'] ?? '';
           final codigo = userData['codigo_estudiante'] ?? '';
+          final photoUrl = userData['photoUrl'] ?? '';
 
           return Column(
             children: [
@@ -134,8 +174,10 @@ class HomePage2 extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
                 child: Row(
                   children: [
-                    const CircleAvatar(
-                      backgroundImage: AssetImage('assets/avatar.jpg'),
+                    CircleAvatar(
+                      backgroundImage: photoUrl.isNotEmpty
+                          ? NetworkImage(photoUrl)
+                          : const AssetImage('assets/avatar.jpg') as ImageProvider,
                       radius: 30,
                     ),
                     const SizedBox(width: 10),
