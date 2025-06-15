@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:tutoring_app/pages/CalendarioPage.dart';
 import 'package:tutoring_app/pages/login_pages.dart';
 import 'package:tutoring_app/pages/student_profile_page.dart';
+import 'package:tutoring_app/pages/material_educativo_page.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -240,7 +241,14 @@ class HomePage2 extends StatelessWidget {
                         Icons.menu_book,
                         'Material Educativo',
                         context,
-                        null,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MaterialEducativoPage(),
+                            ),
+                          );
+                        },
                       ),
                       _buildDrawerItem(Icons.person, 'Perfil', context, () {
                         Navigator.push(
