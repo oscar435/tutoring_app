@@ -9,6 +9,7 @@ import 'package:tutoring_app/pages/notificaciones_page.dart';
 import 'agendar_tutoria_page.dart';
 import '../service/solicitud_tutoria_service.dart';
 import '../models/solicitud_tutoria.dart';
+import 'package:intl/intl.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -386,7 +387,7 @@ class HomePage2 extends StatelessWidget {
         }
         final solicitudes = snapshot.data!;
         return SizedBox(
-          height: 110,
+          height: 120,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: solicitudes.length,
@@ -410,56 +411,135 @@ class HomePage2 extends StatelessWidget {
                 default:
                   estadoColor = Colors.orange;
               }
-              return Container(
-                width: 180,
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple[50],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      solicitud.curso ?? 'Sin curso',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      fechaTexto,
-                      style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w500),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: estadoColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            solicitud.estado.toUpperCase(),
-                            style: TextStyle(
-                              color: estadoColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+              return GestureDetector(
+                onTap: () => _mostrarDetalleSolicitud(context, solicitud),
+                child: Container(
+                  width: 180,
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple[50],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        solicitud.curso ?? 'Sin curso',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        fechaTexto,
+                        style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w500, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: estadoColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              solicitud.estado.toUpperCase(),
+                              style: TextStyle(
+                                color: estadoColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
           ),
         );
       },
+    );
+  }
+
+  void _mostrarDetalleSolicitud(BuildContext context, SolicitudTutoria solicitud) async {
+    // Obtener nombre del tutor
+    String nombreTutor = 'Tutor';
+    if (solicitud.tutorId.isNotEmpty) {
+      final doc = await FirebaseFirestore.instance.collection('tutores').doc(solicitud.tutorId).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final nombre = data['nombre'] ?? '';
+        final apellidos = data['apellidos'] ?? '';
+        nombreTutor = ('$nombre $apellidos').trim().isEmpty ? 'Tutor' : '$nombre $apellidos';
+      }
+    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.45,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.school, color: Colors.deepPurple, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      solicitud.curso ?? 'Sin curso',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _detalleItem('Estado', solicitud.estado.toUpperCase()),
+              if (solicitud.fechaSesion != null && (solicitud.horaInicio ?? '').isNotEmpty && (solicitud.horaFin ?? '').isNotEmpty)
+                _detalleItem(
+                  'Fecha y hora',
+                  '${DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!)} ${solicitud.horaInicio} - ${solicitud.horaFin}',
+                ),
+              if (solicitud.mensaje != null && solicitud.mensaje!.isNotEmpty)
+                _detalleItem('Mensaje', solicitud.mensaje!),
+              _detalleItem('Tutor', nombreTutor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detalleItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+          Expanded(
+            child: Text(value, style: const TextStyle(color: Colors.black87)),
+          ),
+        ],
+      ),
     );
   }
 
