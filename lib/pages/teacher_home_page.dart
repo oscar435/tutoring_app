@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import '../models/sesion_tutoria.dart';
 import '../service/sesion_tutoria_service.dart';
 import 'package:tutoring_app/pages/mis_estudiantes_page.dart';
+import 'package:tutoring_app/pages/tutor_profile_page.dart';
 
 class TeacherHomePage extends StatefulWidget {
   static const routeName = '/teacher-home';
@@ -100,9 +101,19 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               },
             ),
             const SizedBox(width: 10),
-            const CircleAvatar(
-              backgroundImage: AssetImage('assets/teacher_avatar.jpg'),
-              radius: 18,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TutorProfilePage(),
+                  ),
+                );
+              },
+              child: const CircleAvatar(
+                backgroundImage: AssetImage('assets/teacher_avatar.jpg'),
+                radius: 18,
+              ),
             ),
           ],
         ),
@@ -214,23 +225,21 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                         ),
                       ),
                       _buildDrawerItem(
+                        Icons.person,
+                        'Perfil',
+                        context,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TutorProfilePage(),
+                          ),
+                        ),
+                      ),
+                      _buildDrawerItem(
                         Icons.assessment,
                         'Reportes',
                         context,
                         null,
-                      ),
-                      _buildDrawerItem(
-                        Icons.notifications,
-                        'Solicitudes',
-                        context,
-                        user != null
-                            ? () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SolicitudesTutorPage(tutorId: user.uid),
-                                  ),
-                                )
-                            : null,
                       ),
                       _buildDrawerItem(
                         Icons.logout,
@@ -371,21 +380,28 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            const Spacer(),
+            const SizedBox(height: 4),
             Text(
               time,
               style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.w500,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
+            const Spacer(),
             Text(
               students,
               style: const TextStyle(
                 color: Colors.grey,
                 fontSize: 12,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
