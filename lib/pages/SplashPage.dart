@@ -1,10 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tutoring_app/preferences/pref_usuarios.dart';
 
-class SplashPage extends StatelessWidget {
+class SplashPage extends StatefulWidget {
   static const String routeName = AppRoutes.splash;
 
   const SplashPage({super.key});
+
+  @override
+  State<SplashPage> createState() => _SplashPageState();
+}
+
+class _SplashPageState extends State<SplashPage> {
+  final prefs = PreferenciasUsuario();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkNavigation();
+  }
+
+  Future<void> _checkNavigation() async {
+    await Future.delayed(const Duration(milliseconds: 1200)); // Breve splash
+    final isOnboardingDone = prefs.onboardingCompletado;
+    final user = FirebaseAuth.instance.currentUser;
+    if (!isOnboardingDone) {
+      Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+    } else if (user == null) {
+      Navigator.pushReplacementNamed(context, AppRoutes.login);
+    } else {
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,23 +52,7 @@ class SplashPage extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.onboarding);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white, 
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                child: const Text('Empezar', style: TextStyle(fontSize: 16)),
-              ),
-            ),
+            const CircularProgressIndicator(),
           ],
         ),
       ),

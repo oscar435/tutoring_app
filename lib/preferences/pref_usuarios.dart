@@ -17,4 +17,13 @@ class PreferenciasUsuario {
   set ultimaPagina(String value) {
     _prefs.setString('ultimaPagina', value);
   }
+
+  // Preferencia para saber si el onboarding ya fue completado
+  bool get onboardingCompletado {
+    return _prefs.getBool('onboardingCompletado') ?? false;
+  }
+
+  set onboardingCompletado(bool value) {
+    _prefs.setBool('onboardingCompletado', value);
+  }
 }

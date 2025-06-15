@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tutoring_app/pages/CalendarioPage.dart';
@@ -5,13 +6,16 @@ import 'package:tutoring_app/pages/login_pages.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
-  const HomePage2({Key? key}) : super(key: key);
+  const HomePage2({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const Scaffold(body: Center(child: Text('Error: No hay usuario')));
+
     return Scaffold(
       backgroundColor: Colors.white,
-      drawer: _buildCustomDrawer(context),
+      drawer: _buildCustomDrawer(context, user.uid),
       body: SafeArea(
         child: Builder(
           builder: (context) => SingleChildScrollView(
@@ -102,88 +106,109 @@ class HomePage2 extends StatelessWidget {
     );
   }
 
-  Widget _buildCustomDrawer(BuildContext context) {
+  Widget _buildCustomDrawer(BuildContext context, String userId) {
     return Drawer(
-      child: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  backgroundImage: AssetImage('assets/avatar.jpg'),
-                  radius: 30,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Oscar Montes Triveño',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+      child: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('estudiantes')
+            .doc(userId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text('Error al cargar datos'));
+          }
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+          final nombre = userData['nombre'] ?? '';
+          final apellidos = userData['apellidos'] ?? '';
+          final codigo = userData['codigo_estudiante'] ?? '';
+
+          return Column(
+            children: [
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      backgroundImage: AssetImage('assets/avatar.jpg'),
+                      radius: 30,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$nombre $apellidos',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(codigo, style: const TextStyle(color: Colors.grey)),
+                          const SizedBox(height: 5),
+                        ],
                       ),
-                      Text('2021017401', style: TextStyle(color: Colors.grey)),
-                      SizedBox(height: 5),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  color: const Color(0xFF0B1120),
+                  child: ListView(
+                    children: [
+                      _buildDrawerItem(Icons.home, 'Inicio', context, null),
+                      _buildDrawerItem(
+                        Icons.book_online,
+                        'Tutorías agendadas',
+                        context,
+                        null,
+                      ),
+                      _buildDrawerItem(
+                        Icons.calendar_month,
+                        'Calendario académico',
+                        context,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CalendarioPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildDrawerItem(
+                        Icons.menu_book,
+                        'Material Educativo',
+                        context,
+                        null,
+                      ),
+                      _buildDrawerItem(Icons.person, 'Perfil', context, null),
+                      _buildDrawerItem(
+                        Icons.logout,
+                        'Cerrar sesión',
+                        context,
+                        () async {
+                          await FirebaseAuth.instance.signOut();
+                          Navigator.pushReplacementNamed(
+                            context,
+                            LoginPage.routeName,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Container(
-              color: const Color(0xFF0B1120),
-              child: ListView(
-                children: [
-                  _buildDrawerItem(Icons.home, 'Inicio', context, null),
-                  _buildDrawerItem(
-                    Icons.book_online,
-                    'Tutorías agendadas',
-                    context,
-                    null,
-                  ),
-                  _buildDrawerItem(
-                    Icons.calendar_month,
-                    'Calendario académico',
-                    context,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CalendarioPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    Icons.menu_book,
-                    'Material Educativo',
-                    context,
-                    null,
-                  ),
-                  _buildDrawerItem(Icons.person, 'Perfil', context, null),
-                  _buildDrawerItem(
-                    Icons.logout,
-                    'Cerrar sesión',
-                    context,
-                    () async {
-                      await FirebaseAuth.instance.signOut();
-                      Navigator.pushReplacementNamed(
-                        context,
-                        LoginPage.routeName,
-                      );
-                    },
-                  ),
-                ],
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
