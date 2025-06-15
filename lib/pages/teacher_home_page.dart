@@ -66,7 +66,18 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                 _buildSectionTitle(title: 'Estadísticas'),
                 _buildStatsCards(),
                 const SizedBox(height: 20),
-                _buildSectionTitle(title: 'Solicitudes Pendientes'),
+                _buildSectionTitle(
+                  title: 'Solicitudes Pendientes',
+                  trailing: 'Ver todas',
+                  onTrailingTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SolicitudesTutorPage(tutorId: user?.uid ?? ''),
+                      ),
+                    );
+                  },
+                ),
                 _buildPendingRequestsList(),
               ],
             ),
@@ -95,7 +106,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => SolicitudesTutorPage(tutorId: user?.uid ?? ''),
+                    builder: (context) => NotificacionesPage(usuarioId: user?.uid ?? ''),
                   ),
                 );
               },
@@ -280,7 +291,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     );
   }
 
-  Widget _buildSectionTitle({required String title, String? trailing}) {
+  Widget _buildSectionTitle({required String title, String? trailing, VoidCallback? onTrailingTap}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -294,11 +305,14 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             ),
           ),
           if (trailing != null)
-            Text(
-              trailing,
-              style: const TextStyle(
-                color: Colors.deepPurple,
-                fontWeight: FontWeight.w500,
+            GestureDetector(
+              onTap: onTrailingTap,
+              child: Text(
+                trailing,
+                style: const TextStyle(
+                  color: Colors.deepPurple,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
         ],
@@ -320,10 +334,25 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         final sesiones = snapshot.data!;
         return FutureBuilder<List<Map<String, dynamic>>>(
           future: Future.wait(sesiones.map((sesion) async {
-            final nombreEstudiante = await SolicitudTutoriaService().obtenerNombreEstudiante(sesion.estudianteId);
+            final estudianteDoc = await FirebaseFirestore.instance.collection('estudiantes').doc(sesion.estudianteId).get();
+            final estudianteData = estudianteDoc.data() as Map<String, dynamic>?;
+            final nombreEstudiante = estudianteData?['nombre'] != null && estudianteData?['apellidos'] != null
+                ? '${estudianteData!['nombre']} ${estudianteData['apellidos']}'
+                : 'Estudiante';
+            // Construir la fecha completa
+            String fechaCompleta = '';
+            if (sesion.fechaSesion != null) {
+              fechaCompleta = '${sesion.dia} ${DateFormat('dd/MM/yyyy').format(sesion.fechaSesion!)} - ${sesion.horaInicio}';
+            } else {
+              fechaCompleta = '${sesion.dia} - ${sesion.horaInicio}';
+            }
+            final fotoUrl = estudianteData?['photoUrl'] as String?;
             return {
               'sesion': sesion,
               'nombreEstudiante': nombreEstudiante,
+              'fechaCompleta': fechaCompleta,
+              'fotoUrl': fotoUrl,
+              'estudianteData': estudianteData,
             };
           })),
           builder: (context, snap) {
@@ -344,11 +373,17 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               children: sesionesConNombres.map((s) {
                 final sesion = s['sesion'] as SesionTutoria;
                 final nombreEstudiante = s['nombreEstudiante'] as String;
-                return _buildTutoriaCard(
-                  sesion.curso ?? 'Sin curso',
-                  '${sesion.dia} - ${sesion.horaInicio}',
-                  nombreEstudiante,
-                  Colors.deepPurple,
+                final fechaCompleta = s['fechaCompleta'] as String;
+                final fotoUrl = s['fotoUrl'] as String?;
+                final estudianteData = s['estudianteData'] as Map<String, dynamic>?;
+                return GestureDetector(
+                  onTap: () => _mostrarDetallesTutoria(sesion, nombreEstudiante, fotoUrl, estudianteData),
+                  child: _buildTutoriaCard(
+                    sesion.curso ?? 'Sin curso',
+                    fechaCompleta,
+                    nombreEstudiante,
+                    Colors.deepPurple,
+                  ),
                 );
               }).toList(),
             );
@@ -500,20 +535,25 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
           children: solicitudes.map((s) {
             final solicitud = s['solicitud'] as SolicitudTutoria;
             final nombreEstudiante = s['nombreEstudiante'] as String;
-            String fechaHoraTexto;
-            if (solicitud.fechaSesion != null && solicitud.horaInicio != null && solicitud.horaFin != null) {
-              final fecha = solicitud.fechaSesion!;
-              final fechaFormateada = DateFormat('dd/MM/yyyy').format(fecha);
-              fechaHoraTexto = '$fechaFormateada ${solicitud.horaInicio} - ${solicitud.horaFin}';
-            } else {
-              final fecha = solicitud.fechaHora;
-              fechaHoraTexto = DateFormat('dd/MM/yyyy HH:mm').format(fecha);
-            }
-            return _buildRequestCard(
-              nombreEstudiante,
-              solicitud.curso ?? 'Sin curso especificado',
-              fechaHoraTexto,
-              solicitud.id,
+            final estudianteId = solicitud.estudianteId;
+            final curso = solicitud.curso ?? 'Sin curso especificado';
+            // Obtener la foto de perfil del estudiante
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance.collection('estudiantes').doc(estudianteId).get(),
+              builder: (context, snapshotEst) {
+                String? fotoUrl;
+                if (snapshotEst.hasData && snapshotEst.data != null) {
+                  final data = snapshotEst.data!.data() as Map<String, dynamic>?;
+                  fotoUrl = data?['photoUrl'] as String?;
+                }
+                return _buildRequestCard(
+                  nombreEstudiante,
+                  curso,
+                  '', // ya no mostramos la fecha aquí
+                  solicitud.id,
+                  fotoUrl,
+                );
+              },
             );
           }).toList(),
         );
@@ -521,42 +561,363 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     );
   }
 
-  Widget _buildRequestCard(String student, String subject, String time, String solicitudId) {
-    final DateTime fecha = DateTime.tryParse(time) ?? DateTime.now();
-    final String fechaFormateada = DateFormat('dd/MM/yyyy HH:mm').format(fecha);
+  Widget _buildRequestCard(String student, String subject, String time, String solicitudId, String? fotoUrl) {
     return Card(
       color: const Color(0xFFF6F3FF),
       margin: const EdgeInsets.symmetric(vertical: 5),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ListTile(
-        leading: const CircleAvatar(
-          backgroundColor: Color(0xFFD1C4E9),
-          child: Icon(Icons.person, color: Color(0xFF5E35B1)),
+      child: InkWell(
+        onTap: () => _mostrarDetallesSolicitud(solicitudId),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              fotoUrl != null && fotoUrl.isNotEmpty
+                  ? CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0xFFD1C4E9),
+                      backgroundImage: NetworkImage(fotoUrl),
+                      onBackgroundImageError: (_, __) {},
+                    )
+                  : CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0xFFD1C4E9),
+                      child: const Icon(Icons.person, color: Color(0xFF5E35B1)),
+                    ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      student,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subject,
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
         ),
-        title: Text(student, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+    );
+  }
+
+  void _mostrarDetallesTutoria(SesionTutoria sesion, String nombreEstudiante, String? fotoUrl, Map<String, dynamic>? estudianteData) async {
+    if (!mounted) return;
+
+    String fechaHoraTexto;
+    if (sesion.fechaSesion != null && (sesion.horaInicio ?? '').isNotEmpty && (sesion.horaFin ?? '').isNotEmpty) {
+      final fecha = sesion.fechaSesion!;
+      final fechaFormateada = DateFormat('dd/MM/yyyy').format(fecha);
+      fechaHoraTexto = '$fechaFormateada ${sesion.horaInicio} - ${sesion.horaFin}';
+    } else {
+      fechaHoraTexto = '${sesion.dia} ${sesion.horaInicio} - ${sesion.horaFin}';
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
           children: [
-            Text(subject, style: const TextStyle(color: Colors.black54)),
-            Text(fechaFormateada, style: const TextStyle(fontSize: 12, color: Colors.black45)),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF6F3FF),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  fotoUrl != null && fotoUrl.isNotEmpty
+                      ? CircleAvatar(
+                          radius: 25,
+                          backgroundColor: const Color(0xFFD1C4E9),
+                          backgroundImage: NetworkImage(fotoUrl),
+                          onBackgroundImageError: (_, __) {},
+                        )
+                      : CircleAvatar(
+                          radius: 25,
+                          backgroundColor: const Color(0xFFD1C4E9),
+                          child: const Icon(Icons.person, color: Color(0xFF5E35B1)),
+                        ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nombreEstudiante,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(
+                          sesion.curso ?? 'Sin curso especificado',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDetalleItem(
+                      Icons.event,
+                      'Fecha y hora de la tutoría',
+                      fechaHoraTexto,
+                    ),
+                    if (sesion.mensaje != null && sesion.mensaje!.isNotEmpty)
+                      _buildDetalleItem(Icons.message, 'Mensaje', sesion.mensaje!),
+                    _buildDetalleItem(Icons.access_time, 'Estado', sesion.estado.toUpperCase()),
+                    _buildDetalleItem(
+                      Icons.send,
+                      'Reservada el',
+                      DateFormat('dd/MM/yyyy HH:mm').format(sesion.fechaReserva),
+                    ),
+                    if (estudianteData != null && estudianteData['email'] != null)
+                      _buildDetalleItem(Icons.email, 'Email estudiante', estudianteData['email']),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+      ),
+    );
+  }
+
+  Widget _buildDetalleItem(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.deepPurple, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarDetallesSolicitud(String solicitudId) async {
+    final solicitudDoc = await FirebaseFirestore.instance
+        .collection('solicitudes_tutoria')
+        .doc(solicitudId)
+        .get();
+    
+    if (!solicitudDoc.exists) return;
+    
+    final solicitud = SolicitudTutoria.fromMap(solicitudDoc.data() as Map<String, dynamic>);
+    
+    // Obtener datos del estudiante
+    final estudianteDoc = await FirebaseFirestore.instance
+        .collection('estudiantes')
+        .doc(solicitud.estudianteId)
+        .get();
+    
+    final estudianteData = estudianteDoc.data() as Map<String, dynamic>?;
+    final nombreEstudiante = estudianteData?['nombre'] != null && estudianteData?['apellidos'] != null
+        ? '${estudianteData!['nombre']} ${estudianteData['apellidos']}'
+        : 'Estudiante';
+    final fotoUrl = estudianteData?['photoUrl'] as String?;
+    
+    String fechaHoraTexto;
+    if (solicitud.fechaSesion != null && (solicitud.horaInicio ?? '').isNotEmpty && (solicitud.horaFin ?? '').isNotEmpty) {
+      final fecha = solicitud.fechaSesion!;
+      final fechaFormateada = DateFormat('dd/MM/yyyy').format(fecha);
+      fechaHoraTexto = '$fechaFormateada ${solicitud.horaInicio} - ${solicitud.horaFin}';
+    } else {
+      fechaHoraTexto = DateFormat('dd/MM/yyyy HH:mm').format(solicitud.fechaHora);
+    }
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
           children: [
-            IconButton(
-              icon: const Icon(Icons.check, color: Colors.green),
-              onPressed: () => _actualizarEstado(solicitudId, 'aceptada'),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF6F3FF),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  fotoUrl != null && fotoUrl.isNotEmpty
+                      ? CircleAvatar(
+                          radius: 25,
+                          backgroundColor: const Color(0xFFD1C4E9),
+                          backgroundImage: NetworkImage(fotoUrl),
+                          onBackgroundImageError: (_, __) {},
+                        )
+                      : CircleAvatar(
+                          radius: 25,
+                          backgroundColor: const Color(0xFFD1C4E9),
+                          child: const Icon(Icons.person, color: Color(0xFF5E35B1)),
+                        ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nombreEstudiante,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(
+                          solicitud.curso ?? 'Sin curso especificado',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.red),
-              onPressed: () => _actualizarEstado(solicitudId, 'rechazada'),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDetalleItem(
+                      Icons.event,
+                      'Fecha y hora de la tutoría',
+                      fechaHoraTexto,
+                    ),
+                    if (solicitud.mensaje != null && solicitud.mensaje!.isNotEmpty)
+                      _buildDetalleItem(Icons.message, 'Mensaje', solicitud.mensaje!),
+                    _buildDetalleItem(Icons.access_time, 'Estado', solicitud.estado.toUpperCase()),
+                    _buildDetalleItem(
+                      Icons.send,
+                      'Solicitud enviada el',
+                      DateFormat('dd/MM/yyyy HH:mm').format(solicitud.fechaHora),
+                    ),
+                  ],
+                ),
+              ),
             ),
+            if (solicitud.estado == 'pendiente')
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _actualizarEstado(solicitudId, 'rechazada');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Rechazar'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _actualizarEstado(solicitudId, 'aceptada');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Aceptar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
-        isThreeLine: true,
       ),
     );
   }

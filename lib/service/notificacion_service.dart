@@ -25,4 +25,9 @@ class NotificacionService {
   Future<void> marcarComoLeida(String notificacionId) async {
     await _notificacionesRef.doc(notificacionId).update({'leida': true});
   }
+
+  // Borrar una notificación por su ID
+  Future<void> borrarNotificacion(String notificacionId) async {
+    await _notificacionesRef.doc(notificacionId).delete();
+  }
 } 

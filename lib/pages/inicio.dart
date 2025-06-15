@@ -7,6 +7,8 @@ import 'package:tutoring_app/pages/student_profile_page.dart';
 import 'package:tutoring_app/pages/material_educativo_page.dart';
 import 'package:tutoring_app/pages/notificaciones_page.dart';
 import 'agendar_tutoria_page.dart';
+import '../service/solicitud_tutoria_service.dart';
+import '../models/solicitud_tutoria.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -30,18 +32,7 @@ class HomePage2 extends StatelessWidget {
                 _buildTopBar(context),
                 const SizedBox(height: 20),
                 _buildSectionTitle('Tutorías agendadas', trailing: 'Todas'),
-                _buildHorizontalCards([
-                  _buildCard(
-                    'Mayo 30 - 7:00 pm',
-                    Icons.calendar_today,
-                    Colors.pinkAccent,
-                  ),
-                  _buildCard(
-                    'Junio 05 - 5:00 pm',
-                    Icons.calendar_today,
-                    Colors.lightBlue,
-                  ),
-                ]),
+                _buildSolicitudesEstudiante(user.uid),
                 const SizedBox(height: 20),
                 _buildSectionTitle('Nuestros Servicios'),
                 Row(
@@ -381,6 +372,104 @@ class HomePage2 extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  Widget _buildSolicitudesEstudiante(String estudianteId) {
+    return FutureBuilder<List<SolicitudTutoria>>(
+      future: _obtenerSolicitudesPorEstudiante(estudianteId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No tienes tutorías agendadas.'));
+        }
+        final solicitudes = snapshot.data!;
+        return SizedBox(
+          height: 110,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: solicitudes.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final solicitud = solicitudes[index];
+              String fechaTexto = '';
+              if (solicitud.fechaSesion != null && (solicitud.horaInicio ?? '').isNotEmpty) {
+                fechaTexto = '${solicitud.dia ?? ''} ${DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!)} - ${solicitud.horaInicio}';
+              } else {
+                fechaTexto = '${solicitud.dia ?? ''} - ${solicitud.horaInicio ?? ''}';
+              }
+              Color estadoColor;
+              switch (solicitud.estado) {
+                case 'aceptada':
+                  estadoColor = Colors.green;
+                  break;
+                case 'rechazada':
+                  estadoColor = Colors.red;
+                  break;
+                default:
+                  estadoColor = Colors.orange;
+              }
+              return Container(
+                width: 180,
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      solicitud.curso ?? 'Sin curso',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      fechaTexto,
+                      style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: estadoColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            solicitud.estado.toUpperCase(),
+                            style: TextStyle(
+                              color: estadoColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<List<SolicitudTutoria>> _obtenerSolicitudesPorEstudiante(String estudianteId) async {
+    final query = await FirebaseFirestore.instance
+        .collection('solicitudes_tutoria')
+        .where('estudianteId', isEqualTo: estudianteId)
+        .orderBy('fechaHora', descending: true)
+        .get();
+    return query.docs.map((doc) => SolicitudTutoria.fromMap(doc.data() as Map<String, dynamic>)).toList();
   }
 
   Widget _buildHorizontalCards(List<Widget> cards) {

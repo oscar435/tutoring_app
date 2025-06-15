@@ -52,10 +52,20 @@ class SolicitudTutoria {
     dia: map['dia'],
     horaInicio: map['horaInicio'],
     horaFin: map['horaFin'],
-    fechaSesion: map['fechaSesion'] != null
-        ? (map['fechaSesion'] is String
-            ? DateTime.parse(map['fechaSesion'])
-            : (map['fechaSesion'] as Timestamp).toDate())
-        : null,
+    fechaSesion: _parseFechaSesion(map['fechaSesion']),
   );
+
+  static DateTime? _parseFechaSesion(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is DateTime) return raw;
+    if (raw is String) {
+      try {
+        return DateTime.parse(raw);
+      } catch (_) {
+        return null;
+      }
+    }
+    if (raw is Timestamp) return raw.toDate();
+    return null;
+  }
 } 
