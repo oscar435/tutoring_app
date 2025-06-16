@@ -3,7 +3,6 @@ import 'package:tutoring_app/preferences/pref_usuarios.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
