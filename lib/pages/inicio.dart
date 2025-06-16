@@ -303,7 +303,12 @@ class HomePage2 extends StatelessWidget {
                         Icons.book_online,
                         'Tutorías agendadas',
                         context,
-                        null,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const TodasTutoriasPage(),
+                          ),
+                        ),
                       ),
                       _buildDrawerItem(
                         Icons.calendar_month,

@@ -28,7 +28,10 @@ class SolicitudTutoriaService {
 
   // Obtener solicitudes por tutor
   Future<List<SolicitudTutoria>> obtenerSolicitudesPorTutor(String tutorId) async {
-    final query = await _solicitudesRef.where('tutorId', isEqualTo: tutorId).get();
+    final query = await _solicitudesRef
+        .where('tutorId', isEqualTo: tutorId)
+        .orderBy('fechaHora', descending: true)
+        .get();
     return query.docs
         .map((doc) => SolicitudTutoria.fromMap(doc.data() as Map<String, dynamic>))
         .toList();

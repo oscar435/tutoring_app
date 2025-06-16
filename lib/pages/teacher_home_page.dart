@@ -200,7 +200,9 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     children: [
-                      _buildDrawerItem(Icons.home, 'Inicio', context, null),
+                      _buildDrawerItem(Icons.home, 'Inicio', context, () {
+                        Navigator.pop(context);
+                      }),
                       _buildDrawerItem(
                         Icons.calendar_today,
                         'Calendario de tutorías',
@@ -893,6 +895,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
+                          foregroundColor: Colors.white,
                         ),
                         child: const Text('Rechazar'),
                       ),
@@ -910,6 +913,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
+                          foregroundColor: Colors.white,
                         ),
                         child: const Text('Aceptar'),
                       ),
