@@ -13,6 +13,7 @@ import '../models/sesion_tutoria.dart';
 import '../service/sesion_tutoria_service.dart';
 import 'package:tutoring_app/pages/mis_estudiantes_page.dart';
 import 'package:tutoring_app/pages/tutor_profile_page.dart';
+import 'package:tutoring_app/routes/app_routes.dart';
 
 class TeacherHomePage extends StatefulWidget {
   static const routeName = '/teacher-home';
@@ -260,7 +261,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                           await FirebaseAuth.instance.signOut();
                           Navigator.pushReplacementNamed(
                             context,
-                            LoginTeacherPage.routeName,
+                            AppRoutes.roleSelector,
                           );
                         },
                       ),

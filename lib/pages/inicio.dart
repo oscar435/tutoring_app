@@ -11,6 +11,7 @@ import 'agendar_tutoria_page.dart';
 import '../service/solicitud_tutoria_service.dart';
 import '../models/solicitud_tutoria.dart';
 import 'package:intl/intl.dart';
+import 'package:tutoring_app/routes/app_routes.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -346,7 +347,7 @@ class HomePage2 extends StatelessWidget {
                           await FirebaseAuth.instance.signOut();
                           Navigator.pushReplacementNamed(
                             context,
-                            LoginPage.routeName,
+                            AppRoutes.roleSelector,
                           );
                         },
                       ),

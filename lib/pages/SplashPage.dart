@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutoring_app/preferences/pref_usuarios.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SplashPage extends StatefulWidget {
   static const String routeName = AppRoutes.splash;
@@ -42,9 +43,16 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     if (!isOnboardingDone) {
       Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
     } else if (user == null) {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+      Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
     } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+      // Consultar Firestore para saber si es tutor o estudiante
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final isTeacher = userDoc.data()?['isTeacher'] ?? false;
+      if (isTeacher) {
+        Navigator.pushReplacementNamed(context, AppRoutes.teacherHome);
+      } else {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
     }
   }
 
