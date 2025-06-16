@@ -19,21 +19,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Verificar si hay usuario logueado
-    final user = FirebaseAuth.instance.currentUser;
-    String initialRoute;
-    
-    if (user != null) {
-      // Si hay usuario logueado, ir directo al home
-      initialRoute = AppRoutes.home;
-    } else {
-      // Si no hay usuario, ir al login
-      initialRoute = AppRoutes.login;
-    }
-
+    // Siempre iniciar en SplashPage
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: initialRoute,
+      initialRoute: AppRoutes.splash,
       routes: AppRoutes.routes,
     );
   }

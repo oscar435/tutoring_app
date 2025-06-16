@@ -12,17 +12,31 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> {
+class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
   final prefs = PreferenciasUsuario();
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _controller.forward();
     _checkNavigation();
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   Future<void> _checkNavigation() async {
-    await Future.delayed(const Duration(milliseconds: 1200)); // Breve splash
+    await Future.delayed(const Duration(milliseconds: 3000)); // Splash de 3 segundos
     final isOnboardingDone = prefs.onboardingCompletado;
     final user = FirebaseAuth.instance.currentUser;
     if (!isOnboardingDone) {
@@ -43,16 +57,36 @@ class _SplashPageState extends State<SplashPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Spacer(),
-            Image.asset('assets/logo_transparente.png', height: 250),
-            const SizedBox(height: 20),
-            const Text(
-              'Asesoría y apoyo cuando más lo necesitas.',
-              style: TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Image.asset(
+                      'assets/logo_transparente.png',
+                      height: 180,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Asesoría y apoyo cuando más lo necesitas.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
-            const Spacer(),
-            const CircularProgressIndicator(),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple),
+              strokeWidth: 3,
+            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

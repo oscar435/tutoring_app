@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
+import 'package:tutoring_app/preferences/pref_usuarios.dart';
 
 class OnboardingPage extends StatefulWidget {
   static const String routeName = AppRoutes.onboarding;
@@ -15,25 +16,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   final List<Map<String, String>> onboardingData = [
     {
-      "image": "assets/conecta_tutores.png",
+      "image": "https://firebasestorage.googleapis.com/v0/b/tutoring-app-96acc.firebasestorage.app/o/Onboarding_pics%2Fconecta_tutores.png?alt=media&token=c979220c-f56e-4ffc-a2fb-5f0066aebcb6",
       "title": "Conecta con Tutores",
       "description": "Agenda tutorías según tu curso y horario.",
     },
     {
-      "image": "assets/psico.png",
+      "image": "https://firebasestorage.googleapis.com/v0/b/tutoring-app-96acc.firebasestorage.app/o/Onboarding_pics%2Fresources.png?alt=media&token=d9ba21cd-41fe-4c10-914c-9a17c24f892b",
       "title": "Sesión Psicopedagógica",
       "description": "Atención personalizada con profesionales del área.",
     },
     {
-      "image": "assets/resources.png",
+      "image": "https://firebasestorage.googleapis.com/v0/b/tutoring-app-96acc.firebasestorage.app/o/Onboarding_pics%2Fresources.png?alt=media&token=d9ba21cd-41fe-4c10-914c-9a17c24f892b",
       "title": "Materiales y Recursos",
       "description": "Guías, videos y tips sobre estudio y bienestar.",
     },
     {
-      "image": "assets/talleres.png",
+      "image": "https://firebasestorage.googleapis.com/v0/b/tutoring-app-96acc.firebasestorage.app/o/Onboarding_pics%2Ftalleres.png?alt=media&token=4afb54a8-97e1-4ffa-8a98-b3337404844b",
       "title": "Talleres, Charlas y Campañas",
-      "description":
-          "Infórmate de talleres, charlas y eventos que apoyan tu desarrollo académico.",
+      "description": "Infórmate de talleres, charlas y eventos que apoyan tu desarrollo académico.",
     },
   ];
 
@@ -44,6 +44,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
         curve: Curves.easeInOut,
       );
     } else {
+      final prefs = PreferenciasUsuario();
+      prefs.onboardingCompletado = true;
       Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
     }
   }
@@ -66,7 +68,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset(item['image']!, height: 300),
+                      Image.network(
+                        item['image']!,
+                        height: 300,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const CircularProgressIndicator();
+                        },
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 100),
+                      ),
                       const SizedBox(height: 24),
                       Text(
                         item['title']!,
