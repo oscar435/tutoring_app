@@ -21,7 +21,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       "description": "Agenda tutorías según tu curso y horario.",
     },
     {
-      "image": "https://firebasestorage.googleapis.com/v0/b/tutoring-app-96acc.firebasestorage.app/o/Onboarding_pics%2Fresources.png?alt=media&token=d9ba21cd-41fe-4c10-914c-9a17c24f892b",
+      "image": "https://firebasestorage.googleapis.com/v0/b/tutoring-app-96acc.firebasestorage.app/o/Onboarding_pics%2Fpsico.png?alt=media&token=c3cb82a3-e478-47bf-81eb-8bedd8021972",
       "title": "Sesión Psicopedagógica",
       "description": "Atención personalizada con profesionales del área.",
     },
