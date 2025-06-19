@@ -1,5 +1,5 @@
-import 'package:tutoring_app/firebase_options.dart';
-import 'package:tutoring_app/preferences/pref_usuarios.dart';
+import 'package:tutoring_app/core/services/firebase_options.dart';
+import 'package:tutoring_app/core/storage/preferencias_usuario.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
