@@ -34,7 +34,7 @@ class _RegisterPersonalInfoPageState extends State<RegisterPersonalInfoPage> {
                   labelText: 'Nombre',
                   prefixIcon: Icon(Icons.person),
                 ),
-                validator: FormBuilderValidators.required(),
+                validator: FormBuilderValidators.required(errorText: 'El nombre es requerido'),
               ),
               const SizedBox(height: 20),
               FormBuilderTextField(
@@ -43,7 +43,7 @@ class _RegisterPersonalInfoPageState extends State<RegisterPersonalInfoPage> {
                   labelText: 'Apellidos',
                   prefixIcon: Icon(Icons.person_outline),
                 ),
-                validator: FormBuilderValidators.required(),
+                validator: FormBuilderValidators.required(errorText: 'Los apellidos son requeridos'),
               ),
               const SizedBox(height: 20),
               FormBuilderTextField(
@@ -54,10 +54,10 @@ class _RegisterPersonalInfoPageState extends State<RegisterPersonalInfoPage> {
                   prefixIcon: Icon(Icons.cake),
                 ),
                 validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(),
-                  FormBuilderValidators.numeric(),
-                  FormBuilderValidators.min(15),
-                  FormBuilderValidators.max(100),
+                  FormBuilderValidators.required(errorText: 'La edad es requerida'),
+                  FormBuilderValidators.numeric(errorText: 'La edad debe ser un número'),
+                  FormBuilderValidators.min(15, errorText: 'La edad mínima es 15 años'),
+                  FormBuilderValidators.max(100, errorText: 'La edad máxima es 100 años'),
                 ]),
               ),
               const Spacer(),

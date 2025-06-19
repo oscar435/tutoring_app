@@ -97,8 +97,8 @@ class _LoginPageState extends State<LoginPage> {
                   prefixIcon: Icon(Icons.email),
                 ),
                 validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(),
-                  FormBuilderValidators.email(),
+                  FormBuilderValidators.required(errorText: 'El campo email es requerido'),
+                  FormBuilderValidators.email(errorText: 'Ingresa un email válido'),
                 ]),
               ),
               const SizedBox(height: 15),
@@ -109,7 +109,7 @@ class _LoginPageState extends State<LoginPage> {
                   labelText: 'Contraseña',
                   prefixIcon: Icon(Icons.lock),
                 ),
-                validator: FormBuilderValidators.required(),
+                validator: FormBuilderValidators.required(errorText: 'El campo contraseña es requerido'),
               ),
               Align(
                 alignment: Alignment.centerRight,
@@ -135,6 +135,7 @@ class _LoginPageState extends State<LoginPage> {
                   _formKey.currentState?.save();
                   if (_formKey.currentState?.validate() == true) {
                     final v = _formKey.currentState?.value;
+                    
                     var result = await _auth.signInEmailAndPassword(
                       v?['email'],
                       v?['password'],
@@ -143,12 +144,37 @@ class _LoginPageState extends State<LoginPage> {
                     if (result == 1) {
                       showSnackBar(
                         context,
-                        "Usuario o contraseña incorrectos",
+                        "Correo o contraseña incorrectos",
                       );
-                    } else if (result == 2) {
+                    } else if (result == 4) {
                       showSnackBar(
                         context,
-                        "Usuario o contraseña incorrectos",
+                        "Debes verificar tu correo antes de continuar",
+                      );
+                    } else if (result == 5) {
+                      showSnackBar(
+                        context,
+                        "Esta cuenta ha sido deshabilitada",
+                      );
+                    } else if (result == 6) {
+                      showSnackBar(
+                        context,
+                        "Demasiados intentos fallidos. Intenta más tarde",
+                      );
+                    } else if (result == 7) {
+                      showSnackBar(
+                        context,
+                        "Formato de email inválido",
+                      );
+                    } else if (result == 8) {
+                      showSnackBar(
+                        context,
+                        "Error de conexión. Verifica tu internet",
+                      );
+                    } else if (result == null) {
+                      showSnackBar(
+                        context,
+                        "Error de conexión. Verifica tu internet e intenta nuevamente",
                       );
                     } else if (result != null) {
                       Navigator.popAndPushNamed(context, HomePage2.routeName);

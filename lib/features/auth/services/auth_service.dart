@@ -106,6 +106,7 @@ class AuthService {
       );
 
       final user = userCredential.user;
+      
       if (user?.uid != null) {
         // Primero verificar el tipo de usuario
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(user!.uid).get();
@@ -139,16 +140,31 @@ class AuthService {
           }
           
           return user.uid;
+        } else {
+          await _auth.signOut();
+          return null;
         }
       }
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        return 1;
-      } else if (e.code == 'wrong-password') {
-        return 2;
+      switch (e.code) {
+        case 'user-not-found':
+        case 'wrong-password':
+        case 'invalid-credential':
+          return 1;
+        case 'user-disabled':
+          return 5; // Cuenta deshabilitada
+        case 'too-many-requests':
+          return 6; // Demasiados intentos
+        case 'invalid-email':
+          return 7; // Email inválido
+        case 'network-request-failed':
+          return 8; // Error de red
+        default:
+          return null; // Error no manejado
       }
+    } catch (e) {
+      return null; // Error general
     }
-    return null;
   }
 
   // Método para obtener el usuario actual

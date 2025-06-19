@@ -50,8 +50,8 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                 ),
                 keyboardType: TextInputType.number,
                 validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(),
-                  FormBuilderValidators.numeric(),
+                  FormBuilderValidators.required(errorText: 'El código de estudiante es requerido'),
+                  FormBuilderValidators.numeric(errorText: 'El código debe ser un número'),
                   FormBuilderValidators.minLength(
                     10,
                     errorText: 'Debe tener exactamente 10 dígitos',
@@ -78,7 +78,7 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                       ),
                     )
                     .toList(),
-                validator: FormBuilderValidators.required(),
+                validator: FormBuilderValidators.required(errorText: 'Selecciona una especialidad'),
               ),
               const SizedBox(height: 15),
 
@@ -94,7 +94,7 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                           DropdownMenuItem(value: ciclo, child: Text(ciclo)),
                     )
                     .toList(),
-                validator: FormBuilderValidators.required(),
+                validator: FormBuilderValidators.required(errorText: 'Selecciona un ciclo académico'),
               ),
               const SizedBox(height: 15),
 
@@ -104,7 +104,7 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                   labelText: 'Universidad',
                   prefixIcon: Icon(Icons.location_city),
                 ),
-                validator: FormBuilderValidators.required(),
+                validator: FormBuilderValidators.required(errorText: 'La universidad es requerida'),
               ),
               const Spacer(),
 
