@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:tutoring_app/pages/CalendarioPage.dart';
-import 'package:tutoring_app/pages/RoleSelectorPage.dart';
-import 'package:tutoring_app/pages/SplashPage.dart';
-import 'package:tutoring_app/pages/inicio.dart';
-import 'package:tutoring_app/pages/login_pages.dart';
-import 'package:tutoring_app/pages/login_teacher_page.dart';
-import 'package:tutoring_app/pages/onboarding.dart';
-import 'package:tutoring_app/pages/register_credentials_page.dart';
-import 'package:tutoring_app/pages/teacher_home_page.dart';
+import 'package:tutoring_app/features/calendario/pages/CalendarioPage.dart';
+import 'package:tutoring_app/features/dashboard/pages/RoleSelectorPage.dart';
+import 'package:tutoring_app/features/dashboard/pages/SplashPage.dart';
+import 'package:tutoring_app/features/dashboard/pages/inicio.dart';
+import 'package:tutoring_app/features/auth/pages/login_pages.dart';
+import 'package:tutoring_app/features/auth/pages/login_teacher_page.dart';
+import 'package:tutoring_app/features/auth/pages/onboarding.dart';
+import 'package:tutoring_app/features/auth/pages/register_credentials_page.dart';
+import 'package:tutoring_app/features/dashboard/pages/teacher_home_page.dart';
 
 class AppRoutes {
   static const String splash = 'Splash';
