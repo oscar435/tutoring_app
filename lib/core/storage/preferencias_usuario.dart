@@ -26,4 +26,21 @@ class PreferenciasUsuario {
   set onboardingCompletado(bool value) {
     _prefs.setBool('onboardingCompletado', value);
   }
+
+  // Guardar y obtener el rol del usuario
+  String get userRole {
+    return _prefs.getString('userRole') ?? '';
+  }
+
+  Future<void> setUserRole(String role) async {
+    await _prefs.setString('userRole', role);
+  }
+
+  // Limpiar todas las preferencias de la sesión de usuario
+  Future<void> clearUserSession() async {
+    // No borramos 'onboardingCompletado' para que no se muestre de nuevo
+    await _prefs.remove('ultimaPagina');
+    await _prefs.remove('userRole');
+    // Añadir aquí cualquier otra preferencia de usuario que se deba limpiar al cerrar sesión
+  }
 }

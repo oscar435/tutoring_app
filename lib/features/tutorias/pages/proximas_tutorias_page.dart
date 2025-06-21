@@ -105,11 +105,26 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                 
                 final fotoUrl = estudianteData?['photoUrl'];
                 
+                // Verificar si el estudiante está asignado al tutor
+                final tutorDoc = await FirebaseFirestore.instance
+                    .collection('tutores')
+                    .doc(widget.tutorId)
+                    .get();
+                
+                final tutorData = tutorDoc.data() as Map<String, dynamic>?;
+                final estudiantesAsignados = (tutorData?['estudiantes_asignados'] as List<dynamic>?)?.cast<String>() ?? [];
+                final esAsignado = estudiantesAsignados.contains(sesion.estudianteId);
+                
+                print('DEBUG PRÓXIMAS: Tutor ID = ${widget.tutorId}');
+                print('DEBUG PRÓXIMAS: Estudiante ${sesion.estudianteId} - ¿Asignado? = $esAsignado');
+                print('DEBUG PRÓXIMAS: Lista de asignados = $estudiantesAsignados');
+                
                 return {
                   'sesion': sesion,
                   'nombreEstudiante': nombreEstudiante,
                   'fotoUrl': fotoUrl,
                   'estudianteData': estudianteData,
+                  'esAsignado': esAsignado,
                 };
               }),
             ),
@@ -138,6 +153,7 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                   final sesion = sesiones[index]['sesion'] as SesionTutoria;
                   final nombreEstudiante = sesiones[index]['nombreEstudiante'] as String;
                   final fotoUrl = sesiones[index]['fotoUrl'] as String?;
+                  final esAsignado = sesiones[index]['esAsignado'] as bool;
                   
                   final fechaSesion = sesion.fechaSesion ?? sesion.fechaReserva;
                   final ahora = DateTime.now();
@@ -156,106 +172,154 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
 
                   return Card(
                     elevation: 0,
+                    color: esAsignado ? Colors.green[50] : null,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color: esMismoDia ? Colors.orange : Colors.grey.shade200,
-                        width: esMismoDia ? 2 : 1,
+                        color: esAsignado 
+                            ? Colors.green 
+                            : (esMismoDia ? Colors.orange : Colors.grey.shade200),
+                        width: esAsignado ? 2 : (esMismoDia ? 2 : 1),
                       ),
                     ),
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
+                    child: InkWell(
+                      onTap: () {
+                        // Aquí podrías añadir navegación a detalles si es necesario
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: esAsignado ? Border.all(color: Colors.green, width: 2) : null,
+                              ),
+                              child: CircleAvatar(
                                 radius: 24,
-                                backgroundColor: Colors.deepPurple.withOpacity(0.1),
+                                backgroundColor: fotoUrl == null && !esAsignado
+                                    ? Colors.deepPurple.withOpacity(0.1)
+                                    : (esAsignado && fotoUrl == null ? Colors.green : Colors.transparent),
                                 backgroundImage: fotoUrl != null ? NetworkImage(fotoUrl) : null,
                                 child: fotoUrl == null
-                                    ? Icon(Icons.person, color: Colors.deepPurple)
+                                    ? Icon(
+                                        Icons.person,
+                                        color: esAsignado ? Colors.white : Colors.deepPurple,
+                                      )
                                     : null,
                               ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      nombreEstudiante,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          nombreEstudiante,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: esAsignado ? Colors.green[800] : Colors.black,
+                                          ),
+                                        ),
                                       ),
+                                      if (esAsignado)
+                                        Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.star, color: Colors.white, size: 10),
+                                              SizedBox(width: 2),
+                                              Text(
+                                                'ASIGNADO',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    sesion.curso ?? 'Sin curso asignado',
+                                    style: TextStyle(
+                                      color: esAsignado ? Colors.green[700] : Colors.grey[600],
+                                      fontSize: 14,
+                                      fontWeight: esAsignado ? FontWeight.w500 : FontWeight.normal,
                                     ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      sesion.curso ?? 'Sin curso asignado',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                      ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.deepPurple.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                  ],
-                                ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today_rounded,
+                                          size: 20,
+                                          color: Colors.deepPurple,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          fechaFormateada,
+                                          style: TextStyle(
+                                            color: Colors.deepPurple,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.deepPurple.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.access_time_rounded,
+                                          size: 20,
+                                          color: Colors.deepPurple,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          '${sesion.horaInicio} - ${sesion.horaFin}',
+                                          style: TextStyle(
+                                            color: Colors.deepPurple,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          SizedBox(height: 16),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.deepPurple.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.calendar_today_rounded,
-                                  size: 20,
-                                  color: Colors.deepPurple,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  fechaFormateada,
-                                  style: TextStyle(
-                                    color: Colors.deepPurple,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.deepPurple.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  size: 20,
-                                  color: Colors.deepPurple,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  '${sesion.horaInicio} - ${sesion.horaFin}',
-                                  style: TextStyle(
-                                    color: Colors.deepPurple,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                            Icon(Icons.chevron_right, color: esAsignado ? Colors.green : Colors.grey),
+                          ],
+                        ),
                       ),
                     ),
                   );

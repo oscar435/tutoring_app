@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tutoring_app/features/perfil/pages/edit_tutor_profile_page.dart';
 
 class TutorProfilePage extends StatelessWidget {
   const TutorProfilePage({Key? key}) : super(key: key);
@@ -36,6 +37,7 @@ class TutorProfilePage extends StatelessWidget {
           final universidad = data['universidad'] ?? '';
           final facultad = data['facultad'] ?? '';
           final cursos = (data['cursos'] as List?)?.cast<String>() ?? [];
+          final sobreMi = data['sobre_mi'] as String?;
           final createdAt = data['createdAt'];
           String fechaCreacion = '';
           if (createdAt != null) {
@@ -64,6 +66,16 @@ class TutorProfilePage extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
+                if (sobreMi != null && sobreMi.isNotEmpty) ...[
+                  Text(
+                    sobreMi,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: Colors.grey[700], fontStyle: FontStyle.italic),
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 10),
+                ],
                 _infoRow(Icons.email, 'Correo', email),
                 _infoRow(Icons.school, 'Escuela', escuela),
                 _infoRow(Icons.star, 'Especialidad', especialidad),
@@ -82,16 +94,21 @@ class TutorProfilePage extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 16),
-                const Text(
-                  'Si necesitas actualizar tus datos, contacta al administrador.',
-                  style: TextStyle(color: Colors.black54, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
               ],
             ),
           );
         },
+      ),
+       floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const EditTutorProfilePage()),
+          );
+        },
+        backgroundColor: Colors.deepPurple,
+        child: const Icon(Icons.edit, color: Colors.white),
+        tooltip: 'Editar Perfil',
       ),
     );
   }

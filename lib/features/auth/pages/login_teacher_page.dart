@@ -5,6 +5,7 @@ import 'package:tutoring_app/features/dashboard/pages/teacher_home_page.dart';
 import 'package:tutoring_app/features/auth/services/auth_service.dart';
 import 'package:tutoring_app/core/utils/snackbar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tutoring_app/routes/app_routes.dart';
 
 class LoginTeacherPage extends StatefulWidget {
   static const routeName = '/login-teacher';
@@ -133,48 +134,51 @@ class _LoginTeacherPageState extends State<LoginTeacherPage> {
                       requireTeacher: true,
                     );
 
-                    if (result == 1) {
-                      showSnackBar(context, "Correo o contraseña incorrectos");
-                    } else if (result == 3) {
-                      showSnackBar(
-                        context,
-                        "Esta cuenta no tiene permisos de profesor",
-                      );
-                    } else if (result == 4) {
-                      showSnackBar(
-                        context,
-                        "Debes verificar tu correo antes de continuar",
-                      );
-                    } else if (result == 5) {
-                      showSnackBar(
-                        context,
-                        "Esta cuenta ha sido deshabilitada",
-                      );
-                    } else if (result == 6) {
-                      showSnackBar(
-                        context,
-                        "Demasiados intentos fallidos. Intenta más tarde",
-                      );
-                    } else if (result == 7) {
-                      showSnackBar(
-                        context,
-                        "Formato de email inválido",
-                      );
-                    } else if (result == 8) {
-                      showSnackBar(
-                        context,
-                        "Error de conexión. Verifica tu internet",
-                      );
-                    } else if (result == null) {
-                      showSnackBar(
-                        context,
-                        "Error de conexión. Verifica tu internet e intenta nuevamente",
-                      );
-                    } else if (result != null) {
-                      Navigator.popAndPushNamed(
-                        context,
-                        TeacherHomePage.routeName,
-                      );
+                    if (mounted) {
+                      if (result is int) {
+                        if (result == 1) {
+                          showSnackBar(context, "Correo o contraseña incorrectos");
+                        } else if (result == 3) {
+                          showSnackBar(
+                            context,
+                            "Esta cuenta no tiene permisos de profesor",
+                          );
+                        } else if (result == 4) {
+                          showSnackBar(
+                            context,
+                            "Debes verificar tu correo antes de continuar",
+                          );
+                        } else if (result == 5) {
+                          showSnackBar(
+                            context,
+                            "Esta cuenta ha sido deshabilitada",
+                          );
+                        } else if (result == 6) {
+                          showSnackBar(
+                            context,
+                            "Demasiados intentos fallidos. Intenta más tarde",
+                          );
+                        } else if (result == 7) {
+                          showSnackBar(
+                            context,
+                            "Formato de email inválido",
+                          );
+                        } else if (result == 8) {
+                          showSnackBar(
+                            context,
+                            "Error de conexión. Verifica tu internet",
+                          );
+                        } else if (result == null) {
+                          showSnackBar(
+                            context,
+                            "Error de conexión. Verifica tu internet e intenta nuevamente",
+                          );
+                        }
+                      } else if (result is String) {
+                        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.splash, (route) => false);
+                      } else {
+                        showSnackBar(context, "Ocurrió un error inesperado.");
+                      }
                     }
                   }
                 },

@@ -13,10 +13,24 @@ import 'package:tutoring_app/features/tutorias/services/solicitud_tutoria_servic
 import 'package:tutoring_app/core/models/solicitud_tutoria.dart';
 import 'package:intl/intl.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
+import 'package:tutoring_app/core/utils/snackbar.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
   const HomePage2({super.key});
+
+  Future<DocumentSnapshot?> _getAssignedTutor(String studentId) async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('tutores')
+        .where('estudiantes_asignados', arrayContains: studentId)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      return querySnapshot.docs.first;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +49,7 @@ class HomePage2 extends StatelessWidget {
               children: [
                 _buildTopBar(context),
                 const SizedBox(height: 20),
+                _buildAssignedTutorCard(user.uid),
                 _buildSectionTitle(
                   'Tutorías agendadas',
                   trailing: TextButton(
@@ -101,6 +116,82 @@ class HomePage2 extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Drawer _buildCustomDrawer(BuildContext context, String userId) {
+    return Drawer(
+      child: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('estudiantes').doc(userId).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) return const Drawer(child: Center(child: Text('Error al cargar datos')));
+          if (!snapshot.hasData || !snapshot.data!.exists) return const Drawer(child: Center(child: CircularProgressIndicator()));
+          
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+          final nombre = userData['nombre'] ?? '';
+          final apellidos = userData['apellidos'] ?? '';
+          final codigo = userData['codigo_estudiante'] ?? '';
+          final photoUrl = userData['photoUrl'] ?? '';
+
+          return Column(
+            children: [
+              UserAccountsDrawerHeader(
+                accountName: Text('$nombre $apellidos'),
+                accountEmail: Text(codigo),
+                currentAccountPicture: CircleAvatar(
+                  backgroundImage: photoUrl.isNotEmpty
+                      ? NetworkImage(photoUrl)
+                      : const AssetImage('assets/avatar.jpg') as ImageProvider,
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  color: const Color(0xff060628),
+                  child: ListView(
+                    children: [
+                      _buildDrawerItem(context, Icons.home, 'Inicio', () => Navigator.pop(context)),
+                      _buildDrawerItem(context, Icons.person, 'Mi Perfil', () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfilePage()));
+                      }),
+                      _buildDrawerItem(context, Icons.calendar_today, 'Calendario', () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const CalendarioPage()));
+                      }),
+                      _buildDrawerItem(context, Icons.book_online, 'Tutorías agendadas', () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const TodasTutoriasPage()));
+                      }),
+                      _buildDrawerItem(context, Icons.menu_book, 'Material Educativo', () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const MaterialEducativoPage()));
+                      }),
+                      ListTile(
+                        leading: const Icon(Icons.logout, color: Colors.white),
+                        title: const Text('Cerrar sesión', style: TextStyle(color: Colors.white)),
+                        onTap: () async {
+                          await FirebaseAuth.instance.signOut();
+                          final prefs = PreferenciasUsuario();
+                          await prefs.clearUserSession();
+                          Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.roleSelector, (route) => false);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  ListTile _buildDrawerItem(BuildContext context, IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white),
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      onTap: onTap,
     );
   }
 
@@ -236,154 +327,6 @@ class HomePage2 extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-
-  Widget _buildCustomDrawer(BuildContext context, String userId) {
-    return Drawer(
-      child: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('estudiantes')
-            .doc(userId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Center(child: Text('Error al cargar datos'));
-          }
-
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final userData = snapshot.data!.data() as Map<String, dynamic>;
-          final nombre = userData['nombre'] ?? '';
-          final apellidos = userData['apellidos'] ?? '';
-          final codigo = userData['codigo_estudiante'] ?? '';
-          final photoUrl = userData['photoUrl'] ?? '';
-
-          return Column(
-            children: [
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundImage: photoUrl.isNotEmpty
-                          ? NetworkImage(photoUrl)
-                          : const AssetImage('assets/avatar.jpg') as ImageProvider,
-                      radius: 30,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$nombre $apellidos',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(codigo, style: const TextStyle(color: Colors.grey)),
-                          const SizedBox(height: 5),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  color: const Color(0xFF0B1120),
-                  child: ListView(
-                    children: [
-                      _buildDrawerItem(Icons.home, 'Inicio', context, null),
-                      _buildDrawerItem(
-                        Icons.book_online,
-                        'Tutorías agendadas',
-                        context,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const TodasTutoriasPage(),
-                          ),
-                        ),
-                      ),
-                      _buildDrawerItem(
-                        Icons.calendar_month,
-                        'Calendario académico',
-                        context,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const CalendarioPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildDrawerItem(
-                        Icons.menu_book,
-                        'Material Educativo',
-                        context,
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MaterialEducativoPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildDrawerItem(Icons.person, 'Perfil', context, () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const StudentProfilePage(),
-                          ),
-                        );
-                      }),
-                      _buildDrawerItem(
-                        Icons.logout,
-                        'Cerrar sesión',
-                        context,
-                        () async {
-                          await FirebaseAuth.instance.signOut();
-                          Navigator.pushReplacementNamed(
-                            context,
-                            AppRoutes.roleSelector,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildDrawerItem(
-    IconData icon,
-    String title,
-    BuildContext context,
-    VoidCallback? onTap,
-  ) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.white),
-      title: Text(title, style: const TextStyle(color: Colors.white)),
-      onTap:
-          onTap ??
-          () {
-            Navigator.pop(
-              context,
-            ); // Cierra el Drawer si no hay acción específica
-          },
     );
   }
 
@@ -724,11 +667,98 @@ class HomePage2 extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildAssignedTutorCard(String studentId) {
+    return FutureBuilder<DocumentSnapshot?>(
+      future: _getAssignedTutor(studentId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data == null) {
+          // Si no hay tutor asignado o está cargando, no muestra nada.
+          return const SizedBox.shrink();
+        }
+
+        final tutorData = snapshot.data!.data() as Map<String, dynamic>;
+        final tutorId = snapshot.data!.id;
+        final photoUrl = tutorData['photoUrl'] as String? ?? '';
+        final nombre = tutorData['nombre'] as String? ?? 'Tutor';
+        final apellidos = tutorData['apellidos'] as String? ?? '';
+        final especialidad = tutorData['especialidad'] as String? ?? 'Especialista';
+
+        return Card(
+          elevation: 4,
+          margin: const EdgeInsets.only(bottom: 20),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'MI TUTOR ASIGNADO',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                    fontSize: 14,
+                  ),
+                ),
+                const Divider(height: 20),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundImage: photoUrl.isNotEmpty
+                          ? NetworkImage(photoUrl)
+                          : const AssetImage('assets/teacher_avatar.jpg') as ImageProvider,
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$nombre $apellidos',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            especialidad,
+                            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today, color: Colors.deepPurple, size: 28),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AgendarTutoriaPage(
+                              tutorId: tutorId,
+                              estudianteId: studentId,
+                            ),
+                          ),
+                        );
+                      },
+                      tooltip: 'Agendar Tutoría',
+                    )
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class SeleccionarTutorPage extends StatefulWidget {
   final String estudianteId;
-  const SeleccionarTutorPage({required this.estudianteId, Key? key}) : super(key: key);
+  const SeleccionarTutorPage({required this.estudianteId, super.key});
 
   @override
   State<SeleccionarTutorPage> createState() => _SeleccionarTutorPageState();
@@ -736,256 +766,160 @@ class SeleccionarTutorPage extends StatefulWidget {
 
 class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
   String _busqueda = '';
-  String _escuelaSeleccionada = 'Todas';
   final TextEditingController _busquedaController = TextEditingController();
-  List<String> _escuelasDisponibles = [];
+  late Future<List<QueryDocumentSnapshot>> _tutoresFuture;
+  late Future<String?> _assignedTutorIdFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _tutoresFuture = _obtenerTutores();
+    _assignedTutorIdFuture = _getAssignedTutorId(widget.estudianteId);
+  }
+
+  @override
+  void dispose() {
+    _busquedaController.dispose();
+    super.dispose();
+  }
+
+  Future<List<QueryDocumentSnapshot>> _obtenerTutores() async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('tutores').get();
+    return snapshot.docs;
+  }
+
+  Future<String?> _getAssignedTutorId(String studentId) async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('tutores')
+        .where('estudiantes_asignados', arrayContains: studentId)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      return querySnapshot.docs.first.id;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Seleccionar Tutor')),
-      body: StreamBuilder(
-        stream: FirebaseFirestore.instance.collection('tutores').snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
-          final docs = (snapshot.data as QuerySnapshot).docs;
-          if (docs.isEmpty) return Center(child: Text('No hay tutores disponibles.'));
-
-          // Obtener escuelas disponibles entre los tutores
-          final escuelasSet = <String>{};
-          for (final doc in docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            final escuela = (data['escuela'] ?? '').toString();
-            if (escuela.isNotEmpty) escuelasSet.add(escuela);
-          }
-          _escuelasDisponibles = ['Todas', ...escuelasSet.toList()..sort()];
-
-          // Filtrar tutores
-          final tutoresFiltrados = docs.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final nombre = (data['nombre'] ?? '').toString().toLowerCase();
-            final apellidos = (data['apellidos'] ?? '').toString().toLowerCase();
-            final escuela = (data['escuela'] ?? '').toString();
-            final coincideBusqueda = nombre.contains(_busqueda.toLowerCase()) || apellidos.contains(_busqueda.toLowerCase());
-            final coincideEscuela = _escuelaSeleccionada == 'Todas' || escuela == _escuelaSeleccionada;
-            return coincideBusqueda && coincideEscuela;
-          }).toList();
-
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _busquedaController,
-                            decoration: InputDecoration(
-                              hintText: 'Buscar tutor por nombre o apellido',
-                              prefixIcon: Icon(Icons.search),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            onChanged: (value) => setState(() => _busqueda = value),
-                          ),
+                    Expanded(
+                      child: TextField(
+                        controller: _busquedaController,
+                        decoration: InputDecoration(
+                          hintText: 'Buscar tutor por nombre o apellido',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        const SizedBox(width: 12),
-                        IconButton(
-                          icon: Icon(Icons.clear),
-                          onPressed: () {
-                            setState(() {
-                              _busqueda = '';
-                              _busquedaController.clear();
-                              _escuelaSeleccionada = 'Todas';
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: _escuelasDisponibles.map((escuela) => Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: ChoiceChip(
-                            label: Text(escuela),
-                            selected: _escuelaSeleccionada == escuela,
-                            onSelected: (selected) => setState(() => _escuelaSeleccionada = escuela),
-                          ),
-                        )).toList(),
+                        onChanged: (value) => setState(() => _busqueda = value),
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(
+                      icon: Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          _busqueda = '';
+                          _busquedaController.clear();
+                        });
+                      },
                     ),
                   ],
                 ),
-              ),
-              Expanded(
-                child: tutoresFiltrados.isEmpty
-                    ? Center(child: Text('No se encontraron tutores.'))
-                    : ListView.builder(
-                        itemCount: tutoresFiltrados.length,
-                        itemBuilder: (context, index) {
-                          final data = tutoresFiltrados[index].data() as Map<String, dynamic>;
-                          final tutorId = tutoresFiltrados[index].id;
-                          final nombre = data['nombre'] ?? '';
-                          final apellidos = data['apellidos'] ?? '';
-                          final especialidad = data['especialidad'] ?? '';
-                          final universidad = data['universidad'] ?? '';
-                          final photoUrl = data['photoUrl'] ?? '';
-                          final cursos = (data['cursos'] as List?)?.cast<String>() ?? [];
-                          final ciclo = data['ciclo'] ?? '';
-                          return Card(
-                            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                            elevation: 3,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(18),
-                              onTap: () => _mostrarDetalleTutor(context, data, tutorId),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 32,
-                                      backgroundImage: photoUrl.isNotEmpty
-                                          ? NetworkImage(photoUrl)
-                                          : null,
-                                      child: photoUrl.isEmpty ? Icon(Icons.person, size: 32) : null,
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text('$nombre $apellidos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                                          Text(especialidad, style: TextStyle(fontWeight: FontWeight.w500, color: Colors.deepPurple)),
-                                          Text(universidad, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
-                                          if (ciclo != null && ciclo.toString().isNotEmpty)
-                                            Padding(
-                                              padding: const EdgeInsets.only(top: 2.0),
-                                              child: Text('Ciclo: $ciclo', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                                            ),
-                                          if (cursos.isNotEmpty)
-                                            Padding(
-                                              padding: const EdgeInsets.only(top: 8.0),
-                                              child: Wrap(
-                                                spacing: 8,
-                                                children: cursos.map((c) => Chip(label: Text(c), backgroundColor: Colors.deepPurple[50])).toList(),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.deepPurple,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      ),
-                                      child: Text('Agendar'),
-                                      onPressed: () => _mostrarDetalleTutor(context, data, tutorId, agendar: true),
-                                    ),
-                                  ],
-                                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<dynamic>>(
+              future: Future.wait([_tutoresFuture, _assignedTutorIdFuture]),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data == null) {
+                  return const Center(child: Text('No se encontraron tutores.'));
+                }
+
+                final tutores = snapshot.data![0] as List<QueryDocumentSnapshot>;
+                final assignedTutorId = snapshot.data![1] as String?;
+
+                // Lógica de filtrado por búsqueda
+                final filtrados = _busqueda.isEmpty
+                    ? tutores
+                    : tutores.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final nombreCompleto =
+                            '${data['nombre'] ?? ''} ${data['apellidos'] ?? ''}'.toLowerCase();
+                        return nombreCompleto.contains(_busqueda.toLowerCase());
+                      }).toList();
+
+                // Reordenar para poner al tutor asignado primero
+                if (assignedTutorId != null) {
+                  filtrados.sort((a, b) {
+                    if (a.id == assignedTutorId) return -1;
+                    if (b.id == assignedTutorId) return 1;
+                    return 0;
+                  });
+                }
+
+                return ListView.builder(
+                  itemCount: filtrados.length,
+                  itemBuilder: (context, index) {
+                    final tutorDoc = filtrados[index];
+                    final tutorData = tutorDoc.data() as Map<String, dynamic>;
+                    final esAsignado = tutorDoc.id == assignedTutorId;
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      color: esAsignado ? Colors.deepPurple[50] : null,
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          radius: 25,
+                          backgroundImage: (tutorData['photoUrl'] as String? ?? '').isNotEmpty
+                              ? NetworkImage(tutorData['photoUrl'])
+                              : const AssetImage('assets/teacher_avatar.jpg') as ImageProvider,
+                        ),
+                        title: Text('${tutorData['nombre'] ?? ''} ${tutorData['apellidos'] ?? ''}'),
+                        subtitle: Text(tutorData['especialidad'] ?? 'Especialista'),
+                        trailing: esAsignado
+                            ? const Chip(
+                                label: Text('Asignado'),
+                                avatar: Icon(Icons.star, color: Colors.white, size: 14),
+                                backgroundColor: Colors.deepPurple,
+                                labelStyle: TextStyle(color: Colors.white),
+                              )
+                            : const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AgendarTutoriaPage(
+                                tutorId: tutorDoc.id,
+                                estudianteId: widget.estudianteId,
                               ),
                             ),
                           );
                         },
                       ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _mostrarDetalleTutor(BuildContext context, Map<String, dynamic> data, String tutorId, {bool agendar = false}) {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      isScrollControlled: true,
-      builder: (context) {
-        final cursos = (data['cursos'] as List?)?.cast<String>() ?? [];
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundImage: (data['photoUrl'] ?? '').toString().isNotEmpty
-                        ? NetworkImage(data['photoUrl'])
-                        : null,
-                    child: (data['photoUrl'] ?? '').toString().isEmpty ? Icon(Icons.person, size: 36) : null,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${data['nombre']} ${data['apellidos']}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-                        Text(data['especialidad'] ?? '', style: TextStyle(fontWeight: FontWeight.w500, color: Colors.deepPurple)),
-                        Text(data['universidad'] ?? '', style: TextStyle(fontSize: 13, color: Colors.grey[700])),
-                        if ((data['ciclo'] ?? '').toString().isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2.0),
-                            child: Text('Ciclo: ${data['ciclo']}', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (cursos.isNotEmpty)
-                Wrap(
-                  spacing: 8,
-                  children: cursos.map((c) => Chip(label: Text(c), backgroundColor: Colors.deepPurple[50])).toList(),
-                ),
-              if ((data['bio'] ?? '').toString().isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text('Sobre el tutor:', style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(data['bio'], style: TextStyle(fontSize: 15)),
-              ],
-              if ((data['experiencia'] ?? '').toString().isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text('Experiencia:', style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(data['experiencia'], style: TextStyle(fontSize: 15)),
-              ],
-              const SizedBox(height: 24),
-              Center(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text('Agendar Tutoría'),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AgendarTutoriaPage(
-                          tutorId: tutorId,
-                          estudianteId: widget.estudianteId,
-                        ),
-                      ),
                     );
                   },
-                ),
-              ),
-            ],
+                );
+              },
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

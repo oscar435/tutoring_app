@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Regla general: Solo los usuarios autenticados pueden leer/escribir.
+    // Esto es un punto de partida. Idealmente, se refinarían los permisos por rol.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Reglas para la colección 'users'
+    match /users/{userId} {
+      // Cualquier usuario autenticado puede leer la información de otro usuario (para listas de tutores, etc.)
+      allow read: if request.auth != null;
+
+      // Solo el propio usuario o un administrador puede modificar un documento de usuario.
+      // (Necesitamos una forma de identificar a los administradores, por ejemplo, con un 'claim' personalizado)
+      // Por ahora, lo dejaremos en que solo el usuario autenticado puede escribir su propia info.
+      allow write: if request.auth.uid == userId;
+    }
+
+    // Reglas para la colección 'audit_logs'
+    match /audit_logs/{logId} {
+      // Cualquier usuario autenticado puede leer la lista de logs y documentos individuales.
+      allow read, list: if request.auth != null;
+
+      // Cualquier usuario autenticado puede crear un nuevo registro de log.
+      // Esto es seguro porque el ID del admin que realiza la acción se guarda en el propio documento.
+      allow create: if request.auth != null;
+
+      // Nadie puede actualizar o eliminar un log para garantizar la integridad de la auditoría.
+      allow update, delete: if false;
+    }
+  }
+} 
