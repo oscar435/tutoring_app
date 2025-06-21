@@ -6,18 +6,26 @@ class MisEstudiantesPage extends StatelessWidget {
   const MisEstudiantesPage({required this.tutorId, Key? key}) : super(key: key);
 
   Future<List<Map<String, dynamic>>> _obtenerEstudiantes() async {
-    final sesionesSnap = await FirebaseFirestore.instance
-        .collection('sesiones_tutoria')
-        .where('tutorId', isEqualTo: tutorId)
-        .where('estado', isEqualTo: 'aceptada')
-        .get();
-    final sesiones = sesionesSnap.docs.map((doc) => doc.data()).toList();
-    final ids = sesiones.map((s) => s['estudianteId'] as String).toSet().toList();
-    if (ids.isEmpty) return [];
+    // 1. Obtener la lista de IDs de estudiantes asignados al tutor
+    final tutorDoc = await FirebaseFirestore.instance.collection('tutores').doc(tutorId).get();
+    if (!tutorDoc.exists || !tutorDoc.data()!.containsKey('estudiantes_asignados')) {
+      // Si el tutor no existe o no tiene el campo, no hay estudiantes asignados.
+      return [];
+    }
+    
+    final List<String> ids = List<String>.from(tutorDoc.data()!['estudiantes_asignados']);
+
+    if (ids.isEmpty) {
+      // Si la lista de asignados está vacía.
+      return [];
+    }
+
+    // 2. Obtener los documentos de los estudiantes asignados
     final estudiantesSnap = await FirebaseFirestore.instance
         .collection('estudiantes')
         .where(FieldPath.documentId, whereIn: ids)
         .get();
+        
     return estudiantesSnap.docs.map((doc) {
       final data = doc.data();
       data['id'] = doc.id;
@@ -102,8 +110,20 @@ class MisEstudiantesPage extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+          if (snapshot.hasError) {
+             return const Center(child: Text('Ocurrió un error al cargar los estudiantes.'));
+          }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No tienes estudiantes aún.'));
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Aún no tienes estudiantes asignados. Un administrador debe asignártelos desde el panel.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ),
+            );
           }
           final estudiantes = snapshot.data!;
           return ListView.separated(
@@ -121,7 +141,7 @@ class MisEstudiantesPage extends StatelessWidget {
                         : const AssetImage('assets/avatar.jpg') as ImageProvider,
                   ),
                   title: Text('${est['nombre'] ?? ''} ${est['apellidos'] ?? ''}'),
-                  subtitle: Text(est['correo'] ?? ''),
+                  subtitle: Text(est['email'] ?? est['correo'] ?? ''),
                   onTap: () => _mostrarPerfilEstudiante(context, est),
                 ),
               );

@@ -37,6 +37,11 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     }
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   Future<void> _actualizarEstado(String solicitudId, String nuevoEstado) async {
     await SolicitudTutoriaService().actualizarEstado(solicitudId, nuevoEstado);
     setState(() {
@@ -133,13 +138,28 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => TutorProfilePage(),
+                    builder: (context) => const TutorProfilePage(),
                   ),
                 );
               },
-              child: const CircleAvatar(
-                backgroundImage: AssetImage('assets/teacher_avatar.jpg'),
-                radius: 18,
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: user != null ? FirebaseFirestore.instance.collection('tutores').doc(user.uid).snapshots() : null,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+                    final photoUrl = data['photoUrl'] as String?;
+                    if (photoUrl != null && photoUrl.isNotEmpty) {
+                      return CircleAvatar(
+                        backgroundImage: NetworkImage(photoUrl),
+                        radius: 18,
+                      );
+                    }
+                  }
+                  return const CircleAvatar(
+                    backgroundImage: AssetImage('assets/teacher_avatar.jpg'),
+                    radius: 18,
+                  );
+                },
               ),
             ),
           ],
@@ -215,9 +235,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     children: [
-                      _buildDrawerItem(Icons.home, 'Inicio', context, () {
-                        Navigator.pop(context);
-                      }),
+                      _buildDrawerItem(Icons.home, 'Inicio', context, () => Navigator.pop(context)),
                       _buildDrawerItem(
                         Icons.calendar_today,
                         'Calendario de tutorías',
@@ -352,37 +370,29 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         final sesiones = snapshot.data!;
         return FutureBuilder<List<Map<String, dynamic>>>(
           future: Future.wait(sesiones.map((sesion) async {
-            final estudianteDoc = await FirebaseFirestore.instance.collection('estudiantes').doc(sesion.estudianteId).get();
+            final estudianteDoc = await FirebaseFirestore.instance
+                .collection('estudiantes')
+                .doc(sesion.estudianteId)
+                .get();
+            
             final estudianteData = estudianteDoc.data() as Map<String, dynamic>?;
-            final nombreEstudiante = estudianteData?['nombre'] != null && estudianteData?['apellidos'] != null
-                ? '${estudianteData!['nombre']} ${estudianteData['apellidos']}'
+            final nombreEstudiante = estudianteData != null
+                ? '${estudianteData['nombre']} ${estudianteData['apellidos']}'
                 : 'Estudiante';
             
-            // Construir la fecha completa con mejor formato
-            String fechaCompleta = '';
-            String fechaRelativa = '';
             final fechaSesion = sesion.fechaSesion ?? sesion.fechaReserva;
-            final ahora = DateTime.now();
-            final diferencia = fechaSesion.difference(ahora);
+            final fechaCompleta = DateFormat('dd/MM/yyyy').format(fechaSesion);
+            final fechaRelativa = _getRelativeTime(fechaSesion);
             
-            if (sesion.fechaSesion != null) {
-              fechaCompleta = '${sesion.dia} ${DateFormat('dd/MM/yyyy').format(sesion.fechaSesion!)} - ${sesion.horaInicio}';
-            } else {
-              fechaCompleta = '${sesion.dia} ${DateFormat('dd/MM/yyyy').format(sesion.fechaReserva)} - ${sesion.horaInicio}';
-            }
+            // Verificar si el estudiante está asignado al tutor
+            final tutorDoc = await FirebaseFirestore.instance
+                .collection('tutores')
+                .doc(user!.uid)
+                .get();
             
-            // Calcular fecha relativa
-            if (diferencia.inDays == 0) {
-              fechaRelativa = 'Hoy';
-            } else if (diferencia.inDays == 1) {
-              fechaRelativa = 'Mañana';
-            } else if (diferencia.inDays < 7) {
-              fechaRelativa = 'En ${diferencia.inDays} días';
-            } else if (diferencia.inDays < 30) {
-              fechaRelativa = 'En ${(diferencia.inDays / 7).round()} semanas';
-            } else {
-              fechaRelativa = 'En ${(diferencia.inDays / 30).round()} meses';
-            }
+            final tutorData = tutorDoc.data() as Map<String, dynamic>?;
+            final estudiantesAsignados = (tutorData?['estudiantes_asignados'] as List<dynamic>?)?.cast<String>() ?? [];
+            final esAsignado = estudiantesAsignados.contains(sesion.estudianteId);
             
             final fotoUrl = estudianteData?['photoUrl'] as String?;
             return {
@@ -393,6 +403,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               'fechaSesion': fechaSesion,
               'fotoUrl': fotoUrl,
               'estudianteData': estudianteData,
+              'esAsignado': esAsignado,
             };
           })),
           builder: (context, snap) {
@@ -442,6 +453,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                     final fechaRelativa = s['fechaRelativa'] as String;
                     final fotoUrl = s['fotoUrl'] as String?;
                     final estudianteData = s['estudianteData'] as Map<String, dynamic>?;
+                    final esAsignado = s['esAsignado'] as bool;
                     
                     // Color especial para la próxima tutoría
                     final isNext = index == 0;
@@ -453,8 +465,9 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                         fechaCompleta,
                         fechaRelativa,
                         nombreEstudiante,
-                        isNext ? Colors.orange : Colors.deepPurple,
+                        isNext ? Colors.orange : (esAsignado ? Colors.green : Colors.deepPurple),
                         isNext: isNext,
+                        esAsignado: esAsignado,
                       ),
                     );
                   }).toList(),
@@ -474,12 +487,16 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     String students,
     Color color, {
     bool isNext = false,
+    bool esAsignado = false,
   }) {
     return Card(
       elevation: isNext ? 4 : 2,
+      color: esAsignado ? Colors.green[50] : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isNext ? BorderSide(color: Colors.orange, width: 2) : BorderSide.none,
+        side: isNext 
+            ? BorderSide(color: Colors.orange, width: 2) 
+            : (esAsignado ? BorderSide(color: Colors.green, width: 2) : BorderSide.none),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -504,11 +521,36 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   ),
                 ),
               ),
+            if (esAsignado && !isNext)
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                margin: EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.star, color: Colors.white, size: 10),
+                    SizedBox(width: 2),
+                    Text(
+                      'ASIGNADO',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Text(
               subject,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
+                color: esAsignado ? Colors.green[800] : Colors.black,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -537,9 +579,10 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             const SizedBox(height: 2),
             Text(
               students,
-              style: const TextStyle(
-                color: Color(0xFFAAAAAA),
+              style: TextStyle(
+                color: esAsignado ? Colors.green[700] : Color(0xFFAAAAAA),
                 fontSize: 11,
+                fontWeight: esAsignado ? FontWeight.w600 : FontWeight.normal,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -644,20 +687,87 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             final estudianteId = solicitud.estudianteId;
             final curso = solicitud.curso ?? 'Sin curso especificado';
             // Obtener la foto de perfil del estudiante
-            return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance.collection('estudiantes').doc(estudianteId).get(),
-              builder: (context, snapshotEst) {
+            return FutureBuilder<Map<String, dynamic>>(
+              future: Future.wait([
+                FirebaseFirestore.instance.collection('estudiantes').doc(estudianteId).get(),
+                FirebaseFirestore.instance.collection('tutores').doc(user!.uid).get(),
+              ]).then((results) async {
+                final estudianteDoc = results[0];
+                final tutorDoc = results[1];
+                
                 String? fotoUrl;
-                if (snapshotEst.hasData && snapshotEst.data != null) {
-                  final data = snapshotEst.data!.data() as Map<String, dynamic>?;
+                if (estudianteDoc.exists) {
+                  final data = estudianteDoc.data() as Map<String, dynamic>?;
                   fotoUrl = data?['photoUrl'] as String?;
                 }
+                
+                // Verificar si el estudiante está asignado
+                bool esAsignado = false;
+                if (tutorDoc.exists) {
+                  final tutorData = tutorDoc.data() as Map<String, dynamic>?;
+                  final estudiantesAsignados = (tutorData?['estudiantes_asignados'] as List<dynamic>?)?.cast<String>() ?? [];
+                  esAsignado = estudiantesAsignados.contains(estudianteId);
+                }
+                
+                return {
+                  'fotoUrl': fotoUrl,
+                  'esAsignado': esAsignado,
+                };
+              }),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Card(
+                    color: const Color(0xFFF6F3FF),
+                    margin: const EdgeInsets.symmetric(vertical: 5),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: const Color(0xFFD1C4E9),
+                            child: const Icon(Icons.person, color: Color(0xFF5E35B1)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  nombreEstudiante,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  curso,
+                                  style: const TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, color: Colors.grey),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                
+                final fotoUrl = snapshot.data?['fotoUrl'] as String?;
+                final esAsignado = snapshot.data?['esAsignado'] as bool? ?? false;
+                
                 return _buildRequestCard(
                   nombreEstudiante,
                   curso,
                   '', // ya no mostramos la fecha aquí
                   solicitud.id,
                   fotoUrl,
+                  esAsignado,
                 );
               },
             );
@@ -667,12 +777,13 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     );
   }
 
-  Widget _buildRequestCard(String student, String subject, String time, String solicitudId, String? fotoUrl) {
+  Widget _buildRequestCard(String student, String subject, String time, String solicitudId, String? fotoUrl, bool esAsignado) {
     return Card(
-      color: const Color(0xFFF6F3FF),
+      color: esAsignado ? Colors.green[50] : const Color(0xFFF6F3FF),
       margin: const EdgeInsets.symmetric(vertical: 5),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
+        side: esAsignado ? BorderSide(color: Colors.green, width: 2) : BorderSide.none,
       ),
       child: InkWell(
         onTap: () => _mostrarDetallesSolicitud(solicitudId),
@@ -683,39 +794,70 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               fotoUrl != null && fotoUrl.isNotEmpty
                   ? CircleAvatar(
                       radius: 20,
-                      backgroundColor: const Color(0xFFD1C4E9),
+                      backgroundColor: esAsignado ? Colors.green : const Color(0xFFD1C4E9),
                       backgroundImage: NetworkImage(fotoUrl),
                       onBackgroundImageError: (_, __) {},
                     )
                   : CircleAvatar(
                       radius: 20,
-                      backgroundColor: const Color(0xFFD1C4E9),
-                      child: const Icon(Icons.person, color: Color(0xFF5E35B1)),
+                      backgroundColor: esAsignado ? Colors.green : const Color(0xFFD1C4E9),
+                      child: Icon(Icons.person, color: esAsignado ? Colors.white : const Color(0xFF5E35B1)),
                     ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      student,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            student,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: esAsignado ? Colors.green[800] : Colors.black,
+                            ),
+                          ),
+                        ),
+                        if (esAsignado)
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.star, color: Colors.white, size: 10),
+                                SizedBox(width: 2),
+                                Text(
+                                  'ASIGNADO',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subject,
-                      style: const TextStyle(
-                        color: Colors.black54,
+                      style: TextStyle(
+                        color: esAsignado ? Colors.green[700] : Colors.black54,
                         fontSize: 14,
+                        fontWeight: esAsignado ? FontWeight.w500 : FontWeight.normal,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              Icon(Icons.chevron_right, color: esAsignado ? Colors.green : Colors.grey),
             ],
           ),
         ),
@@ -1029,4 +1171,40 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
       ),
     );
   }
-} 
+
+  String _getRelativeTime(DateTime fecha) {
+    final ahora = DateTime.now();
+    final diferencia = fecha.difference(ahora);
+    
+    if (diferencia.inDays == 0) {
+      return 'Hoy';
+    } else if (diferencia.inDays == 1) {
+      return 'Mañana';
+    } else if (diferencia.inDays < 7) {
+      return 'En ${diferencia.inDays} días';
+    } else if (diferencia.inDays < 30) {
+      return 'En ${(diferencia.inDays / 7).round()} semanas';
+    } else {
+      return 'En ${(diferencia.inDays / 30).round()} meses';
+    }
+  }
+
+  String _formatRelativeTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final diferencia = now.difference(dateTime);
+
+    if (diferencia.inDays > 365) {
+      return 'En ${(diferencia.inDays / 365).round()} años';
+    } else if (diferencia.inDays > 30) {
+      return 'En ${(diferencia.inDays / 30).round()} meses';
+    } else if (diferencia.inDays > 0) {
+      return 'En ${diferencia.inDays} días';
+    } else if (diferencia.inHours > 0) {
+      return 'En ${diferencia.inHours} horas';
+    } else if (diferencia.inMinutes > 0) {
+      return 'En ${diferencia.inMinutes} minutos';
+    } else {
+      return 'Ahora';
+    }
+  }
+}

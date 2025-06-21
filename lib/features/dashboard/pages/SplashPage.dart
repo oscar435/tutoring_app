@@ -40,18 +40,57 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     await Future.delayed(const Duration(milliseconds: 3000)); // Splash de 3 segundos
     final isOnboardingDone = prefs.onboardingCompletado;
     final user = FirebaseAuth.instance.currentUser;
+    
     if (!isOnboardingDone) {
-      Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
-    } else if (user == null) {
-      Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
-    } else {
-      // Consultar Firestore para saber si es tutor o estudiante
+      if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+      return;
+    }
+    
+    if (user == null) {
+      if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
+      return;
+    }
+    
+    // La fuente de la verdad para el rol es la colección 'users'
+    try {
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      final isTeacher = userDoc.data()?['isTeacher'] ?? false;
-      if (isTeacher) {
-        Navigator.pushReplacementNamed(context, AppRoutes.teacherHome);
+
+      if (!mounted) return; // Comprobar si el widget sigue montado
+
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final role = userData['role'] as String?;
+
+        // Guardar el rol actual en las preferencias locales
+        await prefs.setUserRole(role ?? '');
+
+        switch (role) {
+          case 'teacher':
+            Navigator.pushReplacementNamed(context, AppRoutes.teacherHome);
+            break;
+          case 'student':
+            Navigator.pushReplacementNamed(context, AppRoutes.home);
+            break;
+          default:
+            // Para admin, superAdmin o roles desconocidos, cerrar sesión en móvil y redirigir
+            await FirebaseAuth.instance.signOut();
+            await prefs.clearUserSession(); // Limpiar datos de sesión
+            Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
+            break;
+        }
       } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
+        // Si el usuario existe en Auth pero no en la BBDD, es un estado inconsistente.
+        await FirebaseAuth.instance.signOut();
+        await prefs.clearUserSession();
+        Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
+      }
+    } catch (e) {
+      print('Error verificando usuario en SplashPage: $e');
+      // En caso de error, cerrar sesión para evitar un estado inconsistente
+      await FirebaseAuth.instance.signOut();
+      if(mounted) {
+        await prefs.clearUserSession();
+        Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
       }
     }
   }

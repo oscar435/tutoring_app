@@ -113,7 +113,19 @@ class AuthService {
         
         if (userDoc.exists) {
           Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-          bool isTeacher = userData['isTeacher'] ?? false;
+          bool isTeacher = (userData['role'] == 'teacher');
+
+          // Si se requiere ser profesor pero no lo es, denegar acceso.
+          if (requireTeacher && !isTeacher) {
+            await _auth.signOut();
+            return 3; // Código de error para rol incorrecto (no es profesor)
+          }
+
+          // Si NO se requiere ser profesor (login de estudiante) pero el rol SÍ es de profesor, denegar.
+          if (!requireTeacher && isTeacher) {
+            await _auth.signOut();
+            return 5; // Nuevo código de error: "Debe iniciar sesión como profesor"
+          }
 
           // Obtener datos específicos según el tipo de usuario
           DocumentSnapshot specificDoc;
@@ -128,15 +140,13 @@ class AuthService {
             return null;
           }
 
-          // Solo verificar email si NO es profesor
-          if (!isTeacher && !user.emailVerified) {
+          final bool isVerifiedInDb = (specificDoc.data() as Map<String, dynamic>?)?['emailVerified'] ?? false;
+
+          // Solo verificar email si NO es profesor.
+          // Permitir el acceso si el correo está verificado en Firebase Auth O en nuestra base de datos (por un admin).
+          if (!isTeacher && !user.emailVerified && !isVerifiedInDb) {
             await _auth.signOut();
             return 4; // Código para correo no verificado
-          }
-
-          if (requireTeacher && !isTeacher) {
-            await _auth.signOut();
-            return 3; // Código de error para usuario no autorizado
           }
           
           return user.uid;
@@ -150,7 +160,7 @@ class AuthService {
         case 'user-not-found':
         case 'wrong-password':
         case 'invalid-credential':
-          return 1;
+        return 1;
         case 'user-disabled':
           return 5; // Cuenta deshabilitada
         case 'too-many-requests':
