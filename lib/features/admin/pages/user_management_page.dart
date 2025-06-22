@@ -330,13 +330,13 @@ class _UserManagementPageState extends State<UserManagementPage> {
     _cicloController.text = completeUserData['ciclo'] ?? '';
     _edadController.text = completeUserData['edad']?.toString() ?? '';
     _especialidadEstudianteController.text = completeUserData['especialidad'] ?? '';
-    _universidadEstudianteController.text = completeUserData['universidad'] ?? '';
+    _universidadEstudianteController.text = completeUserData['universidad'] ?? 'Universidad Nacional Federico Villarreal';
 
     _escuelaTutorController.text = completeUserData['escuela'] ?? '';
     _especialidadTutorController.text = completeUserData['especialidad'] ?? '';
     _cursosTutorController.text = (completeUserData['cursos'] as List<dynamic>?)?.join(', ') ?? '';
-    _universidadTutorController.text = completeUserData['universidad'] ?? '';
-    _facultadTutorController.text = completeUserData['facultad'] ?? '';
+    _universidadTutorController.text = completeUserData['universidad'] ?? 'Universidad Nacional Federico Villarreal';
+    _facultadTutorController.text = completeUserData['facultad'] ?? 'Facultad de Ingeniería Electrónica e Informática';
 
     if (!mounted) return;
 
@@ -447,16 +447,29 @@ class _UserManagementPageState extends State<UserManagementPage> {
                            },
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _especialidadEstudianteController,
+                        DropdownButtonFormField<String>(
+                          value: _especialidadEstudianteController.text.isEmpty ? null : _especialidadEstudianteController.text,
                           decoration: const InputDecoration(labelText: 'Especialidad (Carrera)', border: OutlineInputBorder()),
-                          validator: (v) => _selectedFormRole == UserRole.student && v!.isEmpty ? 'Campo requerido' : null,
+                          items: const [
+                            DropdownMenuItem(value: 'Ingeniería Electrónica', child: Text('Ingeniería Electrónica')),
+                            DropdownMenuItem(value: 'Ingeniería Informática', child: Text('Ingeniería Informática')),
+                            DropdownMenuItem(value: 'Ingeniería Mecatrónica', child: Text('Ingeniería Mecatrónica')),
+                            DropdownMenuItem(value: 'Ingeniería de Telecomunicaciones', child: Text('Ingeniería de Telecomunicaciones')),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() => _especialidadEstudianteController.text = value!);
+                          },
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _universidadEstudianteController,
+                        DropdownButtonFormField<String>(
+                          value: _universidadEstudianteController.text,
                           decoration: const InputDecoration(labelText: 'Universidad', border: OutlineInputBorder()),
-                          validator: (v) => _selectedFormRole == UserRole.student && v!.isEmpty ? 'Campo requerido' : null,
+                          items: const [
+                            DropdownMenuItem(value: 'Universidad Nacional Federico Villarreal', child: Text('Universidad Nacional Federico Villarreal')),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() => _universidadEstudianteController.text = value!);
+                          },
                         ),
                       ],
 
@@ -464,16 +477,24 @@ class _UserManagementPageState extends State<UserManagementPage> {
                         const Divider(),
                         const Text('Datos de Tutor', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _escuelaTutorController,
-                          decoration: const InputDecoration(labelText: 'Escuela Profesional', border: OutlineInputBorder()),
-                           validator: (v) => _selectedFormRole == UserRole.teacher && v!.isEmpty ? 'Campo requerido' : null,
+                        DropdownButtonFormField<String>(
+                          value: _escuelaTutorController.text.isEmpty ? null : _escuelaTutorController.text,
+                          decoration: const InputDecoration(labelText: 'Escuela', border: OutlineInputBorder()),
+                          items: const [
+                            DropdownMenuItem(value: 'Escuela de Ingeniería Electrónica', child: Text('Escuela de Ingeniería Electrónica')),
+                            DropdownMenuItem(value: 'Escuela de Ingeniería Informática', child: Text('Escuela de Ingeniería Informática')),
+                            DropdownMenuItem(value: 'Escuela de Ingeniería Mecatrónica', child: Text('Escuela de Ingeniería Mecatrónica')),
+                            DropdownMenuItem(value: 'Escuela de Ingeniería de Telecomunicaciones', child: Text('Escuela de Ingeniería de Telecomunicaciones')),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() => _escuelaTutorController.text = value!);
+                          },
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _especialidadTutorController,
                           decoration: const InputDecoration(labelText: 'Especialidad (Área)', border: OutlineInputBorder()),
-                           validator: (v) => _selectedFormRole == UserRole.teacher && v!.isEmpty ? 'Campo requerido' : null,
+                          validator: (v) => _selectedFormRole == UserRole.teacher && v!.isEmpty ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -482,16 +503,26 @@ class _UserManagementPageState extends State<UserManagementPage> {
                            validator: (v) => _selectedFormRole == UserRole.teacher && v!.isEmpty ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _universidadTutorController,
+                        DropdownButtonFormField<String>(
+                          value: _universidadTutorController.text.isEmpty ? 'Universidad Nacional Federico Villarreal' : _universidadTutorController.text,
                           decoration: const InputDecoration(labelText: 'Universidad', border: OutlineInputBorder()),
-                          validator: (v) => _selectedFormRole == UserRole.teacher && v!.isEmpty ? 'Campo requerido' : null,
+                          items: const [
+                            DropdownMenuItem(value: 'Universidad Nacional Federico Villarreal', child: Text('Universidad Nacional Federico Villarreal')),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() => _universidadTutorController.text = value!);
+                          },
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _facultadTutorController,
+                        DropdownButtonFormField<String>(
+                          value: _facultadTutorController.text.isEmpty ? 'Facultad de Ingeniería Electrónica e Informática' : _facultadTutorController.text,
                           decoration: const InputDecoration(labelText: 'Facultad', border: OutlineInputBorder()),
-                          validator: (v) => _selectedFormRole == UserRole.teacher && v!.isEmpty ? 'Campo requerido' : null,
+                          items: const [
+                            DropdownMenuItem(value: 'Facultad de Ingeniería Electrónica e Informática', child: Text('Facultad de Ingeniería Electrónica e Informática')),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() => _facultadTutorController.text = value!);
+                          },
                         ),
                       ],
 
