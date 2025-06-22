@@ -4,6 +4,7 @@ import 'package:tutoring_app/core/models/notificacion.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
 import 'package:tutoring_app/features/notificaciones/services/notificacion_service.dart';
+import 'package:tutoring_app/features/disponibilidad/services/disponibilidad_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
 
@@ -39,11 +40,52 @@ class SolicitudTutoriaService {
   }
 
   // Actualizar el estado de una solicitud (aceptar/rechazar) y notificar al estudiante
-  Future<void> actualizarEstado(String solicitudId, String nuevoEstado) async {
+  Future<Map<String, dynamic>> actualizarEstado(String solicitudId, String nuevoEstado) async {
     final doc = await _solicitudesRef.doc(solicitudId).get();
-    if (!doc.exists) return;
+    if (!doc.exists) {
+      return {'success': false, 'message': 'Solicitud no encontrada'};
+    }
+    
     final solicitud = SolicitudTutoria.fromMap(doc.data() as Map<String, dynamic>);
+    
+    // Si se va a aceptar, validar conflictos de horario
+    if (nuevoEstado == 'aceptada') {
+      final disponibilidadService = DisponibilidadService();
+      
+      // Verificar si hay conflicto de horario
+      final hayConflicto = await disponibilidadService.hayConflictoHorario(
+        tutorId: solicitud.tutorId,
+        fechaSesion: solicitud.fechaSesion!,
+        horaInicio: solicitud.horaInicio!,
+        horaFin: solicitud.horaFin!,
+      );
+
+      if (hayConflicto) {
+        return {
+          'success': false, 
+          'message': 'No se puede aceptar la solicitud. El horario ya está ocupado por otra sesión.'
+        };
+      }
+
+      // Verificar que el horario esté dentro de la disponibilidad del tutor
+      final esHorarioValido = await disponibilidadService.esHorarioValido(
+        tutorId: solicitud.tutorId,
+        dia: solicitud.dia!,
+        horaInicio: solicitud.horaInicio!,
+        horaFin: solicitud.horaFin!,
+      );
+
+      if (!esHorarioValido) {
+        return {
+          'success': false, 
+          'message': 'No se puede aceptar la solicitud. El horario no está dentro de la disponibilidad del tutor.'
+        };
+      }
+    }
+
+    // Actualizar el estado de la solicitud
     await _solicitudesRef.doc(solicitudId).update({'estado': nuevoEstado});
+    
     // Notificar al estudiante
     final mensaje = nuevoEstado == 'aceptada'
         ? 'Tu solicitud de tutoría fue aceptada.'
@@ -56,6 +98,7 @@ class SolicitudTutoriaService {
       fecha: DateTime.now(),
     );
     await NotificacionService().crearNotificacion(noti);
+    
     // Si se acepta, crear sesión
     if (nuevoEstado == 'aceptada') {
       final sesion = SesionTutoria(
@@ -69,10 +112,41 @@ class SolicitudTutoriaService {
         curso: solicitud.curso,
         estado: 'aceptada',
         mensaje: solicitud.mensaje,
-        fechaSesion: solicitud.fechaSesion,
+        fechaSesion: solicitud.fechaSesion ?? _calcularFechaSesion(solicitud.dia!, solicitud.horaInicio!),
       );
       await SesionTutoriaService().crearSesion(sesion);
     }
+
+    return {'success': true, 'message': 'Solicitud actualizada correctamente'};
+  }
+
+  DateTime _calcularFechaSesion(String dia, String horaInicio) {
+    final ahora = DateTime.now();
+    final diasSemana = {
+      'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6, 'Domingo': 7
+    };
+    final diaSolicitado = diasSemana[dia]!;
+    
+    var fechaBase = DateTime(ahora.year, ahora.month, ahora.day);
+    while (fechaBase.weekday != diaSolicitado) {
+      fechaBase = fechaBase.add(const Duration(days: 1));
+    }
+
+    final partesHora = horaInicio.split(':');
+    var fechaFinal = DateTime(
+      fechaBase.year,
+      fechaBase.month,
+      fechaBase.day,
+      int.parse(partesHora[0]),
+      int.parse(partesHora[1]),
+    );
+
+    // Si la fecha/hora calculada ya pasó, calcular para la siguiente semana
+    if (fechaFinal.isBefore(ahora)) {
+      fechaFinal = fechaFinal.add(const Duration(days: 7));
+    }
+    
+    return fechaFinal;
   }
 
   // Obtener nombre del estudiante

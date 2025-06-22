@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class SesionTutoria {
   final String id;
   final String tutorId;
@@ -32,24 +34,26 @@ class SesionTutoria {
     'dia': dia,
     'horaInicio': horaInicio,
     'horaFin': horaFin,
-    'fechaReserva': fechaReserva.toIso8601String(),
+    'fechaReserva': Timestamp.fromDate(fechaReserva),
     'curso': curso,
     'estado': estado,
     'mensaje': mensaje,
-    'fechaSesion': fechaSesion?.toIso8601String(),
+    'fechaSesion': fechaSesion != null ? Timestamp.fromDate(fechaSesion!) : null,
   };
 
-  factory SesionTutoria.fromMap(Map<String, dynamic> map) => SesionTutoria(
-    id: map['id'],
-    tutorId: map['tutorId'],
-    estudianteId: map['estudianteId'],
-    dia: map['dia'],
-    horaInicio: map['horaInicio'],
-    horaFin: map['horaFin'],
-    fechaReserva: DateTime.parse(map['fechaReserva']),
-    curso: map['curso'],
-    estado: map['estado'],
-    mensaje: map['mensaje'],
-    fechaSesion: map['fechaSesion'] != null ? DateTime.parse(map['fechaSesion']) : null,
-  );
+  factory SesionTutoria.fromMap(Map<String, dynamic> map) {
+    return SesionTutoria(
+      id: map['id'],
+      tutorId: map['tutorId'],
+      estudianteId: map['estudianteId'],
+      dia: map['dia'],
+      horaInicio: map['horaInicio'],
+      horaFin: map['horaFin'],
+      fechaReserva: (map['fechaReserva'] as Timestamp).toDate(),
+      curso: map['curso'],
+      estado: map['estado'],
+      mensaje: map['mensaje'],
+      fechaSesion: map['fechaSesion'] != null ? (map['fechaSesion'] as Timestamp).toDate() : null,
+    );
+  }
 } 
