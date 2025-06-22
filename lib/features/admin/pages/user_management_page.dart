@@ -392,13 +392,36 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       DropdownButtonFormField<UserRole>(
                         value: _selectedFormRole,
                         decoration: const InputDecoration(labelText: 'Rol', border: OutlineInputBorder()),
-                        items: const [
-                          DropdownMenuItem(value: UserRole.student, child: Text('Estudiante')),
-                          DropdownMenuItem(value: UserRole.teacher, child: Text('Tutor')),
-                          DropdownMenuItem(value: UserRole.admin, child: Text('Administrador')),
-                        ],
-                        onChanged: (value) {
-                          setDialogState(() => _selectedFormRole = value!);
+                        items: UserRole.values
+                          .map((role) => DropdownMenuItem(value: role, child: Text(role.displayName)))
+                          .toList(),
+                        onChanged: (UserRole? newValue) {
+                          if (newValue != null && newValue != _selectedFormRole) {
+                            setDialogState(() {
+                              _selectedFormRole = newValue;
+
+                              // Limpiar todos los campos de roles para evitar conflictos de datos
+                              _codigoEstudianteController.clear();
+                              _cicloController.clear();
+                              _edadController.clear();
+                              _especialidadEstudianteController.clear();
+                              _universidadEstudianteController.text = '';
+
+                              _escuelaTutorController.clear();
+                              _especialidadTutorController.clear();
+                              _cursosTutorController.clear();
+                              _universidadTutorController.text = '';
+                              _facultadTutorController.clear();
+
+                              // Aplicar valores por defecto al rol seleccionado
+                              if (newValue == UserRole.student) {
+                                _universidadEstudianteController.text = 'Universidad Nacional Federico Villarreal';
+                              } else if (newValue == UserRole.teacher) {
+                                _universidadTutorController.text = 'Universidad Nacional Federico Villarreal';
+                                _facultadTutorController.text = 'Facultad de Ingeniería Electrónica e Informática';
+                              }
+                            });
+                          }
                         },
                       ),
                       const SizedBox(height: 16),
