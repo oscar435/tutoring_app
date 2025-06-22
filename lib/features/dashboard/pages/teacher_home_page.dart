@@ -56,55 +56,110 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      drawer: _buildTeacherDrawer(context),
-      body: SafeArea(
-        child: Builder(
-          builder: (context) => SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTopBar(context),
-                const SizedBox(height: 20),
-                _buildSectionTitle(
-                  title: 'Próximas Tutorías',
-                  trailing: 'Ver todas',
-                  onTrailingTap: () {
-                    if (user != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProximasTutoriasPage(tutorId: user!.uid),
-                        ),
-                      );
-                    }
-                  },
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const Scaffold(body: Center(child: Text('Error: No hay usuario')));
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, snapshot) {
+        // Verificar si el usuario está activo
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+          final isActive = userData['isActive'] ?? true;
+          
+          if (!isActive) {
+            // Usuario desactivado, cerrar sesión automáticamente
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              await FirebaseAuth.instance.signOut();
+              final prefs = PreferenciasUsuario();
+              await prefs.clearUserSession();
+              if (context.mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  AppRoutes.roleSelector, 
+                  (route) => false
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Tu cuenta ha sido desactivada. Contacta al administrador.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            });
+            return const Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.block, size: 64, color: Colors.red),
+                    SizedBox(height: 16),
+                    Text(
+                      'Cuenta Desactivada',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Tu cuenta ha sido desactivada por un administrador.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                _buildTutoriasGrid(),
-                const SizedBox(height: 20),
-                _buildSectionTitle(title: 'Estadísticas'),
-                _buildStatsCards(),
-                const SizedBox(height: 20),
-                _buildSectionTitle(
-                  title: 'Solicitudes Pendientes',
-                  trailing: 'Ver todas',
-                  onTrailingTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SolicitudesTutorPage(tutorId: user?.uid ?? ''),
-                      ),
-                    );
-                  },
+              ),
+            );
+          }
+        }
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          drawer: _buildTeacherDrawer(context),
+          body: SafeArea(
+            child: Builder(
+              builder: (context) => SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTopBar(context),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle(
+                      title: 'Próximas Tutorías',
+                      trailing: 'Ver todas',
+                      onTrailingTap: () {
+                        if (user != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProximasTutoriasPage(tutorId: user!.uid),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    _buildTutoriasGrid(),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle(title: 'Estadísticas'),
+                    _buildStatsCards(),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle(
+                      title: 'Solicitudes Pendientes',
+                      trailing: 'Ver todas',
+                      onTrailingTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SolicitudesTutorPage(tutorId: user?.uid ?? ''),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildPendingRequestsList(),
+                  ],
                 ),
-                _buildPendingRequestsList(),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

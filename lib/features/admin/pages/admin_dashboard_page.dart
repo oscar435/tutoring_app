@@ -108,10 +108,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         String message;
         if (filePath != null) {
           // Para Mobile/Desktop
-          message = 'Reporte exportado exitosamente a: $filePath';
+          message = 'Reporte de usuarios exportado exitosamente a: $filePath';
         } else {
           // Para Web
-          message = 'La descarga del reporte ha comenzado.';
+          message = 'La descarga del reporte de usuarios ha comenzado.';
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -128,6 +128,45 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al exportar reporte: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportTutoringReport() async {
+    try {
+      setState(() => _isLoading = true);
+      
+      final filePath = await _reportService.exportTutoringToCSV();
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+
+        String message;
+        if (filePath != null) {
+          // Para Mobile/Desktop
+          message = 'Reporte de tutorías exportado exitosamente a: $filePath';
+        } else {
+          // Para Web
+          message = 'La descarga del reporte de tutorías ha comenzado.';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al exportar reporte de tutorías: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -289,9 +328,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ElevatedButton.icon(
                             onPressed: _isLoading ? null : _exportReport,
                             icon: const Icon(Icons.download),
-                            label: const Text('Exportar Reporte'),
+                            label: const Text('Reporte Usuarios'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green[700],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _exportTutoringReport,
+                            icon: const Icon(Icons.school),
+                            label: const Text('Reporte Tutorías'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange[700],
                               foregroundColor: Colors.white,
                             ),
                           ),

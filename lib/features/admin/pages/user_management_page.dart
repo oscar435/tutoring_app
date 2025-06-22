@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutoring_app/core/models/admin_user.dart';
 import 'package:tutoring_app/core/services/user_management_service.dart';
 import 'package:tutoring_app/features/admin/pages/assign_students_page.dart';
+import 'package:intl/intl.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -34,10 +35,13 @@ class _UserManagementPageState extends State<UserManagementPage> {
   final _cicloController = TextEditingController();
   final _edadController = TextEditingController();
   final _especialidadEstudianteController = TextEditingController();
+  final _universidadEstudianteController = TextEditingController();
 
   final _escuelaTutorController = TextEditingController();
   final _especialidadTutorController = TextEditingController();
   final _cursosTutorController = TextEditingController();
+  final _universidadTutorController = TextEditingController();
+  final _facultadTutorController = TextEditingController();
 
   UserRole _selectedFormRole = UserRole.student;
   
@@ -57,9 +61,12 @@ class _UserManagementPageState extends State<UserManagementPage> {
     _cicloController.dispose();
     _edadController.dispose();
     _especialidadEstudianteController.dispose();
+    _universidadEstudianteController.dispose();
     _escuelaTutorController.dispose();
     _especialidadTutorController.dispose();
     _cursosTutorController.dispose();
+    _universidadTutorController.dispose();
+    _facultadTutorController.dispose();
     super.dispose();
   }
 
@@ -107,21 +114,19 @@ class _UserManagementPageState extends State<UserManagementPage> {
   }
 
   Future<void> _toggleUserStatus(String userId, bool currentStatus) async {
-    final deletedBy = _auth.currentUser!.uid;
+    final adminUserId = _auth.currentUser!.uid;
     try {
       if (currentStatus) {
-        await _userManagementService.deleteUser(userId: userId, deletedBy: deletedBy);
+        // Desactivar usuario
+        await _userManagementService.deleteUser(userId: userId, deletedBy: adminUserId);
       } else {
-        await _userManagementService.updateUser(
-          userId: userId,
-          isActive: true,
-          modifiedBy: deletedBy,
-        );
+        // Reactivar usuario
+        await _userManagementService.reactivateUser(userId: userId, reactivatedBy: adminUserId);
       }
       _loadUsers();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Usuario ${currentStatus ? 'desactivado' : 'activado'} exitosamente'),
+          content: Text('Usuario ${currentStatus ? 'desactivado' : 'reactivado'} exitosamente'),
         ),
       );
     } catch (e) {
@@ -191,7 +196,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
             'ciclo': _cicloController.text,
             'edad': int.tryParse(_edadController.text) ?? 0,
             'especialidad': _especialidadEstudianteController.text,
-            'universidad': 'Universidad Nacional Federico Villarreal',
+            'universidad': _universidadEstudianteController.text.isNotEmpty 
+                ? _universidadEstudianteController.text 
+                : 'Universidad Nacional Federico Villarreal',
             'emailVerified': true,
           };
         }
@@ -211,33 +218,37 @@ class _UserManagementPageState extends State<UserManagementPage> {
         Map<String, dynamic>? specificData;
         final hasRoleChanged = user.role != role;
 
-        // Si el rol ha cambiado, preparamos los datos para la nueva colección
-        if (hasRoleChanged) {
-          if (role == UserRole.student) {
-            specificData = {
-              'nombre': nombre,
-              'apellidos': apellidos,
-              'email': email,
-              'codigo_estudiante': _codigoEstudianteController.text,
-              'ciclo': _cicloController.text,
-              'edad': int.tryParse(_edadController.text) ?? 0,
-              'especialidad': _especialidadEstudianteController.text,
-              'universidad': 'Universidad Nacional Federico Villarreal',
-              'emailVerified': true,
-            };
-          } else if (role == UserRole.teacher) {
-            specificData = {
-              'nombre': nombre,
-              'apellidos': apellidos,
-              'email': email,
-              'escuela': _escuelaTutorController.text,
-              'especialidad': _especialidadTutorController.text,
-              'cursos': _cursosTutorController.text.split(',').map((e) => e.trim()).toList(),
-              'universidad': 'Universidad Nacional Federico Villarreal',
-              'facultad': 'Facultad de Ingeniería Electrónica e Informática',
-              'emailVerified': true,
-            };
-          }
+        // Siempre preparar los datos específicos para la actualización
+        if (role == UserRole.student) {
+          specificData = {
+            'nombre': nombre,
+            'apellidos': apellidos,
+            'email': email,
+            'codigo_estudiante': _codigoEstudianteController.text,
+            'ciclo': _cicloController.text,
+            'edad': int.tryParse(_edadController.text) ?? 0,
+            'especialidad': _especialidadEstudianteController.text,
+            'universidad': _universidadEstudianteController.text.isNotEmpty 
+                ? _universidadEstudianteController.text 
+                : 'Universidad Nacional Federico Villarreal',
+            'emailVerified': true,
+          };
+        } else if (role == UserRole.teacher) {
+          specificData = {
+            'nombre': nombre,
+            'apellidos': apellidos,
+            'email': email,
+            'escuela': _escuelaTutorController.text,
+            'especialidad': _especialidadTutorController.text,
+            'cursos': _cursosTutorController.text.split(',').map((e) => e.trim()).toList(),
+            'universidad': _universidadTutorController.text.isNotEmpty 
+                ? _universidadTutorController.text 
+                : 'Universidad Nacional Federico Villarreal',
+            'facultad': _facultadTutorController.text.isNotEmpty 
+                ? _facultadTutorController.text 
+                : 'Facultad de Ingeniería Electrónica e Informática',
+            'emailVerified': true,
+          };
         }
         
         await _userManagementService.updateUser(
@@ -309,16 +320,23 @@ class _UserManagementPageState extends State<UserManagementPage> {
     _apellidosController.text = completeUserData['apellidos'] ?? '';
     _emailController.text = completeUserData['email'] ?? '';
     _passwordController.clear();
-    _selectedFormRole = completeUserData['role'] ?? UserRole.student;
+    _selectedFormRole = UserRole.values.firstWhere(
+      (e) => e.toString().split('.').last == (completeUserData['role'] ?? 'student'),
+      orElse: () => UserRole.student,
+    );
 
+    // Cargar datos específicos según el rol
     _codigoEstudianteController.text = completeUserData['codigo_estudiante'] ?? '';
     _cicloController.text = completeUserData['ciclo'] ?? '';
     _edadController.text = completeUserData['edad']?.toString() ?? '';
-    _especialidadEstudianteController.text = (completeUserData['role'] == UserRole.student) ? completeUserData['especialidad'] ?? '' : '';
+    _especialidadEstudianteController.text = completeUserData['especialidad'] ?? '';
+    _universidadEstudianteController.text = completeUserData['universidad'] ?? 'Universidad Nacional Federico Villarreal';
 
     _escuelaTutorController.text = completeUserData['escuela'] ?? '';
-    _especialidadTutorController.text = (completeUserData['role'] == UserRole.teacher) ? completeUserData['especialidad'] ?? '' : '';
+    _especialidadTutorController.text = completeUserData['especialidad'] ?? '';
     _cursosTutorController.text = (completeUserData['cursos'] as List<dynamic>?)?.join(', ') ?? '';
+    _universidadTutorController.text = completeUserData['universidad'] ?? 'Universidad Nacional Federico Villarreal';
+    _facultadTutorController.text = completeUserData['facultad'] ?? 'Facultad de Ingeniería Electrónica e Informática';
 
     if (!mounted) return;
 
@@ -374,13 +392,36 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       DropdownButtonFormField<UserRole>(
                         value: _selectedFormRole,
                         decoration: const InputDecoration(labelText: 'Rol', border: OutlineInputBorder()),
-                        items: const [
-                          DropdownMenuItem(value: UserRole.student, child: Text('Estudiante')),
-                          DropdownMenuItem(value: UserRole.teacher, child: Text('Tutor')),
-                          DropdownMenuItem(value: UserRole.admin, child: Text('Administrador')),
-                        ],
-                        onChanged: (value) {
-                          setDialogState(() => _selectedFormRole = value!);
+                        items: UserRole.values
+                          .map((role) => DropdownMenuItem(value: role, child: Text(role.displayName)))
+                          .toList(),
+                        onChanged: (UserRole? newValue) {
+                          if (newValue != null && newValue != _selectedFormRole) {
+                            setDialogState(() {
+                              _selectedFormRole = newValue;
+
+                              // Limpiar todos los campos de roles para evitar conflictos de datos
+                              _codigoEstudianteController.clear();
+                              _cicloController.clear();
+                              _edadController.clear();
+                              _especialidadEstudianteController.clear();
+                              _universidadEstudianteController.text = '';
+
+                              _escuelaTutorController.clear();
+                              _especialidadTutorController.clear();
+                              _cursosTutorController.clear();
+                              _universidadTutorController.text = '';
+                              _facultadTutorController.clear();
+
+                              // Aplicar valores por defecto al rol seleccionado
+                              if (newValue == UserRole.student) {
+                                _universidadEstudianteController.text = 'Universidad Nacional Federico Villarreal';
+                              } else if (newValue == UserRole.teacher) {
+                                _universidadTutorController.text = 'Universidad Nacional Federico Villarreal';
+                                _facultadTutorController.text = 'Facultad de Ingeniería Electrónica e Informática';
+                              }
+                            });
+                          }
                         },
                       ),
                       const SizedBox(height: 16),
@@ -392,26 +433,66 @@ class _UserManagementPageState extends State<UserManagementPage> {
                         TextFormField(
                           controller: _codigoEstudianteController,
                           decoration: const InputDecoration(labelText: 'Código de Estudiante', border: OutlineInputBorder()),
-                          validator: (v) => _selectedFormRole == UserRole.student && v!.isEmpty ? 'Campo requerido' : null,
+                          validator: (v) {
+                            if (_selectedFormRole == UserRole.student) {
+                              if (v!.isEmpty) return 'Campo requerido';
+                              if (v.length != 10) return 'Debe tener 10 dígitos';
+                              if (!RegExp(r'^\d{10}$').hasMatch(v)) return 'Solo números permitidos';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _cicloController,
                           decoration: const InputDecoration(labelText: 'Ciclo', border: OutlineInputBorder()),
-                          validator: (v) => _selectedFormRole == UserRole.student && v!.isEmpty ? 'Campo requerido' : null,
+                          validator: (v) {
+                            if (_selectedFormRole == UserRole.student) {
+                              if (v!.isEmpty) return 'Campo requerido';
+                              final ciclo = int.tryParse(v);
+                              if (ciclo == null || ciclo < 1 || ciclo > 10) return 'Ciclo debe ser del 1 al 10';
+                            }
+                            return null;
+                          },
                         ),
                          const SizedBox(height: 16),
                         TextFormField(
                           controller: _edadController,
                            decoration: const InputDecoration(labelText: 'Edad', border: OutlineInputBorder()),
                            keyboardType: TextInputType.number,
-                           validator: (v) => _selectedFormRole == UserRole.student && v!.isEmpty ? 'Campo requerido' : null,
+                           validator: (v) {
+                             if (_selectedFormRole == UserRole.student) {
+                               if (v!.isEmpty) return 'Campo requerido';
+                               final edad = int.tryParse(v);
+                               if (edad == null || edad < 16 || edad > 100) return 'Edad debe ser entre 16 y 100';
+                             }
+                             return null;
+                           },
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _especialidadEstudianteController,
+                        DropdownButtonFormField<String>(
+                          value: _especialidadEstudianteController.text.isEmpty ? null : _especialidadEstudianteController.text,
                           decoration: const InputDecoration(labelText: 'Especialidad (Carrera)', border: OutlineInputBorder()),
-                          validator: (v) => _selectedFormRole == UserRole.student && v!.isEmpty ? 'Campo requerido' : null,
+                          items: const [
+                            DropdownMenuItem(value: 'Ingeniería Electrónica', child: Text('Ingeniería Electrónica')),
+                            DropdownMenuItem(value: 'Ingeniería Informática', child: Text('Ingeniería Informática')),
+                            DropdownMenuItem(value: 'Ingeniería Mecatrónica', child: Text('Ingeniería Mecatrónica')),
+                            DropdownMenuItem(value: 'Ingeniería de Telecomunicaciones', child: Text('Ingeniería de Telecomunicaciones')),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() => _especialidadEstudianteController.text = value!);
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _universidadEstudianteController.text,
+                          decoration: const InputDecoration(labelText: 'Universidad', border: OutlineInputBorder()),
+                          items: const [
+                            DropdownMenuItem(value: 'Universidad Nacional Federico Villarreal', child: Text('Universidad Nacional Federico Villarreal')),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() => _universidadEstudianteController.text = value!);
+                          },
                         ),
                       ],
 
@@ -419,16 +500,24 @@ class _UserManagementPageState extends State<UserManagementPage> {
                         const Divider(),
                         const Text('Datos de Tutor', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _escuelaTutorController,
-                          decoration: const InputDecoration(labelText: 'Escuela Profesional', border: OutlineInputBorder()),
-                           validator: (v) => _selectedFormRole == UserRole.teacher && v!.isEmpty ? 'Campo requerido' : null,
+                        DropdownButtonFormField<String>(
+                          value: _escuelaTutorController.text.isEmpty ? null : _escuelaTutorController.text,
+                          decoration: const InputDecoration(labelText: 'Escuela', border: OutlineInputBorder()),
+                          items: const [
+                            DropdownMenuItem(value: 'Escuela de Ingeniería Electrónica', child: Text('Escuela de Ingeniería Electrónica')),
+                            DropdownMenuItem(value: 'Escuela de Ingeniería Informática', child: Text('Escuela de Ingeniería Informática')),
+                            DropdownMenuItem(value: 'Escuela de Ingeniería Mecatrónica', child: Text('Escuela de Ingeniería Mecatrónica')),
+                            DropdownMenuItem(value: 'Escuela de Ingeniería de Telecomunicaciones', child: Text('Escuela de Ingeniería de Telecomunicaciones')),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() => _escuelaTutorController.text = value!);
+                          },
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _especialidadTutorController,
                           decoration: const InputDecoration(labelText: 'Especialidad (Área)', border: OutlineInputBorder()),
-                           validator: (v) => _selectedFormRole == UserRole.teacher && v!.isEmpty ? 'Campo requerido' : null,
+                          validator: (v) => _selectedFormRole == UserRole.teacher && v!.isEmpty ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -436,6 +525,47 @@ class _UserManagementPageState extends State<UserManagementPage> {
                           decoration: const InputDecoration(labelText: 'Cursos (separados por coma)', border: OutlineInputBorder()),
                            validator: (v) => _selectedFormRole == UserRole.teacher && v!.isEmpty ? 'Campo requerido' : null,
                         ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _universidadTutorController.text.isEmpty ? 'Universidad Nacional Federico Villarreal' : _universidadTutorController.text,
+                          decoration: const InputDecoration(labelText: 'Universidad', border: OutlineInputBorder()),
+                          items: const [
+                            DropdownMenuItem(value: 'Universidad Nacional Federico Villarreal', child: Text('Universidad Nacional Federico Villarreal')),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() => _universidadTutorController.text = value!);
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _facultadTutorController.text.isEmpty ? 'Facultad de Ingeniería Electrónica e Informática' : _facultadTutorController.text,
+                          decoration: const InputDecoration(labelText: 'Facultad', border: OutlineInputBorder()),
+                          items: const [
+                            DropdownMenuItem(value: 'Facultad de Ingeniería Electrónica e Informática', child: Text('Facultad de Ingeniería Electrónica e Informática')),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() => _facultadTutorController.text = value!);
+                          },
+                        ),
+                      ],
+
+                      if (_selectedFormRole == UserRole.admin) ...[
+                        const Divider(),
+                        const Text('Datos de Administrador', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Los administradores tienen acceso completo al panel de administración.',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Permisos incluidos:',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                        const Text('• Gestión de usuarios', style: TextStyle(fontSize: 12)),
+                        const Text('• Asignación de roles', style: TextStyle(fontSize: 12)),
+                        const Text('• Ver auditoría', style: TextStyle(fontSize: 12)),
+                        const Text('• Crear usuarios', style: TextStyle(fontSize: 12)),
                       ],
                     ],
                   ),
@@ -563,11 +693,38 @@ class _UserManagementPageState extends State<UserManagementPage> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  'Creado: ${DateFormat('dd/MM/yyyy').format(user.createdAt)}',
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+                if (!user.isActive)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'INACTIVO',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
               ],
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.visibility, color: Colors.blue),
+                  onPressed: () => _showUserDetails(user),
+                  tooltip: 'Ver Detalles',
+                ),
                 IconButton(
                   icon: Icon(
                     user.isActive ? Icons.block : Icons.check_circle_outline,
@@ -634,5 +791,118 @@ class _UserManagementPageState extends State<UserManagementPage> {
       default:
         return const Icon(Icons.person);
     }
+  }
+
+  void _showUserDetails(AdminUser user) async {
+    // Mostrar indicador de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      Map<String, dynamic> completeUserData = {};
+      
+      // Obtener datos específicos según el rol
+      if (user.role == UserRole.student || user.role == UserRole.teacher) {
+        final collectionName = user.role == UserRole.student ? 'estudiantes' : 'tutores';
+        final specificDoc = await _firestore.collection(collectionName).doc(user.id).get();
+        if (specificDoc.exists) {
+          completeUserData.addAll(specificDoc.data()!);
+        }
+      }
+
+      if (mounted) {
+        Navigator.pop(context); // Cerrar indicador de carga
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Detalles de ${user.fullName}'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildDetailRow('Nombre', user.nombre),
+                  _buildDetailRow('Apellidos', user.apellidos),
+                  _buildDetailRow('Email', user.email),
+                  _buildDetailRow('Rol', user.roleDisplayName),
+                  _buildDetailRow('Estado', user.isActive ? 'Activo' : 'Inactivo'),
+                  _buildDetailRow('Fecha de creación', DateFormat('dd/MM/yyyy HH:mm').format(user.createdAt)),
+                  if (user.lastLogin != null)
+                    _buildDetailRow('Último acceso', DateFormat('dd/MM/yyyy HH:mm').format(user.lastLogin!)),
+                  
+                  if (user.role == UserRole.student) ...[
+                    const Divider(),
+                    const Text('Datos de Estudiante', style: TextStyle(fontWeight: FontWeight.bold)),
+                    _buildDetailRow('Código', completeUserData['codigo_estudiante'] ?? '-'),
+                    _buildDetailRow('Ciclo', completeUserData['ciclo'] ?? '-'),
+                    _buildDetailRow('Edad', completeUserData['edad']?.toString() ?? '-'),
+                    _buildDetailRow('Especialidad', completeUserData['especialidad'] ?? '-'),
+                    _buildDetailRow('Universidad', completeUserData['universidad'] ?? '-'),
+                  ],
+                  
+                  if (user.role == UserRole.teacher) ...[
+                    const Divider(),
+                    const Text('Datos de Tutor', style: TextStyle(fontWeight: FontWeight.bold)),
+                    _buildDetailRow('Escuela', completeUserData['escuela'] ?? '-'),
+                    _buildDetailRow('Especialidad', completeUserData['especialidad'] ?? '-'),
+                    _buildDetailRow('Cursos', (completeUserData['cursos'] as List<dynamic>?)?.join(', ') ?? '-'),
+                    _buildDetailRow('Universidad', completeUserData['universidad'] ?? '-'),
+                    _buildDetailRow('Facultad', completeUserData['facultad'] ?? '-'),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showUserFormDialog(user: user);
+                },
+                child: const Text('Editar'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Cerrar indicador de carga
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar detalles: $e')),
+        );
+      }
+    }
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,31 +1,43 @@
 import 'package:flutter/material.dart';
 
 // Función original para compatibilidad con el código antiguo
-void showSnackBar(BuildContext context, String mensaje) {
+void showSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Text(mensaje),
-      duration: const Duration(milliseconds: 1500),
+      content: Text(message),
+      duration: const Duration(seconds: 3),
     ),
   );
 }
 
 // Nueva función para mensajes de éxito
-void showSuccessSnackbar(BuildContext context, String message) {
+void showSuccessSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
-      backgroundColor: Colors.green[600],
+      backgroundColor: Colors.green,
+      duration: const Duration(seconds: 3),
     ),
   );
 }
 
 // Nueva función para mensajes de error
-void showErrorSnackbar(BuildContext context, String message) {
+void showErrorSnackBar(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
-      backgroundColor: Colors.red[600],
+      backgroundColor: Colors.red,
+      duration: const Duration(seconds: 4),
+    ),
+  );
+}
+
+void showAccountDeactivatedSnackBar(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Tu cuenta ha sido desactivada. Contacta al administrador.'),
+      backgroundColor: Colors.red,
+      duration: Duration(seconds: 5),
     ),
   );
 }

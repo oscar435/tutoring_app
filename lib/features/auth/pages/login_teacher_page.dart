@@ -168,6 +168,11 @@ class _LoginTeacherPageState extends State<LoginTeacherPage> {
                             context,
                             "Error de conexión. Verifica tu internet",
                           );
+                        } else if (result == 9) {
+                          showSnackBar(
+                            context,
+                            "Tu cuenta ha sido desactivada. Contacta al administrador.",
+                          );
                         } else if (result == null) {
                           showSnackBar(
                             context,
