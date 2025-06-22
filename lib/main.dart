@@ -27,10 +27,7 @@ class MyApp extends StatelessWidget {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Panel de Administración - UNFV Tutorías',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          useMaterial3: true,
-        ),
+        theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
         home: AuthGate(),
       );
     }
@@ -92,7 +89,7 @@ class _RoleCheckScreenState extends State<RoleCheckScreen> {
           .collection('users')
           .doc(widget.user.uid)
           .get();
-      
+
       if (userDoc.exists) {
         final userData = userDoc.data() as Map<String, dynamic>?;
         final userRole = userData?['role'] as String?;
@@ -125,9 +122,16 @@ class _RoleCheckScreenState extends State<RoleCheckScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('Acceso denegado.', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Acceso denegado.',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
-                const Text('Esta aplicación es solo para administradores.', textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
+                const Text(
+                  'Esta aplicación es solo para administradores.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.logout),
@@ -135,7 +139,10 @@ class _RoleCheckScreenState extends State<RoleCheckScreen> {
                   onPressed: () async {
                     await FirebaseAuth.instance.signOut();
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ],
             ),
@@ -188,11 +195,13 @@ class _LoginPageState extends State<LoginPage> {
         default:
           message = 'Error al iniciar sesión: ${e.message}';
       }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al iniciar sesión: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al iniciar sesión: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -213,18 +222,12 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   const Text(
                     'Panel de Administración',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   const Text(
                     'Acceso solo para administradores',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   const SizedBox(height: 32),
                   TextField(
@@ -253,9 +256,7 @@ class _LoginPageState extends State<LoginPage> {
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Text('Iniciar Sesión'),
                     ),
