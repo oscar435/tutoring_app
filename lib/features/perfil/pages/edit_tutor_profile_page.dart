@@ -95,13 +95,13 @@ class _EditTutorProfilePageState extends State<EditTutorProfilePage> {
       await _firestore.collection('tutores').doc(user.uid).set(dataToUpdate, SetOptions(merge: true));
 
       if (mounted) {
-        showSuccessSnackbar(context, 'Perfil actualizado exitosamente');
+        showSuccessSnackBar(context, 'Perfil actualizado exitosamente');
         Navigator.pop(context);
       }
 
     } catch (e) {
       if (mounted) {
-        showErrorSnackbar(context, 'Error al actualizar el perfil: $e');
+        showErrorSnackBar(context, 'Error al actualizar el perfil: $e');
       }
     } finally {
       if(mounted) {

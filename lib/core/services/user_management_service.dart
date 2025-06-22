@@ -211,6 +211,19 @@ class UserManagementService {
           
           batch.set(newSpecificDocRef, specificData);
         }
+      } else {
+        // Si no hay cambio de rol, actualizar los datos específicos en la colección actual
+        final currentRole = role ?? oldUser.role;
+        final collectionName = _getCollectionForRole(currentRole);
+        if (collectionName != null && specificData != null) {
+          final specificDocRef = _firestore.collection(collectionName).doc(userId);
+          
+          // Añadir campos de auditoría
+          specificData['updatedAt'] = FieldValue.serverTimestamp();
+          
+          // Actualizar el documento específico
+          batch.update(specificDocRef, specificData);
+        }
       }
       // --- Fin de Lógica de Auditoría y Migración ---
 
@@ -221,7 +234,24 @@ class UserManagementService {
       await batch.commit();
 
       // Log de actualización general
-      // ...
+      await _logAuditAction(
+        userId: modifiedBy,
+        action: AuditAction.update,
+        resource: AuditResource.user,
+        resourceId: userId,
+        resourceName: oldUser.fullName,
+        oldValues: {
+          'nombre': oldUser.nombre,
+          'apellidos': oldUser.apellidos,
+          'role': oldUser.role.toString().split('.').last,
+        },
+        newValues: {
+          'nombre': nombre ?? oldUser.nombre,
+          'apellidos': apellidos ?? oldUser.apellidos,
+          'role': (role ?? oldUser.role).toString().split('.').last,
+        },
+        description: 'Usuario actualizado: ${oldUser.fullName}',
+      );
     } catch (e) {
       print('Error actualizando usuario: $e');
       throw Exception('Error al actualizar usuario: $e');
@@ -241,12 +271,28 @@ class UserManagementService {
 
       final user = AdminUser.fromFirestore(userDoc);
 
-      // Desactivar usuario en lugar de eliminarlo
+      // 1. Desactivar usuario en Firestore
       await _firestore.collection('users').doc(userId).update({
         'isActive': false,
         'lastModified': Timestamp.fromDate(DateTime.now()),
         'modifiedBy': deletedBy,
       });
+
+      // 2. Agregar marca de desactivación en la colección específica
+      try {
+        final role = user.role;
+        if (role == UserRole.student || role == UserRole.teacher) {
+          final collectionName = role == UserRole.student ? 'estudiantes' : 'tutores';
+          await _firestore.collection(collectionName).doc(userId).update({
+            'isActive': false,
+            'deactivatedAt': Timestamp.fromDate(DateTime.now()),
+            'deactivatedBy': deletedBy,
+          });
+        }
+      } catch (e) {
+        print('Error actualizando colección específica: $e');
+        // Continuar aunque falle, lo importante es la colección users
+      }
 
       // Registrar en auditoría
       await _logAuditAction(
@@ -374,6 +420,57 @@ class UserManagementService {
         return 'tutores';
       default:
         return null;
+    }
+  }
+
+  // Reactivar usuario
+  Future<void> reactivateUser({
+    required String userId,
+    required String reactivatedBy,
+  }) async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        throw Exception('Usuario no encontrado');
+      }
+
+      final user = AdminUser.fromFirestore(userDoc);
+
+      // 1. Reactivar usuario en Firestore
+      await _firestore.collection('users').doc(userId).update({
+        'isActive': true,
+        'lastModified': Timestamp.fromDate(DateTime.now()),
+        'modifiedBy': reactivatedBy,
+      });
+
+      // 2. Remover marca de desactivación en la colección específica
+      try {
+        final role = user.role;
+        if (role == UserRole.student || role == UserRole.teacher) {
+          final collectionName = role == UserRole.student ? 'estudiantes' : 'tutores';
+          await _firestore.collection(collectionName).doc(userId).update({
+            'isActive': true,
+            'reactivatedAt': Timestamp.fromDate(DateTime.now()),
+            'reactivatedBy': reactivatedBy,
+          });
+        }
+      } catch (e) {
+        print('Error actualizando colección específica: $e');
+        // Continuar aunque falle, lo importante es la colección users
+      }
+
+      // Registrar en auditoría
+      await _logAuditAction(
+        userId: reactivatedBy,
+        action: AuditAction.update,
+        resource: AuditResource.user,
+        resourceId: userId,
+        resourceName: user.fullName,
+        description: 'Usuario reactivado: ${user.fullName}',
+      );
+    } catch (e) {
+      print('Error reactivando usuario: $e');
+      throw Exception('Error al reactivar usuario: $e');
     }
   }
 } 

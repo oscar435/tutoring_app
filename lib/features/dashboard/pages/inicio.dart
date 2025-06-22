@@ -37,85 +37,137 @@ class HomePage2 extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const Scaffold(body: Center(child: Text('Error: No hay usuario')));
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      drawer: _buildCustomDrawer(context, user.uid),
-      body: SafeArea(
-        child: Builder(
-          builder: (context) => SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTopBar(context),
-                const SizedBox(height: 20),
-                _buildAssignedTutorCard(user.uid),
-                _buildSectionTitle(
-                  'Tutorías agendadas',
-                  trailing: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const TodasTutoriasPage()),
-                      );
-                    },
-                    child: const Text('Ver todas'),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, snapshot) {
+        // Verificar si el usuario está activo
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+          final isActive = userData['isActive'] ?? true;
+          
+          if (!isActive) {
+            // Usuario desactivado, cerrar sesión automáticamente
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              await FirebaseAuth.instance.signOut();
+              final prefs = PreferenciasUsuario();
+              await prefs.clearUserSession();
+              if (context.mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  AppRoutes.roleSelector, 
+                  (route) => false
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Tu cuenta ha sido desactivada. Contacta al administrador.'),
+                    backgroundColor: Colors.red,
                   ),
-                ),
-                _buildSolicitudesEstudiante(user.uid),
-                const SizedBox(height: 20),
-                _buildSectionTitle('Nuestros Servicios'),
-                Row(
+                );
+              }
+            });
+            return const Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: _buildServiceCard(
-                        context,
-                        'TUTORÍAS',
-                        Icons.school,
-                        Colors.orange,
-                      ),
+                    Icon(Icons.block, size: 64, color: Colors.red),
+                    SizedBox(height: 16),
+                    Text(
+                      'Cuenta Desactivada',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _buildServiceCard(
-                        context,
-                        'AYUDA PSICOPEDAGÓGICA',
-                        Icons.psychology,
-                        Colors.green,
-                      ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Tu cuenta ha sido desactivada por un administrador.',
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                _buildSectionTitle(
-                  'Noticias recientes',
-                  trailing: TextButton(
-                    onPressed: () {
-                      // TODO: Implementar navegación a noticias
-                    },
-                    child: const Text('Todas las noticias'),
-                  ),
+              ),
+            );
+          }
+        }
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          drawer: _buildCustomDrawer(context, user.uid),
+          body: SafeArea(
+            child: Builder(
+              builder: (context) => SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTopBar(context),
+                    const SizedBox(height: 20),
+                    _buildAssignedTutorCard(user.uid),
+                    _buildSectionTitle(
+                      'Tutorías agendadas',
+                      trailing: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const TodasTutoriasPage()),
+                          );
+                        },
+                        child: const Text('Ver todas'),
+                      ),
+                    ),
+                    _buildSolicitudesEstudiante(user.uid),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle('Nuestros Servicios'),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildServiceCard(
+                            context,
+                            'TUTORÍAS',
+                            Icons.school,
+                            Colors.orange,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildServiceCard(
+                            context,
+                            'AYUDA PSICOPEDAGÓGICA',
+                            Icons.psychology,
+                            Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle(
+                      'Noticias recientes',
+                      trailing: TextButton(
+                        onPressed: () {
+                          // TODO: Implementar navegación a noticias
+                        },
+                        child: const Text('Todas las noticias'),
+                      ),
+                    ),
+                    _buildNewsList(),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle('Eventos'),
+                    _buildEventCard('21 Mayo', 'Encuesta estudiantil'),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle(
+                      'Materiales disponibles',
+                      trailing: TextButton(
+                        onPressed: () {
+                          // TODO: Implementar navegación a cursos
+                        },
+                        child: const Text('All Courses'),
+                      ),
+                    ),
+                    _buildMaterialsRow(),
+                  ],
                 ),
-                _buildNewsList(),
-                const SizedBox(height: 20),
-                _buildSectionTitle('Eventos'),
-                _buildEventCard('21 Mayo', 'Encuesta estudiantil'),
-                const SizedBox(height: 20),
-                _buildSectionTitle(
-                  'Materiales disponibles',
-                  trailing: TextButton(
-                    onPressed: () {
-                      // TODO: Implementar navegación a cursos
-                    },
-                    child: const Text('All Courses'),
-                  ),
-                ),
-                _buildMaterialsRow(),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

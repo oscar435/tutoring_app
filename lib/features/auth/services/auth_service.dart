@@ -114,6 +114,13 @@ class AuthService {
         if (userDoc.exists) {
           Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
           bool isTeacher = (userData['role'] == 'teacher');
+          bool isActive = (userData['isActive'] ?? true); // Por defecto activo
+
+          // Verificar si el usuario está activo
+          if (!isActive) {
+            await _auth.signOut();
+            return 9; // Nuevo código de error: "Cuenta desactivada"
+          }
 
           // Si se requiere ser profesor pero no lo es, denegar acceso.
           if (requireTeacher && !isTeacher) {

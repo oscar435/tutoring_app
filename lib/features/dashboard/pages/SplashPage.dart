@@ -60,6 +60,18 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
       if (userDoc.exists) {
         final userData = userDoc.data() as Map<String, dynamic>;
         final role = userData['role'] as String?;
+        final isActive = userData['isActive'] ?? true; // Verificar si está activo
+
+        // Verificar si el usuario está activo
+        if (!isActive) {
+          // Usuario desactivado, cerrar sesión y redirigir
+          await FirebaseAuth.instance.signOut();
+          await prefs.clearUserSession();
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
+          }
+          return;
+        }
 
         // Guardar el rol actual en las preferencias locales
         await prefs.setUserRole(role ?? '');
