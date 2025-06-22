@@ -6,10 +6,12 @@ import 'package:tutoring_app/core/models/sesion_tutoria.dart';
 import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
 
 class ProximasTutoriasPage extends StatefulWidget {
-  final String tutorId;
+  final String userId;
+  final String userRole; // 'tutor' o 'estudiante'
 
   const ProximasTutoriasPage({
-    required this.tutorId,
+    required this.userId,
+    required this.userRole,
     Key? key,
   }) : super(key: key);
 
@@ -61,7 +63,7 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
         elevation: 0,
       ),
       body: StreamBuilder<List<SesionTutoria>>(
-        stream: SesionTutoriaService().streamSesionesFuturasPorTutor(widget.tutorId),
+        stream: SesionTutoriaService().streamSesionesFuturas(widget.userId, widget.userRole),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -108,14 +110,14 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                 // Verificar si el estudiante está asignado al tutor
                 final tutorDoc = await FirebaseFirestore.instance
                     .collection('tutores')
-                    .doc(widget.tutorId)
+                    .doc(widget.userId)
                     .get();
                 
                 final tutorData = tutorDoc.data() as Map<String, dynamic>?;
                 final estudiantesAsignados = (tutorData?['estudiantes_asignados'] as List<dynamic>?)?.cast<String>() ?? [];
                 final esAsignado = estudiantesAsignados.contains(sesion.estudianteId);
                 
-                print('DEBUG PRÓXIMAS: Tutor ID = ${widget.tutorId}');
+                print('DEBUG PRÓXIMAS: Tutor ID = ${widget.userId}');
                 print('DEBUG PRÓXIMAS: Estudiante ${sesion.estudianteId} - ¿Asignado? = $esAsignado');
                 print('DEBUG PRÓXIMAS: Lista de asignados = $estudiantesAsignados');
                 
@@ -199,16 +201,9 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                               ),
                               child: CircleAvatar(
                                 radius: 24,
-                                backgroundColor: fotoUrl == null && !esAsignado
-                                    ? Colors.deepPurple.withOpacity(0.1)
-                                    : (esAsignado && fotoUrl == null ? Colors.green : Colors.transparent),
-                                backgroundImage: fotoUrl != null ? NetworkImage(fotoUrl) : null,
-                                child: fotoUrl == null
-                                    ? Icon(
-                                        Icons.person,
-                                        color: esAsignado ? Colors.white : Colors.deepPurple,
-                                      )
-                                    : null,
+                                backgroundImage: (fotoUrl != null && fotoUrl.isNotEmpty)
+                                  ? NetworkImage(fotoUrl)
+                                  : const AssetImage('assets/avatar.jpg') as ImageProvider,
                               ),
                             ),
                             SizedBox(width: 12),

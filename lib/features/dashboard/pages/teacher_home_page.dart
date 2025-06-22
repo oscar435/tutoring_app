@@ -43,15 +43,29 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   }
 
   Future<void> _actualizarEstado(String solicitudId, String nuevoEstado) async {
-    await SolicitudTutoriaService().actualizarEstado(solicitudId, nuevoEstado);
-    setState(() {
-      if (user != null) {
-        _solicitudesFuture = SolicitudTutoriaService().obtenerSolicitudesConNombres(user!.uid);
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Solicitud ${nuevoEstado == 'aceptada' ? 'aceptada' : 'rechazada'}')),
-    );
+    if (!mounted) return;
+
+    final resultado = await SolicitudTutoriaService().actualizarEstado(solicitudId, nuevoEstado);
+    final exito = resultado['success'] as bool;
+    final mensaje = resultado['message'] as String;
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensaje),
+          backgroundColor: exito ? Colors.green : Colors.red,
+        ),
+      );
+    }
+    
+    // Si la operación fue exitosa, refrescar la lista de solicitudes
+    if (exito) {
+      setState(() {
+        if (user != null) {
+          _solicitudesFuture = SolicitudTutoriaService().obtenerSolicitudesConNombres(user!.uid);
+        }
+      });
+    }
   }
 
   @override
@@ -129,7 +143,10 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ProximasTutoriasPage(tutorId: user!.uid),
+                              builder: (context) => ProximasTutoriasPage(
+                                userId: user.uid, 
+                                userRole: 'tutor'
+                              ),
                             ),
                           );
                         }
@@ -414,7 +431,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   Widget _buildTutoriasGrid() {
     if (user == null) return SizedBox.shrink();
     return StreamBuilder<List<SesionTutoria>>(
-      stream: SesionTutoriaService().streamSesionesFuturasPorTutor(user!.uid),
+      stream: SesionTutoriaService().streamSesionesFuturas(user!.uid, 'tutor'),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -1227,20 +1244,20 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     );
   }
 
-  String _getRelativeTime(DateTime fecha) {
-    final ahora = DateTime.now();
-    final diferencia = fecha.difference(ahora);
-    
-    if (diferencia.inDays == 0) {
+  String _getRelativeTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final sessionDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    final difference = sessionDate.difference(today);
+
+    if (difference.inDays == 0) {
       return 'Hoy';
-    } else if (diferencia.inDays == 1) {
+    } else if (difference.inDays == 1) {
       return 'Mañana';
-    } else if (diferencia.inDays < 7) {
-      return 'En ${diferencia.inDays} días';
-    } else if (diferencia.inDays < 30) {
-      return 'En ${(diferencia.inDays / 7).round()} semanas';
+    } else if (difference.inDays > 1 && difference.inDays < 7) {
+      return 'En ${difference.inDays} días';
     } else {
-      return 'En ${(diferencia.inDays / 30).round()} meses';
+      return DateFormat('dd MMM').format(dateTime);
     }
   }
 

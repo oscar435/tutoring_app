@@ -821,6 +821,14 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
   final TextEditingController _busquedaController = TextEditingController();
   late Future<List<QueryDocumentSnapshot>> _tutoresFuture;
   late Future<String?> _assignedTutorIdFuture;
+  String? _escuelaSeleccionada;
+
+  final List<String> _escuelas = [
+    'Ingeniería Informática',
+    'Ingeniería Electrónica', 
+    'Ingeniería de Telecomunicaciones',
+    'Ingeniería Mecatrónica'
+  ];
 
   @override
   void initState() {
@@ -889,6 +897,27 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _escuelaSeleccionada,
+                  hint: const Text('Filtrar por Escuela Profesional'),
+                  isExpanded: true,
+                  items: _escuelas.map((String school) {
+                    return DropdownMenuItem<String>(
+                      value: school,
+                      child: Text(school),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    setState(() {
+                      _escuelaSeleccionada = newValue;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
               ],
             ),
           ),
@@ -906,15 +935,27 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
                 final tutores = snapshot.data![0] as List<QueryDocumentSnapshot>;
                 final assignedTutorId = snapshot.data![1] as String?;
 
-                // Lógica de filtrado por búsqueda
-                final filtrados = _busqueda.isEmpty
-                    ? tutores
-                    : tutores.where((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        final nombreCompleto =
-                            '${data['nombre'] ?? ''} ${data['apellidos'] ?? ''}'.toLowerCase();
-                        return nombreCompleto.contains(_busqueda.toLowerCase());
-                      }).toList();
+                // Lógica de filtrado
+                List<QueryDocumentSnapshot> filtrados = List.from(tutores);
+
+                // 1. Filtrado por búsqueda de texto
+                if (_busqueda.isNotEmpty) {
+                  filtrados = filtrados.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final nombreCompleto =
+                        '${data['nombre'] ?? ''} ${data['apellidos'] ?? ''}'.toLowerCase();
+                    return nombreCompleto.contains(_busqueda.toLowerCase());
+                  }).toList();
+                }
+
+                // 2. Filtrado por escuela profesional
+                if (_escuelaSeleccionada != null) {
+                  filtrados = filtrados.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    // El campo se llama 'escuela' en Firestore
+                    return data['escuela'] == _escuelaSeleccionada;
+                  }).toList();
+                }
 
                 // Reordenar para poner al tutor asignado primero
                 if (assignedTutorId != null) {
