@@ -1,124 +1,395 @@
 import 'package:flutter/material.dart';
-import 'package:tutoring_app/core/models/notificacion.dart';
-import 'package:tutoring_app/features/notificaciones/services/notificacion_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../services/notificacion_service.dart';
+import '../../../core/models/notificacion.dart';
 
 class NotificacionesPage extends StatefulWidget {
-  final String usuarioId;
-  const NotificacionesPage({required this.usuarioId, super.key});
+  const NotificacionesPage({Key? key}) : super(key: key);
 
   @override
   State<NotificacionesPage> createState() => _NotificacionesPageState();
 }
 
 class _NotificacionesPageState extends State<NotificacionesPage> {
-  late Future<List<Notificacion>> _notificacionesFuture;
+  final NotificacionService _notificacionService = NotificacionService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _notificacionesFuture = NotificacionService().obtenerNotificacionesPorUsuario(widget.usuarioId);
+    _initializeNotifications();
   }
 
-  Future<void> _marcarComoLeida(String notificacionId) async {
-    await NotificacionService().marcarComoLeida(notificacionId);
+  Future<void> _initializeNotifications() async {
+    await _notificacionService.initialize();
     setState(() {
-      _notificacionesFuture = NotificacionService().obtenerNotificacionesPorUsuario(widget.usuarioId);
+      _isLoading = false;
     });
-  }
-
-  Future<void> _borrarNotificacion(String notificacionId) async {
-    await NotificacionService().borrarNotificacion(notificacionId);
-    setState(() {
-      _notificacionesFuture = NotificacionService().obtenerNotificacionesPorUsuario(widget.usuarioId);
-    });
-  }
-
-  String _formatearFecha(DateTime fecha) {
-    final ahora = DateTime.now();
-    if (fecha.year == ahora.year && fecha.month == ahora.month && fecha.day == ahora.day) {
-      return 'Hoy, ' + DateFormat('HH:mm').format(fecha);
-    }
-    return DateFormat('dd/MM/yyyy HH:mm').format(fecha);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Notificaciones')),
-      body: FutureBuilder<List<Notificacion>>(
-        future: _notificacionesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No tienes notificaciones.'));
-          }
-          // Copia local de la lista para manipulación visual
-          List<Notificacion> notificaciones = List.from(snapshot.data!);
-          return StatefulBuilder(
-            builder: (context, setStateLocal) {
-              return ListView.builder(
-                itemCount: notificaciones.length,
-                itemBuilder: (context, index) {
-                  final noti = notificaciones[index];
-                  return Dismissible(
-                    key: Key(noti.id),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      color: Colors.red,
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: const Icon(Icons.delete, color: Colors.white),
-                    ),
-                    onDismissed: (_) {
-                      setStateLocal(() {
-                        notificaciones.removeAt(index);
-                      });
-                    },
-                    child: Card(
-                      color: noti.leida ? Colors.white : Colors.blue[50],
-                      child: ListTile(
-                        leading: Icon(
-                          noti.tipo == 'solicitud' ? Icons.mail : Icons.check_circle,
-                          color: noti.leida ? Colors.grey : Colors.blue,
-                        ),
-                        title: Text(noti.mensaje,
-                            style: TextStyle(
-                              fontWeight: noti.leida ? FontWeight.normal : FontWeight.bold,
-                            )),
-                        subtitle: Text(_formatearFecha(noti.fecha)),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: Text(
+          'Notificaciones',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: const Color(0xFF1E3A8A),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                _isLoading = true;
+              });
+              _initializeNotifications();
+            },
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildNotificationsList(),
+    );
+  }
+
+  Widget _buildNotificationsList() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return const Center(
+        child: Text('Usuario no autenticado'),
+      );
+    }
+
+    return StreamBuilder<List<Notificacion>>(
+      stream: _notificacionService.getNotificacionesStream(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error al cargar notificaciones',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final notificaciones = snapshot.data!;
+
+        if (notificaciones.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.notifications_none,
+                  size: 80,
+                  color: Colors.grey[300],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No tienes notificaciones',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Las notificaciones aparecerán aquí',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: notificaciones.length,
+          itemBuilder: (context, index) {
+            final notificacion = notificaciones[index];
+            return _buildNotificationCard(notificacion);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildNotificationCard(Notificacion notificacion) {
+    return Dismissible(
+      key: Key(notificacion.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: Colors.red.shade700,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(
+          Icons.delete_outline,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
+      onDismissed: (direction) {
+        // _notificacionService.eliminarNotificacion(notificacion.id); // TODO: Re-evaluar esta funcionalidad
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Notificación eliminada (funcionalidad pendiente)'),
+            backgroundColor: Colors.red.shade600,
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: notificacion.leida ? Colors.white : const Color(0xFFE3F2FD),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              if (!notificacion.leida) {
+                _notificacionService.marcarComoLeida(notificacion.id);
+              }
+              _handleNotificationTap(notificacion);
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildNotificationIcon(notificacion.tipo),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            if (!noti.leida)
-                              IconButton(
-                                icon: Icon(Icons.check, color: Colors.green),
-                                onPressed: () => _marcarComoLeida(noti.id),
-                                tooltip: 'Marcar como leída',
+                            Expanded(
+                              child: Text(
+                                notificacion.titulo,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: notificacion.leida 
+                                      ? FontWeight.w500 
+                                      : FontWeight.w600,
+                                  color: notificacion.leida 
+                                      ? Colors.grey[700] 
+                                      : Colors.black87,
+                                ),
                               ),
-                            if (noti.leida)
-                              IconButton(
-                                icon: Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  setStateLocal(() {
-                                    notificaciones.removeAt(index);
-                                  });
-                                },
-                                tooltip: 'Borrar notificación',
+                            ),
+                            if (!notificacion.leida)
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.blue,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 4),
+                        Text(
+                          notificacion.mensaje,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 14,
+                              color: Colors.grey[500],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              notificacion.tiempoTranscurrido,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getTypeColor(notificacion.tipo).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                notificacion.tipoString,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: _getTypeColor(notificacion.tipo),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  );
-                },
-              );
-            },
-          );
-        },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
+  }
+
+  Widget _buildNotificationIcon(TipoNotificacion tipo) {
+    IconData iconData;
+    Color iconColor;
+
+    switch (tipo) {
+      case TipoNotificacion.solicitudTutoria:
+        iconData = Icons.school;
+        iconColor = Colors.blue;
+        break;
+      case TipoNotificacion.respuestaSolicitud:
+        iconData = Icons.check_circle;
+        iconColor = Colors.green;
+        break;
+      case TipoNotificacion.recordatorioSesion:
+        iconData = Icons.alarm;
+        iconColor = Colors.orange;
+        break;
+      case TipoNotificacion.cancelacionSesion:
+        iconData = Icons.cancel;
+        iconColor = Colors.red;
+        break;
+      case TipoNotificacion.asignacionTutor:
+        iconData = Icons.person_add;
+        iconColor = Colors.purple;
+        break;
+      case TipoNotificacion.notificacionAdmin:
+        iconData = Icons.admin_panel_settings;
+        iconColor = Colors.indigo;
+        break;
+      default:
+        iconData = Icons.notifications;
+        iconColor = Colors.grey;
+    }
+
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: iconColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Icon(
+        iconData,
+        color: iconColor,
+        size: 20,
+      ),
+    );
+  }
+
+  Color _getTypeColor(TipoNotificacion tipo) {
+    switch (tipo) {
+      case TipoNotificacion.solicitudTutoria:
+        return Colors.blue;
+      case TipoNotificacion.respuestaSolicitud:
+        return Colors.green;
+      case TipoNotificacion.recordatorioSesion:
+        return Colors.orange;
+      case TipoNotificacion.cancelacionSesion:
+        return Colors.red;
+      case TipoNotificacion.asignacionTutor:
+        return Colors.purple;
+      case TipoNotificacion.notificacionAdmin:
+        return Colors.indigo;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  void _handleNotificationTap(Notificacion notificacion) {
+    // Aquí puedes implementar la navegación basada en el tipo de notificación
+    switch (notificacion.tipo) {
+      case TipoNotificacion.solicitudTutoria:
+        // Navegar a solicitudes de tutoría
+        Navigator.pushNamed(context, '/solicitudes-tutor');
+        break;
+      case TipoNotificacion.respuestaSolicitud:
+        // Navegar a mis tutorías
+        Navigator.pushNamed(context, '/mis-tutorias');
+        break;
+      case TipoNotificacion.recordatorioSesion:
+        // Navegar a próximas tutorías
+        Navigator.pushNamed(context, '/proximas-tutorias');
+        break;
+      case TipoNotificacion.cancelacionSesion:
+        // Navegar a todas las tutorías
+        Navigator.pushNamed(context, '/todas-tutorias');
+        break;
+      case TipoNotificacion.asignacionTutor:
+        // Navegar a perfil
+        Navigator.pushNamed(context, '/perfil');
+        break;
+      case TipoNotificacion.notificacionAdmin:
+        // Navegar a dashboard
+        Navigator.pushNamed(context, '/dashboard');
+        break;
+      default:
+        // No hacer nada
+        break;
+    }
   }
 } 

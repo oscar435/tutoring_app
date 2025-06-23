@@ -7,11 +7,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:tutoring_app/features/admin/pages/admin_dashboard_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tutoring_app/features/notificaciones/services/notificacion_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PreferenciasUsuario.init(); //importante para inicialiar la app
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Inicializar el servicio de notificaciones
+  if (!kIsWeb) {
+    await NotificacionService().initialize();
+  }
+  
   runApp(MyApp());
 }
 

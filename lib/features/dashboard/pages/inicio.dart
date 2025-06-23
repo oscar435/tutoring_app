@@ -14,6 +14,7 @@ import 'package:tutoring_app/core/models/solicitud_tutoria.dart';
 import 'package:intl/intl.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
 import 'package:tutoring_app/core/utils/snackbar.dart';
+import 'package:tutoring_app/features/notificaciones/widgets/notification_badge.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -327,58 +328,19 @@ class HomePage2 extends StatelessWidget {
         onPressed: () {},
       );
     }
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('notificaciones')
-          .where('usuarioId', isEqualTo: usuarioId)
-          .where('leida', isEqualTo: false)
-          .snapshots(),
-      builder: (context, snapshot) {
-        int count = 0;
-        if (snapshot.hasData) {
-          count = snapshot.data!.docs.length;
-        }
-        return Stack(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications, size: 28),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => NotificacionesPage(usuarioId: usuarioId),
-                  ),
-                );
-              },
+    
+    return NotificationBadge(
+      child: IconButton(
+        icon: const Icon(Icons.notifications, size: 28),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const NotificacionesPage(),
             ),
-            if (count > 0)
-              Positioned(
-                right: 6,
-                top: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    '$count',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

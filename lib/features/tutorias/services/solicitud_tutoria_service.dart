@@ -13,19 +13,15 @@ class SolicitudTutoriaService {
       FirebaseFirestore.instance.collection('solicitudes_tutoria');
   final CollectionReference _estudiantesRef =
       FirebaseFirestore.instance.collection('estudiantes');
+  final CollectionReference _tutoresRef =
+      FirebaseFirestore.instance.collection('tutores');
 
   // Crear una nueva solicitud de tutoría y notificar al tutor
   Future<void> crearSolicitud(SolicitudTutoria solicitud) async {
     await _solicitudesRef.doc(solicitud.id).set(solicitud.toMap());
-    // Notificar al tutor
-    final noti = Notificacion(
-      id: const Uuid().v4(),
-      usuarioId: solicitud.tutorId,
-      tipo: 'solicitud',
-      mensaje: 'Tienes una nueva solicitud de tutoría.',
-      fecha: DateTime.now(),
-    );
-    await NotificacionService().crearNotificacion(noti);
+    
+    // LA LÓGICA DE NOTIFICACIÓN SE HA ELIMINADO DE AQUÍ.
+    // AHORA LA GESTIONA COMPLETAMENTE LA CLOUD FUNCTION onSolicitudTutoriaCreated
   }
 
   // Obtener solicitudes por tutor
@@ -86,21 +82,12 @@ class SolicitudTutoriaService {
     // Actualizar el estado de la solicitud
     await _solicitudesRef.doc(solicitudId).update({'estado': nuevoEstado});
     
-    // Notificar al estudiante
-    final mensaje = nuevoEstado == 'aceptada'
-        ? 'Tu solicitud de tutoría fue aceptada.'
-        : 'Tu solicitud de tutoría fue rechazada.';
-    final noti = Notificacion(
-      id: const Uuid().v4(),
-      usuarioId: solicitud.estudianteId,
-      tipo: 'respuesta',
-      mensaje: mensaje,
-      fecha: DateTime.now(),
-    );
-    await NotificacionService().crearNotificacion(noti);
+    // LA LÓGICA DE NOTIFICACIÓN SE HA ELIMINADO DE AQUÍ.
+    // AHORA LA GESTIONA COMPLETAMENTE LA CLOUD FUNCTION onSolicitudTutoriaUpdated
     
     // Si se acepta, crear sesión
     if (nuevoEstado == 'aceptada') {
+      final fechaSesion = solicitud.fechaSesion ?? _calcularFechaSesion(solicitud.dia!, solicitud.horaInicio!);
       final sesion = SesionTutoria(
         id: const Uuid().v4(),
         tutorId: solicitud.tutorId,
@@ -112,7 +99,7 @@ class SolicitudTutoriaService {
         curso: solicitud.curso,
         estado: 'aceptada',
         mensaje: solicitud.mensaje,
-        fechaSesion: solicitud.fechaSesion ?? _calcularFechaSesion(solicitud.dia!, solicitud.horaInicio!),
+        fechaSesion: fechaSesion,
       );
       await SesionTutoriaService().crearSesion(sesion);
     }
@@ -159,6 +146,16 @@ class SolicitudTutoriaService {
     return '$nombre $apellidos'.trim().isEmpty ? 'Estudiante' : '$nombre $apellidos';
   }
 
+  // Obtener nombre del tutor
+  Future<String> obtenerNombreTutor(String tutorId) async {
+    final doc = await _tutoresRef.doc(tutorId).get();
+    if (!doc.exists) return 'Tutor';
+    final data = doc.data() as Map<String, dynamic>;
+    final nombre = data['nombre'] ?? '';
+    final apellidos = data['apellidos'] ?? '';
+    return '$nombre $apellidos'.trim().isEmpty ? 'Tutor' : '$nombre $apellidos';
+  }
+
   // Obtener solicitudes por tutor con nombres de estudiantes
   Future<List<Map<String, dynamic>>> obtenerSolicitudesConNombres(String tutorId) async {
     final solicitudes = await obtenerSolicitudesPorTutor(tutorId);
@@ -172,5 +169,52 @@ class SolicitudTutoriaService {
       }),
     );
     return solicitudesConNombres;
+  }
+
+  // Obtener stream de solicitudes por tutor
+  Stream<List<SolicitudTutoria>> getSolicitudesPorTutorStream(String tutorId) {
+    return _solicitudesRef
+        .where('tutorId', isEqualTo: tutorId)
+        .orderBy('fechaHora', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => SolicitudTutoria.fromMap(doc.data() as Map<String, dynamic>))
+          .toList();
+    });
+  }
+
+  // Obtener stream de solicitudes por tutor con detalles del estudiante
+  Stream<List<Map<String, dynamic>>> getSolicitudesConDetallesStream(String tutorId) {
+    return _solicitudesRef
+        .where('tutorId', isEqualTo: tutorId)
+        .orderBy('fechaHora', descending: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final solicitudesConDetalles = <Map<String, dynamic>>[];
+      for (var doc in snapshot.docs) {
+        final solicitud = SolicitudTutoria.fromMap(doc.data() as Map<String, dynamic>);
+        
+        // Obtener detalles del estudiante
+        final estudianteDoc = await _estudiantesRef.doc(solicitud.estudianteId).get();
+        String nombreEstudiante = 'Estudiante';
+        String? photoUrl;
+
+        if (estudianteDoc.exists) {
+          final data = estudianteDoc.data() as Map<String, dynamic>;
+          final nombre = data['nombre'] ?? '';
+          final apellidos = data['apellidos'] ?? '';
+          nombreEstudiante = '$nombre $apellidos'.trim().isEmpty ? 'Estudiante' : '$nombre $apellidos';
+          photoUrl = data['photoUrl'];
+        }
+
+        solicitudesConDetalles.add({
+          'solicitud': solicitud,
+          'nombreEstudiante': nombreEstudiante,
+          'photoUrl': photoUrl,
+        });
+      }
+      return solicitudesConDetalles;
+    });
   }
 } 
