@@ -8,6 +8,8 @@ import '../services/report_service.dart';
 import 'user_management_page.dart';
 import 'audit_logs_page.dart';
 import 'package:tutoring_app/features/admin/pages/audit_logs_page.dart';
+import 'package:tutoring_app/features/admin/pages/admin_sessions_page.dart';
+import 'package:tutoring_app/features/admin/pages/admin_requests_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -356,6 +358,38 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             label: const Text('Gestionar Usuarios'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue[700],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AdminSessionsPage(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.event_available),
+                            label: const Text('Sesiones Agendadas'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green[700],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AdminRequestsPage(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.history),
+                            label: const Text('Historial de Solicitudes'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple[700],
                               foregroundColor: Colors.white,
                             ),
                           ),
