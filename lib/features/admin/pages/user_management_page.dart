@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutoring_app/core/models/admin_user.dart';
 import 'package:tutoring_app/core/services/user_management_service.dart';
 import 'package:tutoring_app/features/admin/pages/assign_students_page.dart';
+import 'package:tutoring_app/features/admin/pages/admin_availability_page.dart';
 import 'package:intl/intl.dart';
 
 class UserManagementPage extends StatefulWidget {
@@ -753,6 +754,22 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       );
                     },
                     tooltip: 'Asignar Estudiantes',
+                  ),
+                if (user.role == UserRole.teacher)
+                  IconButton(
+                    icon: const Icon(Icons.access_time, color: Colors.teal),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AdminAvailabilityPage(
+                            tutorId: user.id,
+                            tutorName: '${user.nombre ?? ''} ${user.apellidos ?? ''}'.trim(),
+                          ),
+                        ),
+                      );
+                    },
+                    tooltip: 'Editar Disponibilidad',
                   ),
               ],
             ),
