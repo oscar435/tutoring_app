@@ -105,6 +105,55 @@ class NotificacionService {
     }
   }
 
+  // Método público para actualizar el FCM token después del login
+  Future<void> updateFCMTokenAfterLogin() async {
+    try {
+      debugPrint('🔄 Actualizando FCM token después del login...');
+      
+      // Obtener un token FRESCO cada vez (no reutilizar el almacenado)
+      final token = await _firebaseMessaging.getToken();
+      if (token != null) {
+        _fcmToken = token;
+        debugPrint('📱 FCM Token obtenido: $token');
+        
+        // Guardar en Firestore
+        await _saveFCMToken(token);
+        debugPrint('✅ FCM Token guardado en Firestore');
+      } else {
+        debugPrint('❌ No se pudo obtener FCM token');
+      }
+    } catch (e) {
+      debugPrint('❌ Error actualizando FCM token después del login: $e');
+    }
+  }
+
+  // Método público para obtener el token actual
+  String? getCurrentFCMToken() {
+    return _fcmToken;
+  }
+
+  // Método público para limpiar el FCM token al hacer logout
+  Future<void> clearFCMTokenOnLogout() async {
+    try {
+      debugPrint('🧹 Limpiando FCM token al hacer logout...');
+      
+      final user = _auth.currentUser;
+      if (user != null) {
+        // Eliminar el token de Firestore
+        await _firestore.collection('users').doc(user.uid).update({
+          'fcmToken': FieldValue.delete(),
+          'ultimaActualizacion': FieldValue.serverTimestamp(),
+        });
+        debugPrint('✅ FCM Token eliminado de Firestore');
+      }
+      
+      // Limpiar el token en memoria
+      _fcmToken = null;
+    } catch (e) {
+      debugPrint('❌ Error limpiando FCM token: $e');
+    }
+  }
+
   void _setupMessageHandlers() {
     // 1. Mensaje recibido mientras la app está en primer plano
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tutoring_app/features/notificaciones/services/notificacion_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -156,6 +157,14 @@ class AuthService {
             return 4; // Código para correo no verificado
           }
           
+          // ✅ ACTUALIZAR FCM TOKEN DESPUÉS DEL LOGIN EXITOSO
+          try {
+            await NotificacionService().updateFCMTokenAfterLogin();
+          } catch (e) {
+            print('⚠️ Error actualizando FCM token después del login: $e');
+            // No fallar el login por este error
+          }
+          
           return user.uid;
         } else {
           await _auth.signOut();
@@ -208,6 +217,22 @@ class AuthService {
     } catch (e) {
       print('Error al reenviar correo: $e');
       return false;
+    }
+  }
+
+  // Método para cerrar sesión
+  Future<void> signOut() async {
+    try {
+      // Limpiar FCM token antes de hacer logout
+      await NotificacionService().clearFCMTokenOnLogout();
+      
+      // Hacer logout de Firebase Auth
+      await _auth.signOut();
+      print('✅ Logout exitoso');
+    } catch (e) {
+      print('❌ Error durante logout: $e');
+      // Intentar logout de Firebase Auth aunque falle la limpieza del token
+      await _auth.signOut();
     }
   }
 }
