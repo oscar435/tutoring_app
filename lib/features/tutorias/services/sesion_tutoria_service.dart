@@ -45,27 +45,29 @@ class SesionTutoriaService {
     return sesiones;
   }
 
-  Stream<List<SesionTutoria>> streamSesionesFuturasPorTutor(String tutorId) {
+  Stream<List<SesionTutoria>> streamSesionesFuturas(String userId, String userRole) {
     final ahora = DateTime.now();
+    
+    // Validar rol de usuario
+    if (userRole != 'tutor' && userRole != 'estudiante') {
+      throw ArgumentError('El rol del usuario debe ser "tutor" o "estudiante".');
+    }
+    
+    final userField = userRole == 'tutor' ? 'tutorId' : 'estudianteId';
+
     return _sesionesRef
-        .where('tutorId', isEqualTo: tutorId)
+        .where(userField, isEqualTo: userId)
         .where('estado', isEqualTo: 'aceptada')
+        .where('fechaSesion', isGreaterThan: ahora) // Filtrado en el servidor
         .orderBy('fechaSesion', descending: false)
-        .orderBy('fechaReserva', descending: false)
         .snapshots()
         .map((snapshot) {
+          if (snapshot.docs.isEmpty) {
+            return []; // Devuelve una lista vacía si no hay documentos
+          }
           final sesiones = snapshot.docs
               .map((doc) => SesionTutoria.fromMap(doc.data() as Map<String, dynamic>))
-              .where((sesion) => (sesion.fechaSesion ?? sesion.fechaReserva).isAfter(ahora))
               .toList();
-          
-          // Ordenar por fecha (más próximas primero)
-          sesiones.sort((a, b) {
-            final fechaA = a.fechaSesion ?? a.fechaReserva;
-            final fechaB = b.fechaSesion ?? b.fechaReserva;
-            return fechaA.compareTo(fechaB);
-          });
-          
           return sesiones;
         });
   }
@@ -90,30 +92,5 @@ class SesionTutoriaService {
     });
     
     return sesiones;
-  }
-
-  Stream<List<SesionTutoria>> streamSesionesFuturasPorEstudiante(String estudianteId) {
-    final ahora = DateTime.now();
-    return _sesionesRef
-        .where('estudianteId', isEqualTo: estudianteId)
-        .where('estado', isEqualTo: 'aceptada')
-        .orderBy('fechaSesion', descending: false)
-        .orderBy('fechaReserva', descending: false)
-        .snapshots()
-        .map((snapshot) {
-          final sesiones = snapshot.docs
-              .map((doc) => SesionTutoria.fromMap(doc.data() as Map<String, dynamic>))
-              .where((sesion) => (sesion.fechaSesion ?? sesion.fechaReserva).isAfter(ahora))
-              .toList();
-          
-          // Ordenar por fecha (más próximas primero)
-          sesiones.sort((a, b) {
-            final fechaA = a.fechaSesion ?? a.fechaReserva;
-            final fechaB = b.fechaSesion ?? b.fechaReserva;
-            return fechaA.compareTo(fechaB);
-          });
-          
-          return sesiones;
-        });
   }
 } 

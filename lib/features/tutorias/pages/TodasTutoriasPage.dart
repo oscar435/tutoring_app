@@ -6,6 +6,7 @@ import 'package:tutoring_app/core/models/solicitud_tutoria.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
 import 'package:tutoring_app/features/auth/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
 
 class TodasTutoriasPage extends StatelessWidget {
   const TodasTutoriasPage({super.key});
@@ -24,8 +25,8 @@ class TodasTutoriasPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Todas mis tutorías'),
       ),
-      body: StreamBuilder<List<SolicitudTutoria>>(
-        stream: _obtenerTodasTutorias(user.uid),
+      body: StreamBuilder<List<SesionTutoria>>(
+        stream: SesionTutoriaService().streamSesionesFuturas(user.uid, 'estudiante'),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
@@ -60,7 +61,7 @@ class TodasTutoriasPage extends StatelessWidget {
                       ),
                       Text(
                         'Hora: '
-                        '${tutoria.horaInicio != null && tutoria.horaFin != null ? "${tutoria.horaInicio} - ${tutoria.horaFin}" : 'Sin hora'}',
+                        '${tutoria.horaInicio.isNotEmpty && tutoria.horaFin.isNotEmpty ? "${tutoria.horaInicio} - ${tutoria.horaFin}" : 'Sin hora'}',
                       ),
                       Text(
                         'Estado: ${tutoria.estado}',
@@ -85,20 +86,7 @@ class TodasTutoriasPage extends StatelessWidget {
     );
   }
 
-  Stream<List<SolicitudTutoria>> _obtenerTodasTutorias(String userId) {
-    return FirebaseFirestore.instance
-        .collection('solicitudes_tutoria')
-        .where('estudianteId', isEqualTo: userId)
-        .orderBy('fechaHora', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => SolicitudTutoria.fromMap({...doc.data(), 'id': doc.id}))
-          .toList();
-    });
-  }
-
-  void _mostrarDetalleTutoria(BuildContext context, SolicitudTutoria tutoria) {
+  void _mostrarDetalleTutoria(BuildContext context, SesionTutoria tutoria) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -140,7 +128,7 @@ class TodasTutoriasPage extends StatelessWidget {
                 ),
                 _buildInfoRow(
                   'Hora',
-                  tutoria.horaInicio != null && tutoria.horaFin != null
+                  tutoria.horaInicio.isNotEmpty && tutoria.horaFin.isNotEmpty
                       ? "${tutoria.horaInicio} - ${tutoria.horaFin}"
                       : 'Sin hora',
                 ),

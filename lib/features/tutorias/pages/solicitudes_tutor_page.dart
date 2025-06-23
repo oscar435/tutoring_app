@@ -69,13 +69,35 @@ class _SolicitudesTutorPageState extends State<SolicitudesTutorPage> {
   }
 
   Future<void> _actualizarEstado(String solicitudId, String nuevoEstado) async {
-    await SolicitudTutoriaService().actualizarEstado(solicitudId, nuevoEstado);
-    setState(() {
-      _solicitudesFuture = _obtenerSolicitudesConAsignacion();
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Solicitud ${nuevoEstado == 'aceptada' ? 'aceptada' : 'rechazada'}')),
-    );
+    try {
+      final resultado = await SolicitudTutoriaService().actualizarEstado(solicitudId, nuevoEstado);
+      
+      if (resultado['success']) {
+        setState(() {
+          _solicitudesFuture = _obtenerSolicitudesConAsignacion();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(resultado['message']),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(resultado['message']),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al actualizar la solicitud: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

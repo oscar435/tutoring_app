@@ -37,50 +37,52 @@ class _CalendarioPageState extends State<CalendarioPage> {
   void _detectarRolYEscuchar(String uid) async {
     final tutorDoc = await FirebaseFirestore.instance.collection('tutores').doc(uid).get();
     final estudianteDoc = await FirebaseFirestore.instance.collection('estudiantes').doc(uid).get();
+    
+    String? userRole;
     if (tutorDoc.exists) {
-      // Es tutor
-      SesionTutoriaService().streamSesionesFuturasPorTutor(uid).listen((sesiones) async {
-        final Map<DateTime, List<Map<String, String>>> eventos = {};
-        for (final sesion in sesiones) {
-          final fecha = sesion.fechaSesion;
-          if (fecha != null) {
-            final key = DateTime.utc(fecha.year, fecha.month, fecha.day);
-            // Obtener nombre del estudiante
-            final estudianteNombre = await _obtenerNombreEstudiante(sesion.estudianteId);
-            eventos.putIfAbsent(key, () => []).add({
-              'curso': sesion.curso ?? 'Tutoría',
-              'estudiante': estudianteNombre,
-              'hora': '${sesion.horaInicio} - ${sesion.horaFin}',
-            });
-          }
-        }
-        setState(() {
-          _events = eventos;
-          _loading = false;
-        });
-      });
+      userRole = 'tutor';
     } else if (estudianteDoc.exists) {
-      // Es estudiante
-      SesionTutoriaService().streamSesionesFuturasPorEstudiante(uid).listen((sesiones) async {
+      userRole = 'estudiante';
+    }
+
+    if (userRole != null) {
+      SesionTutoriaService().streamSesionesFuturas(uid, userRole).listen((sesiones) async {
         final Map<DateTime, List<Map<String, String>>> eventos = {};
         for (final sesion in sesiones) {
           final fecha = sesion.fechaSesion;
           if (fecha != null) {
             final key = DateTime.utc(fecha.year, fecha.month, fecha.day);
-            // Obtener nombre del tutor
-            final tutorNombre = await _obtenerNombreTutor(sesion.tutorId);
-            eventos.putIfAbsent(key, () => []).add({
-              'curso': sesion.curso ?? 'Tutoría',
-              'tutor': tutorNombre,
-              'hora': '${sesion.horaInicio} - ${sesion.horaFin}',
-            });
+            
+            if (userRole == 'tutor') {
+              final estudianteNombre = await _obtenerNombreEstudiante(sesion.estudianteId);
+              eventos.putIfAbsent(key, () => []).add({
+                'curso': sesion.curso ?? 'Tutoría',
+                'estudiante': estudianteNombre,
+                'hora': '${sesion.horaInicio} - ${sesion.horaFin}',
+              });
+            } else { // Es estudiante
+              final tutorNombre = await _obtenerNombreTutor(sesion.tutorId);
+              eventos.putIfAbsent(key, () => []).add({
+                'curso': sesion.curso ?? 'Tutoría',
+                'tutor': tutorNombre,
+                'hora': '${sesion.horaInicio} - ${sesion.horaFin}',
+              });
+            }
           }
         }
+        if (mounted) {
+          setState(() {
+            _events = eventos;
+            _loading = false;
+          });
+        }
+      });
+    } else {
+      if (mounted) {
         setState(() {
-          _events = eventos;
           _loading = false;
         });
-      });
+      }
     }
   }
 
