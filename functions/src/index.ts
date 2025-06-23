@@ -200,9 +200,70 @@ export const sendNotification = functions.https.onCall(async (data, context) => 
   return { success: true };
 });
 
-// Función programada para enviar recordatorios de sesiones
-export const sendSessionReminders = functions.pubsub
+// === FUNCIONES PROGRAMADAS (CRON JOBS) ===
+
+// 1. Recordatorio 24 horas antes de la sesión
+export const send24HourSessionReminders = functions.pubsub
   .schedule('every 1 hours')
+  .onRun(async (context) => {
+    const now = new Date();
+    const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const twentyFiveHoursFromNow = new Date(now.getTime() + 25 * 60 * 60 * 1000);
+
+    const sesionesSnapshot = await db.collection('sesiones_tutoria')
+      .where('fechaSesion', '>=', twentyFourHoursFromNow)
+      .where('fechaSesion', '<', twentyFiveHoursFromNow)
+      .where('estado', '==', 'aceptada')
+      .get();
+
+    if (sesionesSnapshot.empty) {
+      console.log('No hay sesiones para recordar con 24h de antelación.');
+      return null;
+    }
+
+    for (const doc of sesionesSnapshot.docs) {
+      const sesion = doc.data();
+      
+      const [tutorDoc, estudianteDoc] = await Promise.all([
+        db.collection('tutores').doc(sesion.tutorId).get(),
+        db.collection('estudiantes').doc(sesion.estudianteId).get(),
+      ]);
+
+      const nombreTutor = tutorDoc.data() ? `${tutorDoc.data()!.nombre} ${tutorDoc.data()!.apellidos}`.trim() : 'Tutor';
+      const nombreEstudiante = estudianteDoc.data() ? `${estudianteDoc.data()!.nombre} ${estudianteDoc.data()!.apellidos}`.trim() : 'Estudiante';
+      
+      const datosNotificacion = {
+        sesionId: doc.id,
+        tutorId: sesion.tutorId,
+        estudianteId: sesion.estudianteId,
+        materia: sesion.curso,
+      };
+
+      // Notificar al estudiante
+      await createNotificationAndSendPush(
+        sesion.estudianteId,
+        'Recordatorio de sesión',
+        `Tu sesión de ${sesion.curso} con ${nombreTutor} es mañana.`,
+        'recordatorioSesion',
+        datosNotificacion
+      );
+
+      // Notificar al tutor
+      await createNotificationAndSendPush(
+        sesion.tutorId,
+        'Recordatorio de sesión',
+        `Tu sesión de ${sesion.curso} con ${nombreEstudiante} es mañana.`,
+        'recordatorioSesion',
+        datosNotificacion
+      );
+    }
+    console.log(`Enviados ${sesionesSnapshot.docs.length * 2} recordatorios de 24h.`);
+    return null;
+  });
+
+// 2. Recordatorio 30 minutos antes de la sesión
+export const send30MinuteSessionReminders = functions.pubsub
+  .schedule('every 15 minutes') // Más granularidad para recordatorios cercanos
   .onRun(async (context) => {
     const now = new Date();
     const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
@@ -213,25 +274,47 @@ export const sendSessionReminders = functions.pubsub
       .where('estado', '==', 'aceptada')
       .get();
 
+    if (sesionesSnapshot.empty) {
+      console.log('No hay sesiones para recordar con 30min de antelación.');
+      return null;
+    }
+
     for (const doc of sesionesSnapshot.docs) {
       const sesion = doc.data();
-      const tutorDoc = await db.collection('tutores').doc(sesion.tutorId).get();
-      const nombreTutor = tutorDoc.data()
-        ? `${tutorDoc.data()!.nombre} ${tutorDoc.data()!.apellidos}`.trim()
-        : 'Tutor';
 
+      const [tutorDoc, estudianteDoc] = await Promise.all([
+        db.collection('tutores').doc(sesion.tutorId).get(),
+        db.collection('estudiantes').doc(sesion.estudianteId).get(),
+      ]);
+      
+      const nombreTutor = tutorDoc.data() ? `${tutorDoc.data()!.nombre} ${tutorDoc.data()!.apellidos}`.trim() : 'Tutor';
+      const nombreEstudiante = estudianteDoc.data() ? `${estudianteDoc.data()!.nombre} ${estudianteDoc.data()!.apellidos}`.trim() : 'Estudiante';
+
+      const datosNotificacion = {
+        sesionId: doc.id,
+        tutorId: sesion.tutorId,
+        estudianteId: sesion.estudianteId,
+        materia: sesion.curso,
+      };
+
+      // Notificar al estudiante
       await createNotificationAndSendPush(
         sesion.estudianteId,
-        'Recordatorio de sesión',
-        `Tienes una sesión de ${sesion.curso} con ${nombreTutor} en 30 minutos.`,
+        'Tu sesión comienza pronto',
+        `Tu sesión de ${sesion.curso} con ${nombreTutor} es en 30 minutos.`,
         'recordatorioSesion',
-        {
-          sesionId: doc.id,
-          tutorId: sesion.tutorId,
-          materia: sesion.curso,
-        }
+        datosNotificacion
+      );
+
+      // Notificar al tutor
+      await createNotificationAndSendPush(
+        sesion.tutorId,
+        'Tu sesión comienza pronto',
+        `Tu sesión de ${sesion.curso} con ${nombreEstudiante} es en 30 minutos.`,
+        'recordatorioSesion',
+        datosNotificacion
       );
     }
-    console.log(`Enviados ${sesionesSnapshot.docs.length} recordatorios de sesión.`);
+    console.log(`Enviados ${sesionesSnapshot.docs.length * 2} recordatorios de 30min.`);
     return null;
   }); 
