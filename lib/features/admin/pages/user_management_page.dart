@@ -6,6 +6,7 @@ import 'package:tutoring_app/core/services/user_management_service.dart';
 import 'package:tutoring_app/features/admin/pages/assign_students_page.dart';
 import 'package:tutoring_app/features/admin/pages/admin_availability_page.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -20,6 +21,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
   final UserManagementService _userManagementService = UserManagementService();
   bool _isLoading = true;
   List<AdminUser> _users = [];
+  List<AdminUser> _allUsers = [];
   UserRole? _selectedRoleFilter;
   bool _showInactive = false;
   String _searchQuery = '';
@@ -46,6 +48,12 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
   UserRole _selectedFormRole = UserRole.student;
   
+  // Variables para filtros
+  TextEditingController _searchController = TextEditingController();
+  String? _selectedSchool;
+  List<String> _schoolOptions = [];
+  Timer? _debounce;
+
   @override
   void initState() {
     super.initState();
@@ -68,22 +76,40 @@ class _UserManagementPageState extends State<UserManagementPage> {
     _cursosTutorController.dispose();
     _universidadTutorController.dispose();
     _facultadTutorController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
-  // Añadiendo un comentario para forzar la actualización del archivo.
   Future<void> _loadUsers() async {
     setState(() => _isLoading = true);
     try {
       final users = await _userManagementService.getUsers(
         roleFilter: _selectedRoleFilter,
         isActiveFilter: _showInactive ? null : true,
-        searchQuery: _searchQuery,
+        searchQuery: null, // No filtrar aquí
       );
-      setState(() {
-        _users = users;
-        _isLoading = false;
-      });
+      _allUsers = users;
+      // Si el filtro de rol es tutor, obtener escuelas únicas desde Firestore
+      if (_selectedRoleFilter == UserRole.teacher) {
+        final snapshot = await FirebaseFirestore.instance.collection('tutores').get();
+        final schools = snapshot.docs
+          .map((doc) => doc.data()['escuela'] ?? '')
+          .where((e) => e != null && e.toString().isNotEmpty)
+          .map((e) => e.toString())
+          .toSet()
+          .toList();
+        schools.sort();
+        setState(() {
+          _schoolOptions = schools;
+        });
+      } else {
+        setState(() {
+          _schoolOptions = [];
+          _selectedSchool = null;
+        });
+      }
+      _applyFilters();
+      setState(() => _isLoading = false);
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -583,44 +609,102 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
   }
 
+  void _applyFilters() {
+    List<AdminUser> filtered = _allUsers;
+    final query = _searchQuery.toLowerCase();
+    if (query.isNotEmpty) {
+      filtered = filtered.where((u) =>
+        u.nombre.toLowerCase().contains(query) ||
+        u.apellidos.toLowerCase().contains(query)
+      ).toList();
+    }
+    if (_selectedRoleFilter == UserRole.teacher && _selectedSchool != null && _selectedSchool!.isNotEmpty) {
+      filtered = filtered.where((u) => u.toFirestore()['escuela'] == _selectedSchool).toList();
+    }
+    setState(() {
+      _users = filtered;
+    });
+  }
+
   Widget _buildFilterBar() {
     return Container(
       padding: const EdgeInsets.all(16),
       color: Colors.grey[100],
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: DropdownButtonFormField<UserRole>(
-              value: _selectedRoleFilter,
-              decoration: const InputDecoration(
-                labelText: 'Filtrar por Rol',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: null, child: Text('Todos')),
-                DropdownMenuItem(value: UserRole.student, child: Text('Estudiantes')),
-                DropdownMenuItem(value: UserRole.teacher, child: Text('Tutores')),
-                DropdownMenuItem(value: UserRole.admin, child: Text('Administradores')),
-              ],
-              onChanged: (value) {
-                setState(() => _selectedRoleFilter = value);
-                _loadUsers();
-              },
-            ),
-          ),
-          const SizedBox(width: 16),
           Row(
             children: [
-              Checkbox(
-                value: _showInactive,
-                onChanged: (value) {
-                  setState(() => _showInactive = value!);
-                  _loadUsers();
-                },
+              Expanded(
+                child: DropdownButtonFormField<UserRole>(
+                  value: _selectedRoleFilter,
+                  decoration: const InputDecoration(
+                    labelText: 'Filtrar por Rol',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: null, child: Text('Todos')),
+                    DropdownMenuItem(value: UserRole.student, child: Text('Estudiantes')),
+                    DropdownMenuItem(value: UserRole.teacher, child: Text('Tutores')),
+                    DropdownMenuItem(value: UserRole.admin, child: Text('Administradores')),
+                  ],
+                  onChanged: (value) {
+                    setState(() => _selectedRoleFilter = value);
+                    _selectedSchool = null;
+                    _loadUsers();
+                  },
+                ),
               ),
-              const Text('Mostrar Inactivos'),
+              const SizedBox(width: 16),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _showInactive,
+                    onChanged: (value) {
+                      setState(() => _showInactive = value!);
+                      _loadUsers();
+                    },
+                  ),
+                  const Text('Mostrar Inactivos'),
+                ],
+              ),
             ],
           ),
+          const SizedBox(height: 12),
+          // Buscador de texto con debounce
+          TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(
+              labelText: 'Buscar por nombre o apellidos',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (value) {
+              if (_debounce?.isActive ?? false) _debounce!.cancel();
+              _debounce = Timer(const Duration(milliseconds: 200), () {
+                setState(() => _searchQuery = value);
+                _applyFilters();
+              });
+            },
+          ),
+          if (_selectedRoleFilter == UserRole.teacher && _schoolOptions.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _selectedSchool,
+              decoration: const InputDecoration(
+                labelText: 'Filtrar por Escuela',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('Todas las escuelas')),
+                ..._schoolOptions.map((school) => DropdownMenuItem(value: school, child: Text(school))),
+              ],
+              onChanged: (value) {
+                setState(() => _selectedSchool = value);
+                _applyFilters();
+              },
+            ),
+          ],
         ],
       ),
     );

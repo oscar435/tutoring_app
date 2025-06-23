@@ -39,8 +39,7 @@ class UserManagementService {
         if (searchQuery != null && searchQuery.isNotEmpty) {
           final query = searchQuery.toLowerCase();
           if (user.nombre.toLowerCase().contains(query) ||
-              user.apellidos.toLowerCase().contains(query) ||
-              user.email.toLowerCase().contains(query)) {
+              user.apellidos.toLowerCase().contains(query)) {
             users.add(user);
           }
         } else {
