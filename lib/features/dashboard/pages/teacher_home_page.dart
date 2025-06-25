@@ -34,7 +34,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   void initState() {
     super.initState();
     if (user != null) {
-      _solicitudesFuture = SolicitudTutoriaService().obtenerSolicitudesConNombres(user!.uid);
+      _solicitudesFuture = SolicitudTutoriaService()
+          .obtenerSolicitudesConNombres(user!.uid);
     }
   }
 
@@ -46,7 +47,10 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   Future<void> _actualizarEstado(String solicitudId, String nuevoEstado) async {
     if (!mounted) return;
 
-    final resultado = await SolicitudTutoriaService().actualizarEstado(solicitudId, nuevoEstado);
+    final resultado = await SolicitudTutoriaService().actualizarEstado(
+      solicitudId,
+      nuevoEstado,
+    );
     final exito = resultado['success'] as bool;
     final mensaje = resultado['message'] as String;
 
@@ -58,12 +62,13 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         ),
       );
     }
-    
+
     // Si la operación fue exitosa, refrescar la lista de solicitudes
     if (exito) {
       setState(() {
         if (user != null) {
-          _solicitudesFuture = SolicitudTutoriaService().obtenerSolicitudesConNombres(user!.uid);
+          _solicitudesFuture = SolicitudTutoriaService()
+              .obtenerSolicitudesConNombres(user!.uid);
         }
       });
     }
@@ -72,16 +77,20 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return const Scaffold(body: Center(child: Text('Error: No hay usuario')));
+    if (user == null)
+      return const Scaffold(body: Center(child: Text('Error: No hay usuario')));
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots(),
       builder: (context, snapshot) {
         // Verificar si el usuario está activo
         if (snapshot.hasData && snapshot.data!.exists) {
           final userData = snapshot.data!.data() as Map<String, dynamic>;
           final isActive = userData['isActive'] ?? true;
-          
+
           if (!isActive) {
             // Usuario desactivado, cerrar sesión automáticamente
             WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -90,12 +99,14 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               await prefs.clearUserSession();
               if (context.mounted) {
                 Navigator.of(context).pushNamedAndRemoveUntil(
-                  AppRoutes.roleSelector, 
-                  (route) => false
+                  AppRoutes.roleSelector,
+                  (route) => false,
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Tu cuenta ha sido desactivada. Contacta al administrador.'),
+                    content: Text(
+                      'Tu cuenta ha sido desactivada. Contacta al administrador.',
+                    ),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -110,7 +121,10 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                     SizedBox(height: 16),
                     Text(
                       'Cuenta Desactivada',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     SizedBox(height: 8),
                     Text(
@@ -145,8 +159,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => ProximasTutoriasPage(
-                                userId: user.uid, 
-                                userRole: 'tutor'
+                                userId: user.uid,
+                                userRole: 'tutor',
                               ),
                             ),
                           );
@@ -165,7 +179,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => SolicitudesTutorPage(tutorId: user?.uid ?? ''),
+                            builder: (context) =>
+                                SolicitudesTutorPage(tutorId: user?.uid ?? ''),
                           ),
                         );
                       },
@@ -218,7 +233,12 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                 );
               },
               child: StreamBuilder<DocumentSnapshot>(
-                stream: user != null ? FirebaseFirestore.instance.collection('tutores').doc(user.uid).snapshots() : null,
+                stream: user != null
+                    ? FirebaseFirestore.instance
+                          .collection('tutores')
+                          .doc(user.uid)
+                          .snapshots()
+                    : null,
                 builder: (context, snapshot) {
                   if (snapshot.hasData && snapshot.data!.exists) {
                     final data = snapshot.data!.data() as Map<String, dynamic>;
@@ -248,7 +268,10 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     if (user == null) return const Drawer();
     return Drawer(
       child: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('tutores').doc(user.uid).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('tutores')
+            .doc(user.uid)
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(child: Text('Error al cargar datos'));
@@ -265,7 +288,10 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 32,
+                  horizontal: 16,
+                ),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFF512DA8), Color(0xFF9575CD)],
@@ -279,7 +305,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       radius: 44,
                       backgroundImage: photoUrl.isNotEmpty
                           ? NetworkImage(photoUrl)
-                          : const AssetImage('assets/teacher_avatar.jpg') as ImageProvider,
+                          : const AssetImage('assets/teacher_avatar.jpg')
+                                as ImageProvider,
                     ),
                     const SizedBox(height: 14),
                     Text(
@@ -310,7 +337,12 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     children: [
-                      _buildDrawerItem(Icons.home, 'Inicio', context, () => Navigator.pop(context)),
+                      _buildDrawerItem(
+                        Icons.home,
+                        'Inicio',
+                        context,
+                        () => Navigator.pop(context),
+                      ),
                       _buildDrawerItem(
                         Icons.calendar_today,
                         'Calendario de tutorías',
@@ -328,11 +360,14 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                         context,
                         user != null
                             ? () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => EditarDisponibilidadPage(tutorId: user.uid),
-                                  ),
-                                )
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      EditarDisponibilidadPage(
+                                        tutorId: user.uid,
+                                      ),
+                                ),
+                              )
                             : null,
                       ),
                       _buildDrawerItem(
@@ -342,7 +377,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                         () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => MisEstudiantesPage(tutorId: user.uid),
+                            builder: (context) =>
+                                MisEstudiantesPage(tutorId: user.uid),
                           ),
                         ),
                       ),
@@ -394,15 +430,16 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   ) {
     return ListTile(
       leading: Icon(icon, color: Colors.white70),
-      title: Text(
-        title,
-        style: const TextStyle(color: Colors.white70),
-      ),
+      title: Text(title, style: const TextStyle(color: Colors.white70)),
       onTap: onTap,
     );
   }
 
-  Widget _buildSectionTitle({required String title, String? trailing, VoidCallback? onTrailingTap}) {
+  Widget _buildSectionTitle({
+    required String title,
+    String? trailing,
+    VoidCallback? onTrailingTap,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -410,10 +447,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           if (trailing != null)
             GestureDetector(
@@ -444,43 +478,53 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         }
         final sesiones = snapshot.data!;
         return FutureBuilder<List<Map<String, dynamic>>>(
-          future: Future.wait(sesiones.map((sesion) async {
-            final estudianteDoc = await FirebaseFirestore.instance
-                .collection('estudiantes')
-                .doc(sesion.estudianteId)
-                .get();
-            
-            final estudianteData = estudianteDoc.data() as Map<String, dynamic>?;
-            final nombreEstudiante = estudianteData != null
-                ? '${estudianteData['nombre']} ${estudianteData['apellidos']}'
-                : 'Estudiante';
-            
-            final fechaSesion = sesion.fechaSesion ?? sesion.fechaReserva;
-            final fechaCompleta = DateFormat('dd/MM/yyyy').format(fechaSesion);
-            final fechaRelativa = _getRelativeTime(fechaSesion);
-            
-            // Verificar si el estudiante está asignado al tutor
-            final tutorDoc = await FirebaseFirestore.instance
-                .collection('tutores')
-                .doc(user!.uid)
-                .get();
-            
-            final tutorData = tutorDoc.data() as Map<String, dynamic>?;
-            final estudiantesAsignados = (tutorData?['estudiantes_asignados'] as List<dynamic>?)?.cast<String>() ?? [];
-            final esAsignado = estudiantesAsignados.contains(sesion.estudianteId);
-            
-            final fotoUrl = estudianteData?['photoUrl'] as String?;
-            return {
-              'sesion': sesion,
-              'nombreEstudiante': nombreEstudiante,
-              'fechaCompleta': fechaCompleta,
-              'fechaRelativa': fechaRelativa,
-              'fechaSesion': fechaSesion,
-              'fotoUrl': fotoUrl,
-              'estudianteData': estudianteData,
-              'esAsignado': esAsignado,
-            };
-          })),
+          future: Future.wait(
+            sesiones.map((sesion) async {
+              final estudianteDoc = await FirebaseFirestore.instance
+                  .collection('estudiantes')
+                  .doc(sesion.estudianteId)
+                  .get();
+
+              final estudianteData =
+                  estudianteDoc.data() as Map<String, dynamic>?;
+              final nombreEstudiante = estudianteData != null
+                  ? '${estudianteData['nombre']} ${estudianteData['apellidos']}'
+                  : 'Estudiante';
+
+              final fechaSesion = sesion.fechaSesion ?? sesion.fechaReserva;
+              final fechaCompleta = DateFormat(
+                'dd/MM/yyyy',
+              ).format(fechaSesion);
+              final fechaRelativa = _getRelativeTime(fechaSesion);
+
+              // Verificar si el estudiante está asignado al tutor
+              final tutorDoc = await FirebaseFirestore.instance
+                  .collection('tutores')
+                  .doc(user!.uid)
+                  .get();
+
+              final tutorData = tutorDoc.data() as Map<String, dynamic>?;
+              final estudiantesAsignados =
+                  (tutorData?['estudiantes_asignados'] as List<dynamic>?)
+                      ?.cast<String>() ??
+                  [];
+              final esAsignado = estudiantesAsignados.contains(
+                sesion.estudianteId,
+              );
+
+              final fotoUrl = estudianteData?['photoUrl'] as String?;
+              return {
+                'sesion': sesion,
+                'nombreEstudiante': nombreEstudiante,
+                'fechaCompleta': fechaCompleta,
+                'fechaRelativa': fechaRelativa,
+                'fechaSesion': fechaSesion,
+                'fotoUrl': fotoUrl,
+                'estudianteData': estudianteData,
+                'esAsignado': esAsignado,
+              };
+            }),
+          ),
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
@@ -489,19 +533,22 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               return Center(child: Text('No hay próximas tutorías.'));
             }
             final sesionesConNombres = snap.data!;
-            
+
             // Ordenar por fecha (ya viene ordenado del servicio, pero por si acaso)
             sesionesConNombres.sort((a, b) {
               final fechaA = a['fechaSesion'] as DateTime;
               final fechaB = b['fechaSesion'] as DateTime;
               return fechaA.compareTo(fechaB);
             });
-            
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 8,
+                  ),
                   child: Text(
                     'Próximas Tutorías (${sesionesConNombres.length})',
                     style: TextStyle(
@@ -527,20 +574,28 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                     final fechaCompleta = s['fechaCompleta'] as String;
                     final fechaRelativa = s['fechaRelativa'] as String;
                     final fotoUrl = s['fotoUrl'] as String?;
-                    final estudianteData = s['estudianteData'] as Map<String, dynamic>?;
+                    final estudianteData =
+                        s['estudianteData'] as Map<String, dynamic>?;
                     final esAsignado = s['esAsignado'] as bool;
-                    
+
                     // Color especial para la próxima tutoría
                     final isNext = index == 0;
-                    
+
                     return GestureDetector(
-                      onTap: () => _mostrarDetallesTutoria(sesion, nombreEstudiante, fotoUrl, estudianteData),
+                      onTap: () => _mostrarDetallesTutoria(
+                        sesion,
+                        nombreEstudiante,
+                        fotoUrl,
+                        estudianteData,
+                      ),
                       child: _buildTutoriaCard(
                         sesion.curso ?? 'Sin curso',
                         fechaCompleta,
                         fechaRelativa,
                         nombreEstudiante,
-                        isNext ? Colors.orange : (esAsignado ? Colors.green : Colors.deepPurple),
+                        isNext
+                            ? Colors.orange
+                            : (esAsignado ? Colors.green : Colors.deepPurple),
                         isNext: isNext,
                         esAsignado: esAsignado,
                       ),
@@ -569,9 +624,11 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
       color: esAsignado ? Colors.green[50] : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isNext 
-            ? BorderSide(color: Colors.orange, width: 2) 
-            : (esAsignado ? BorderSide(color: Colors.green, width: 2) : BorderSide.none),
+        side: isNext
+            ? BorderSide(color: Colors.orange, width: 2)
+            : (esAsignado
+                  ? BorderSide(color: Colors.green, width: 2)
+                  : BorderSide.none),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -690,23 +747,21 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _buildStatCard(
-            'Horas',
-            '89',
-            Icons.timer,
-            Colors.orange,
-          ),
+          child: _buildStatCard('Horas', '89', Icons.timer, Colors.orange),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -715,17 +770,11 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             const SizedBox(height: 5),
             Text(
               value,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             Text(
               title,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],
@@ -741,7 +790,9 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     }
 
     return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: SolicitudTutoriaService().getSolicitudesConDetallesStream(user.uid),
+      stream: SolicitudTutoriaService().getSolicitudesConDetallesStream(
+        user.uid,
+      ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -754,7 +805,9 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         }
 
         final solicitudes = snapshot.data!
-            .where((s) => (s['solicitud'] as SolicitudTutoria).estado == 'pendiente')
+            .where(
+              (s) => (s['solicitud'] as SolicitudTutoria).estado == 'pendiente',
+            )
             .toList();
 
         if (solicitudes.isEmpty) {
@@ -772,7 +825,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             return FutureBuilder<bool>(
               future: _esEstudianteAsignado(estudianteId, user.uid),
               builder: (context, asignadoSnapshot) {
-                if (asignadoSnapshot.connectionState == ConnectionState.waiting) {
+                if (asignadoSnapshot.connectionState ==
+                    ConnectionState.waiting) {
                   return const Card(
                     child: SizedBox(
                       height: 70,
@@ -796,18 +850,32 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     );
   }
 
-  Future<bool> _esEstudianteAsignado(String estudianteId, String tutorId) async {
-    final tutorDoc = await FirebaseFirestore.instance.collection('tutores').doc(tutorId).get();
+  Future<bool> _esEstudianteAsignado(
+    String estudianteId,
+    String tutorId,
+  ) async {
+    final tutorDoc = await FirebaseFirestore.instance
+        .collection('tutores')
+        .doc(tutorId)
+        .get();
     if (tutorDoc.exists) {
       final tutorData = tutorDoc.data() as Map<String, dynamic>?;
       final estudiantesAsignados =
-          (tutorData?['estudiantes_asignados'] as List<dynamic>?)?.cast<String>() ?? [];
+          (tutorData?['estudiantes_asignados'] as List<dynamic>?)
+              ?.cast<String>() ??
+          [];
       return estudiantesAsignados.contains(estudianteId);
     }
     return false;
   }
 
-  Widget _buildRequestCard(String student, String subject, String solicitudId, String? fotoUrl, bool esAsignado) {
+  Widget _buildRequestCard(
+    String student,
+    String subject,
+    String solicitudId,
+    String? fotoUrl,
+    bool esAsignado,
+  ) {
     return Card(
       color: esAsignado ? Colors.green[50] : const Color(0xFFF6F3FF),
       margin: const EdgeInsets.symmetric(vertical: 5),
@@ -826,14 +894,23 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               fotoUrl != null && fotoUrl.isNotEmpty
                   ? CircleAvatar(
                       radius: 20,
-                      backgroundColor: esAsignado ? Colors.green : const Color(0xFFD1C4E9),
+                      backgroundColor: esAsignado
+                          ? Colors.green
+                          : const Color(0xFFD1C4E9),
                       backgroundImage: NetworkImage(fotoUrl),
                       onBackgroundImageError: (_, __) {},
                     )
                   : CircleAvatar(
                       radius: 20,
-                      backgroundColor: esAsignado ? Colors.green : const Color(0xFFD1C4E9),
-                      child: Icon(Icons.person, color: esAsignado ? Colors.white : const Color(0xFF5E35B1)),
+                      backgroundColor: esAsignado
+                          ? Colors.green
+                          : const Color(0xFFD1C4E9),
+                      child: Icon(
+                        Icons.person,
+                        color: esAsignado
+                            ? Colors.white
+                            : const Color(0xFF5E35B1),
+                      ),
                     ),
               const SizedBox(width: 12),
               Expanded(
@@ -848,13 +925,20 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
-                              color: esAsignado ? Colors.green[800] : Colors.black,
+                              color: esAsignado
+                                  ? Colors.green[800]
+                                  : Colors.black,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (esAsignado)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.green,
                               borderRadius: BorderRadius.circular(8),
@@ -862,7 +946,11 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.star, color: Colors.white, size: 10),
+                                const Icon(
+                                  Icons.star,
+                                  color: Colors.white,
+                                  size: 10,
+                                ),
                                 const SizedBox(width: 2),
                                 Text(
                                   'ASIGNADO',
@@ -883,13 +971,20 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       style: TextStyle(
                         color: esAsignado ? Colors.green[700] : Colors.black54,
                         fontSize: 14,
-                        fontWeight: esAsignado ? FontWeight.w500 : FontWeight.normal,
+                        fontWeight: esAsignado
+                            ? FontWeight.w500
+                            : FontWeight.normal,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: esAsignado ? Colors.green : Colors.grey),
+              Icon(
+                Icons.chevron_right,
+                color: esAsignado ? Colors.green : Colors.grey,
+              ),
             ],
           ),
         ),
@@ -902,30 +997,39 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         .collection('solicitudes_tutoria')
         .doc(solicitudId)
         .get();
-    
+
     if (!solicitudDoc.exists) return;
-    
-    final solicitud = SolicitudTutoria.fromMap(solicitudDoc.data() as Map<String, dynamic>);
-    
+
+    final solicitud = SolicitudTutoria.fromMap(
+      solicitudDoc.data() as Map<String, dynamic>,
+    );
+
     // Obtener datos del estudiante
     final estudianteDoc = await FirebaseFirestore.instance
         .collection('estudiantes')
         .doc(solicitud.estudianteId)
         .get();
-    
+
     final estudianteData = estudianteDoc.data() as Map<String, dynamic>?;
-    final nombreEstudiante = estudianteData?['nombre'] != null && estudianteData?['apellidos'] != null
+    final nombreEstudiante =
+        estudianteData?['nombre'] != null &&
+            estudianteData?['apellidos'] != null
         ? '${estudianteData!['nombre']} ${estudianteData['apellidos']}'
         : 'Estudiante';
     final fotoUrl = estudianteData?['photoUrl'] as String?;
-    
+
     String fechaHoraTexto;
-    if (solicitud.fechaSesion != null && (solicitud.horaInicio ?? '').isNotEmpty && (solicitud.horaFin ?? '').isNotEmpty) {
+    if (solicitud.fechaSesion != null &&
+        (solicitud.horaInicio ?? '').isNotEmpty &&
+        (solicitud.horaFin ?? '').isNotEmpty) {
       final fecha = solicitud.fechaSesion!;
       final fechaFormateada = DateFormat('dd/MM/yyyy').format(fecha);
-      fechaHoraTexto = '$fechaFormateada ${solicitud.horaInicio} - ${solicitud.horaFin}';
+      fechaHoraTexto =
+          '$fechaFormateada ${solicitud.horaInicio} - ${solicitud.horaFin}';
     } else {
-      fechaHoraTexto = DateFormat('dd/MM/yyyy HH:mm').format(solicitud.fechaHora);
+      fechaHoraTexto = DateFormat(
+        'dd/MM/yyyy HH:mm',
+      ).format(solicitud.fechaHora);
     }
 
     if (!mounted) return;
@@ -960,7 +1064,10 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       : CircleAvatar(
                           radius: 25,
                           backgroundColor: const Color(0xFFD1C4E9),
-                          child: const Icon(Icons.person, color: Color(0xFF5E35B1)),
+                          child: const Icon(
+                            Icons.person,
+                            color: Color(0xFF5E35B1),
+                          ),
                         ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -973,6 +1080,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           solicitud.curso ?? 'Sin curso especificado',
@@ -980,6 +1089,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             color: Colors.black54,
                             fontSize: 16,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -998,13 +1109,24 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       'Fecha y hora de la tutoría',
                       fechaHoraTexto,
                     ),
-                    if (solicitud.mensaje != null && solicitud.mensaje!.isNotEmpty)
-                      _buildDetalleItem(Icons.message, 'Mensaje', solicitud.mensaje!),
-                    _buildDetalleItem(Icons.access_time, 'Estado', solicitud.estado.toUpperCase()),
+                    if (solicitud.mensaje != null &&
+                        solicitud.mensaje!.isNotEmpty)
+                      _buildDetalleItem(
+                        Icons.message,
+                        'Mensaje',
+                        solicitud.mensaje!,
+                      ),
+                    _buildDetalleItem(
+                      Icons.access_time,
+                      'Estado',
+                      solicitud.estado.toUpperCase(),
+                    ),
                     _buildDetalleItem(
                       Icons.send,
                       'Solicitud enviada el',
-                      DateFormat('dd/MM/yyyy HH:mm').format(solicitud.fechaHora),
+                      DateFormat(
+                        'dd/MM/yyyy HH:mm',
+                      ).format(solicitud.fechaHora),
                     ),
                   ],
                 ),
@@ -1089,10 +1211,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  content,
-                  style: const TextStyle(fontSize: 16),
-                ),
+                Text(content, style: const TextStyle(fontSize: 16)),
               ],
             ),
           ),
@@ -1105,14 +1224,22 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     _actualizarEstado(request.id, status);
   }
 
-  void _mostrarDetallesTutoria(SesionTutoria sesion, String nombreEstudiante, String? fotoUrl, Map<String, dynamic>? estudianteData) async {
+  void _mostrarDetallesTutoria(
+    SesionTutoria sesion,
+    String nombreEstudiante,
+    String? fotoUrl,
+    Map<String, dynamic>? estudianteData,
+  ) async {
     if (!mounted) return;
 
     String fechaHoraTexto;
-    if (sesion.fechaSesion != null && (sesion.horaInicio ?? '').isNotEmpty && (sesion.horaFin ?? '').isNotEmpty) {
+    if (sesion.fechaSesion != null &&
+        (sesion.horaInicio ?? '').isNotEmpty &&
+        (sesion.horaFin ?? '').isNotEmpty) {
       final fecha = sesion.fechaSesion!;
       final fechaFormateada = DateFormat('dd/MM/yyyy').format(fecha);
-      fechaHoraTexto = '$fechaFormateada ${sesion.horaInicio} - ${sesion.horaFin}';
+      fechaHoraTexto =
+          '$fechaFormateada ${sesion.horaInicio} - ${sesion.horaFin}';
     } else {
       fechaHoraTexto = '${sesion.dia} ${sesion.horaInicio} - ${sesion.horaFin}';
     }
@@ -1147,7 +1274,10 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       : CircleAvatar(
                           radius: 25,
                           backgroundColor: const Color(0xFFD1C4E9),
-                          child: const Icon(Icons.person, color: Color(0xFF5E35B1)),
+                          child: const Icon(
+                            Icons.person,
+                            color: Color(0xFF5E35B1),
+                          ),
                         ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1160,6 +1290,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           sesion.curso ?? 'Sin curso especificado',
@@ -1167,6 +1299,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             color: Colors.black54,
                             fontSize: 16,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -1186,15 +1320,30 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       fechaHoraTexto,
                     ),
                     if (sesion.mensaje != null && sesion.mensaje!.isNotEmpty)
-                      _buildDetalleItem(Icons.message, 'Mensaje', sesion.mensaje!),
-                    _buildDetalleItem(Icons.access_time, 'Estado', sesion.estado.toUpperCase()),
+                      _buildDetalleItem(
+                        Icons.message,
+                        'Mensaje',
+                        sesion.mensaje!,
+                      ),
+                    _buildDetalleItem(
+                      Icons.access_time,
+                      'Estado',
+                      sesion.estado.toUpperCase(),
+                    ),
                     _buildDetalleItem(
                       Icons.send,
                       'Reservada el',
-                      DateFormat('dd/MM/yyyy HH:mm').format(sesion.fechaReserva),
+                      DateFormat(
+                        'dd/MM/yyyy HH:mm',
+                      ).format(sesion.fechaReserva),
                     ),
-                    if (estudianteData != null && estudianteData['email'] != null)
-                      _buildDetalleItem(Icons.email, 'Email estudiante', estudianteData['email']),
+                    if (estudianteData != null &&
+                        estudianteData['email'] != null)
+                      _buildDetalleItem(
+                        Icons.email,
+                        'Email estudiante',
+                        estudianteData['email'],
+                      ),
                   ],
                 ),
               ),

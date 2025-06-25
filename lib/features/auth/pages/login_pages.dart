@@ -30,15 +30,9 @@ class _LoginPageState extends State<LoginPage> {
       );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        showSnackBar(
-          context,
-          "No existe una cuenta con ese correo",
-        );
+        showSnackBar(context, "No existe una cuenta con ese correo");
       } else {
-        showSnackBar(
-          context,
-          "Error al enviar el correo de restablecimiento",
-        );
+        showSnackBar(context, "Error al enviar el correo de restablecimiento");
       }
     }
   }
@@ -82,137 +76,157 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: const Color(0xfff7f7f7),
       appBar: AppBar(title: const Text('Inicio de Sesión')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: FormBuilder(
-          key: _formKey,
-          child: Column(
-            children: [
-              const SizedBox(height: 30),
-              Image.asset('assets/logo_transparente.png', height: 200),
-              const SizedBox(height: 20),
-              FormBuilderTextField(
-                name: 'email',
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: FormBuilder(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 30),
+                Image.asset('assets/logo_transparente.png', height: 200),
+                const SizedBox(height: 20),
+                FormBuilderTextField(
+                  name: 'email',
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  validator: FormBuilderValidators.compose([
+                    FormBuilderValidators.required(
+                      errorText: 'El campo email es requerido',
+                    ),
+                    FormBuilderValidators.email(
+                      errorText: 'Ingresa un email válido',
+                    ),
+                  ]),
                 ),
-                validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(errorText: 'El campo email es requerido'),
-                  FormBuilderValidators.email(errorText: 'Ingresa un email válido'),
-                ]),
-              ),
-              const SizedBox(height: 15),
-              FormBuilderTextField(
-                name: 'password',
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: Icon(Icons.lock),
-                ),
-                validator: FormBuilderValidators.required(errorText: 'El campo contraseña es requerido'),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: _showResetPasswordDialog,
-                  child: const Text(
-                    '¿Olvidaste tu contraseña?',
-                    style: TextStyle(color: Colors.blue),
+                const SizedBox(height: 15),
+                FormBuilderTextField(
+                  name: 'password',
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Contraseña',
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                  validator: FormBuilderValidators.required(
+                    errorText: 'El campo contraseña es requerido',
                   ),
                 ),
-              ),
-              const SizedBox(height: 25),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  shape: const StadiumBorder(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 15,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _showResetPasswordDialog,
+                    child: const Text(
+                      '¿Olvidaste tu contraseña?',
+                      style: TextStyle(color: Colors.blue),
+                    ),
                   ),
                 ),
-                onPressed: () async {
-                  _formKey.currentState?.save();
-                  if (_formKey.currentState?.validate() == true) {
-                    final v = _formKey.currentState?.value;
-                    
-                    var result = await _auth.signInEmailAndPassword(
-                      v?['email'],
-                      v?['password'],
-                    );
+                const SizedBox(height: 25),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 15,
+                    ),
+                  ),
+                  onPressed: () async {
+                    _formKey.currentState?.save();
+                    if (_formKey.currentState?.validate() == true) {
+                      final v = _formKey.currentState?.value;
 
-                    if (mounted) {
-                      if (result is int) {
-                        if (result == 1) {
-                          showSnackBar(context, "Correo o contraseña incorrectos");
-                        } else if (result == 3) {
-                          showSnackBar(context, "Esta cuenta no tiene permisos de estudiante");
-                        } else if (result == 4) {
-                          showSnackBar(
+                      var result = await _auth.signInEmailAndPassword(
+                        v?['email'],
+                        v?['password'],
+                      );
+
+                      if (mounted) {
+                        if (result is int) {
+                          if (result == 1) {
+                            showSnackBar(
+                              context,
+                              "Correo o contraseña incorrectos",
+                            );
+                          } else if (result == 3) {
+                            showSnackBar(
+                              context,
+                              "Esta cuenta no tiene permisos de estudiante",
+                            );
+                          } else if (result == 4) {
+                            showSnackBar(
+                              context,
+                              "Debes verificar tu correo antes de continuar",
+                            );
+                          } else if (result == 5) {
+                            showSnackBar(
+                              context,
+                              "Cuenta de profesor detectada. Inicie sesión desde el portal de profesores.",
+                            );
+                          } else if (result == 6) {
+                            showSnackBar(
+                              context,
+                              "Demasiados intentos fallidos. Intenta más tarde",
+                            );
+                          } else if (result == 7) {
+                            showSnackBar(context, "Formato de email inválido");
+                          } else if (result == 8) {
+                            showSnackBar(
+                              context,
+                              "Error de conexión. Verifica tu internet",
+                            );
+                          } else if (result == 9) {
+                            showSnackBar(
+                              context,
+                              "Tu cuenta ha sido desactivada. Contacta al administrador.",
+                            );
+                          } else if (result == null) {
+                            showSnackBar(
+                              context,
+                              "Error de conexión. Verifica tu internet e intenta nuevamente",
+                            );
+                          }
+                        } else if (result is String) {
+                          Navigator.pushNamedAndRemoveUntil(
                             context,
-                            "Debes verificar tu correo antes de continuar",
-                          );
-                        } else if (result == 5) {
-                          showSnackBar(context, "Cuenta de profesor detectada. Inicie sesión desde el portal de profesores.");
-                        } else if (result == 6) {
-                          showSnackBar(
-                            context,
-                            "Demasiados intentos fallidos. Intenta más tarde",
-                          );
-                        } else if (result == 7) {
-                          showSnackBar(
-                            context,
-                            "Formato de email inválido",
-                          );
-                        } else if (result == 8) {
-                          showSnackBar(
-                            context,
-                            "Error de conexión. Verifica tu internet",
-                          );
-                        } else if (result == 9) {
-                          showSnackBar(
-                            context,
-                            "Tu cuenta ha sido desactivada. Contacta al administrador.",
-                          );
-                        } else if (result == null) {
-                          showSnackBar(
-                            context,
-                            "Error de conexión. Verifica tu internet e intenta nuevamente",
+                            AppRoutes.splash,
+                            (route) => false,
                           );
                         }
-                      } else if (result is String) {
-                        Navigator.pushNamedAndRemoveUntil(
-                            context, AppRoutes.splash, (route) => false);
                       }
                     }
-                  }
-                },
-                child: const Text(
-                  'INICIAR SESIÓN',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RegisterCredentialsPage(),
+                  },
+                  child: const Text(
+                    'INICIAR SESIÓN',
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
-                child: const Text("¿No tienes cuenta? Crear nueva cuenta"),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RoleSelectorPage(),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RegisterCredentialsPage(),
+                    ),
                   ),
+                  child: const Text("¿No tienes cuenta? Crear nueva cuenta"),
                 ),
-                child: const Text("Volver a selección de rol"),
-              ),
-            ],
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RoleSelectorPage(),
+                    ),
+                  ),
+                  child: const Text("Volver a selección de rol"),
+                ),
+              ],
+            ),
           ),
         ),
       ),

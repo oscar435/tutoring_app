@@ -649,7 +649,12 @@ class HomePage2 extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(color: Colors.black87)),
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.black87),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -686,7 +691,12 @@ class HomePage2 extends StatelessWidget {
           Icon(icon, color: Colors.white),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(text, style: const TextStyle(color: Colors.white)),
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -725,7 +735,12 @@ class HomePage2 extends StatelessWidget {
             Icon(icon, color: Colors.white),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(title, style: const TextStyle(color: Colors.white)),
+              child: Text(
+                title,
+                style: const TextStyle(color: Colors.white),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -740,7 +755,12 @@ class HomePage2 extends StatelessWidget {
           child: Column(
             children: [
               Image.asset('assets/news.png'),
-              const Text('FIEI da la bienvenida a sus ingresantes 2025'),
+              const Text(
+                'FIEI da la bienvenida a sus ingresantes 2025',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -749,7 +769,12 @@ class HomePage2 extends StatelessWidget {
           child: Column(
             children: [
               Image.asset('assets/news2.png'),
-              const Text('Villarrealinos presentan muestra escultórica'),
+              const Text(
+                'Villarrealinos presentan muestra escultórica',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -776,7 +801,12 @@ class HomePage2 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(description, style: const TextStyle(color: Colors.white)),
+          Text(
+            description,
+            style: const TextStyle(color: Colors.white),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -789,7 +819,12 @@ class HomePage2 extends StatelessWidget {
           child: Column(
             children: [
               Image.asset('assets/info_curso.jpg'),
-              const Text('Introducción a la Ingeniería Informática'),
+              const Text(
+                'Introducción a la Ingeniería Informática',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -798,7 +833,12 @@ class HomePage2 extends StatelessWidget {
           child: Column(
             children: [
               Image.asset('assets/oratoria_curso.jpg'),
-              const Text('Dominar la oratoria y el discurso'),
+              const Text(
+                'Dominar la oratoria y el discurso',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),

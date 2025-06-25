@@ -15,10 +15,7 @@ class RecentActivityWidget extends StatelessWidget {
           children: [
             const Text(
               'Actividad Reciente',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             StreamBuilder<QuerySnapshot>(
@@ -33,9 +30,7 @@ class RecentActivityWidget extends StatelessWidget {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text('No hay actividad reciente'),
-                  );
+                  return const Center(child: Text('No hay actividad reciente'));
                 }
 
                 return ListView.builder(
@@ -43,17 +38,29 @@ class RecentActivityWidget extends StatelessWidget {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context, index) {
-                    final log = AuditLog.fromFirestore(snapshot.data!.docs[index]);
+                    final log = AuditLog.fromFirestore(
+                      snapshot.data!.docs[index],
+                    );
                     return ListTile(
                       leading: _getActionIcon(log.action),
-                      title: Text(log.userName),
-                      subtitle: Text(log.description ?? ''),
+                      title: Text(
+                        log.userName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        log.description ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       trailing: Text(
                         _formatTimestamp(log.timestamp),
                         style: const TextStyle(
                           color: Colors.grey,
                           fontSize: 12,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     );
                   },
@@ -103,4 +110,4 @@ class RecentActivityWidget extends StatelessWidget {
       return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
     }
   }
-} 
+}

@@ -71,99 +71,103 @@ class _RegisterCredentialsPageState extends State<RegisterCredentialsPage> {
     return Scaffold(
       backgroundColor: const Color(0xfff7f7f7),
       appBar: AppBar(title: const Text('Crear cuenta')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: FormBuilder(
-          key: _formKey,
-          child: Column(
-            children: [
-              const SizedBox(height: 30),
-              Image.asset('assets/logo_transparente.png', height: 250),
-              const SizedBox(height: 30),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: FormBuilder(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 30),
+                Image.asset('assets/logo_transparente.png', height: 250),
+                const SizedBox(height: 30),
 
-              FormBuilderTextField(
-                name: 'email',
-                decoration: const InputDecoration(
-                  labelText: 'Correo institucional',
-                  prefixIcon: Icon(Icons.email),
-                  hintText: 'ejemplo@unfv.edu.pe',
-                  helperText: 'Usa tu correo institucional (@unfv.edu.pe)',
-                ),
-                validator: _validateInstitutionalEmail,
-                keyboardType: TextInputType.emailAddress,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-              ),
-              const SizedBox(height: 20),
-
-              FormBuilderTextField(
-                name: 'password',
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: Icon(Icons.lock),
-                  helperText: 'Mínimo 6 caracteres',
-                ),
-                validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(
-                    errorText: 'La contraseña es requerida',
+                FormBuilderTextField(
+                  name: 'email',
+                  decoration: const InputDecoration(
+                    labelText: 'Correo institucional',
+                    prefixIcon: Icon(Icons.email),
+                    hintText: 'ejemplo@unfv.edu.pe',
+                    helperText: 'Usa tu correo institucional (@unfv.edu.pe)',
                   ),
-                  FormBuilderValidators.minLength(
-                    6,
-                    errorText: 'La contraseña debe tener al menos 6 caracteres',
-                  ),
-                ]),
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-              ),
-              const Spacer(),
+                  validator: _validateInstitutionalEmail,
+                  keyboardType: TextInputType.emailAddress,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                ),
+                const SizedBox(height: 20),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 15,
+                FormBuilderTextField(
+                  name: 'password',
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Contraseña',
+                    prefixIcon: Icon(Icons.lock),
+                    helperText: 'Mínimo 6 caracteres',
+                  ),
+                  validator: FormBuilderValidators.compose([
+                    FormBuilderValidators.required(
+                      errorText: 'La contraseña es requerida',
                     ),
-                    shape: const StadiumBorder(),
-                  ),
-                  onPressed: _isLoading ? null : _handleRegistration,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                    FormBuilderValidators.minLength(
+                      6,
+                      errorText:
+                          'La contraseña debe tener al menos 6 caracteres',
+                    ),
+                  ]),
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                ),
+                const SizedBox(height: 30),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 15,
+                      ),
+                      shape: const StadiumBorder(),
+                    ),
+                    onPressed: _isLoading ? null : _handleRegistration,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
+                          )
+                        : const Text(
+                            'Siguiente',
+                            style: TextStyle(color: Colors.white),
                           ),
-                        )
-                      : const Text(
-                          'Siguiente',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginPage(),
                   ),
                 ),
-                child: const Text("¿Ya tienes cuenta? Iniciar sesión"),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RoleSelectorPage(),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
                   ),
+                  child: const Text("¿Ya tienes cuenta? Iniciar sesión"),
                 ),
-                child: const Text("Volver a selección de rol"),
-              ),
-            ],
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RoleSelectorPage(),
+                    ),
+                  ),
+                  child: const Text("Volver a selección de rol"),
+                ),
+              ],
+            ),
           ),
         ),
       ),

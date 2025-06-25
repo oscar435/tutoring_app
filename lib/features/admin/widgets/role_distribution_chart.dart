@@ -4,10 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 class RoleDistributionChart extends StatelessWidget {
   final Map<String, dynamic> data;
 
-  const RoleDistributionChart({
-    super.key,
-    required this.data,
-  });
+  const RoleDistributionChart({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -19,10 +16,7 @@ class RoleDistributionChart extends StatelessWidget {
           children: [
             const Text(
               'Distribución de Roles',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -37,11 +31,7 @@ class RoleDistributionChart extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: _generateLegendItems(),
-            ),
+            Wrap(spacing: 16, runSpacing: 8, children: _generateLegendItems()),
           ],
         ),
       ),
@@ -50,12 +40,7 @@ class RoleDistributionChart extends StatelessWidget {
 
   List<PieChartSectionData> _generateSections() {
     final List<PieChartSectionData> sections = [];
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-    ];
+    final colors = [Colors.blue, Colors.green, Colors.orange, Colors.purple];
     var colorIndex = 0;
 
     data.forEach((role, count) {
@@ -82,12 +67,7 @@ class RoleDistributionChart extends StatelessWidget {
 
   List<Widget> _generateLegendItems() {
     final List<Widget> items = [];
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-    ];
+    final colors = [Colors.blue, Colors.green, Colors.orange, Colors.purple];
     var colorIndex = 0;
 
     final roleNames = {
@@ -112,7 +92,11 @@ class RoleDistributionChart extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('${roleNames[role] ?? role}: $count'),
+              Text(
+                '${roleNames[role] ?? role}: $count',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         );
@@ -122,4 +106,4 @@ class RoleDistributionChart extends StatelessWidget {
 
     return items;
   }
-} 
+}
