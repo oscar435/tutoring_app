@@ -36,16 +36,20 @@ class HomePage2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return const Scaffold(body: Center(child: Text('Error: No hay usuario')));
+    if (user == null)
+      return const Scaffold(body: Center(child: Text('Error: No hay usuario')));
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots(),
       builder: (context, snapshot) {
         // Verificar si el usuario está activo
         if (snapshot.hasData && snapshot.data!.exists) {
           final userData = snapshot.data!.data() as Map<String, dynamic>;
           final isActive = userData['isActive'] ?? true;
-          
+
           if (!isActive) {
             // Usuario desactivado, cerrar sesión automáticamente
             WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -54,12 +58,14 @@ class HomePage2 extends StatelessWidget {
               await prefs.clearUserSession();
               if (context.mounted) {
                 Navigator.of(context).pushNamedAndRemoveUntil(
-                  AppRoutes.roleSelector, 
-                  (route) => false
+                  AppRoutes.roleSelector,
+                  (route) => false,
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Tu cuenta ha sido desactivada. Contacta al administrador.'),
+                    content: Text(
+                      'Tu cuenta ha sido desactivada. Contacta al administrador.',
+                    ),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -74,7 +80,10 @@ class HomePage2 extends StatelessWidget {
                     SizedBox(height: 16),
                     Text(
                       'Cuenta Desactivada',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     SizedBox(height: 8),
                     Text(
@@ -107,7 +116,9 @@ class HomePage2 extends StatelessWidget {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const TodasTutoriasPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const TodasTutoriasPage(),
+                            ),
                           );
                         },
                         child: const Text('Ver todas'),
@@ -142,7 +153,15 @@ class HomePage2 extends StatelessWidget {
                       'Noticias recientes',
                       trailing: TextButton(
                         onPressed: () {
-                          // TODO: Implementar navegación a noticias
+                          // Navegación a noticias - implementación básica
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Funcionalidad de noticias en desarrollo',
+                              ),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
                         },
                         child: const Text('Todas las noticias'),
                       ),
@@ -156,9 +175,10 @@ class HomePage2 extends StatelessWidget {
                       'Materiales disponibles',
                       trailing: TextButton(
                         onPressed: () {
-                          // TODO: Implementar navegación a cursos
+                          // Navegación a materiales educativos
+                          Navigator.pushNamed(context, AppRoutes.materials);
                         },
-                        child: const Text('All Courses'),
+                        child: const Text('Ver todos'),
                       ),
                     ),
                     _buildMaterialsRow(),
@@ -175,11 +195,20 @@ class HomePage2 extends StatelessWidget {
   Drawer _buildCustomDrawer(BuildContext context, String userId) {
     return Drawer(
       child: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('estudiantes').doc(userId).snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('estudiantes')
+            .doc(userId)
+            .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return const Drawer(child: Center(child: Text('Error al cargar datos')));
-          if (!snapshot.hasData || !snapshot.data!.exists) return const Drawer(child: Center(child: CircularProgressIndicator()));
-          
+          if (snapshot.hasError)
+            return const Drawer(
+              child: Center(child: Text('Error al cargar datos')),
+            );
+          if (!snapshot.hasData || !snapshot.data!.exists)
+            return const Drawer(
+              child: Center(child: CircularProgressIndicator()),
+            );
+
           final userData = snapshot.data!.data() as Map<String, dynamic>;
           final nombre = userData['nombre'] ?? '';
           final apellidos = userData['apellidos'] ?? '';
@@ -202,31 +231,78 @@ class HomePage2 extends StatelessWidget {
                   color: const Color(0xff060628),
                   child: ListView(
                     children: [
-                      _buildDrawerItem(context, Icons.home, 'Inicio', () => Navigator.pop(context)),
+                      _buildDrawerItem(
+                        context,
+                        Icons.home,
+                        'Inicio',
+                        () => Navigator.pop(context),
+                      ),
                       _buildDrawerItem(context, Icons.person, 'Mi Perfil', () {
                         Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfilePage()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const StudentProfilePage(),
+                          ),
+                        );
                       }),
-                      _buildDrawerItem(context, Icons.calendar_today, 'Calendario', () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const CalendarioPage()));
-                      }),
-                      _buildDrawerItem(context, Icons.book_online, 'Tutorías agendadas', () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const TodasTutoriasPage()));
-                      }),
-                      _buildDrawerItem(context, Icons.menu_book, 'Material Educativo', () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const MaterialEducativoPage()));
-                      }),
+                      _buildDrawerItem(
+                        context,
+                        Icons.calendar_today,
+                        'Calendario',
+                        () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CalendarioPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildDrawerItem(
+                        context,
+                        Icons.book_online,
+                        'Tutorías agendadas',
+                        () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const TodasTutoriasPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildDrawerItem(
+                        context,
+                        Icons.menu_book,
+                        'Material Educativo',
+                        () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const MaterialEducativoPage(),
+                            ),
+                          );
+                        },
+                      ),
                       ListTile(
                         leading: const Icon(Icons.logout, color: Colors.white),
-                        title: const Text('Cerrar sesión', style: TextStyle(color: Colors.white)),
+                        title: const Text(
+                          'Cerrar sesión',
+                          style: TextStyle(color: Colors.white),
+                        ),
                         onTap: () async {
                           await FirebaseAuth.instance.signOut();
                           final prefs = PreferenciasUsuario();
                           await prefs.clearUserSession();
-                          Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.roleSelector, (route) => false);
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            AppRoutes.roleSelector,
+                            (route) => false,
+                          );
                         },
                       ),
                     ],
@@ -240,7 +316,12 @@ class HomePage2 extends StatelessWidget {
     );
   }
 
-  ListTile _buildDrawerItem(BuildContext context, IconData icon, String title, VoidCallback onTap) {
+  ListTile _buildDrawerItem(
+    BuildContext context,
+    IconData icon,
+    String title,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       leading: Icon(icon, color: Colors.white),
       title: Text(title, style: const TextStyle(color: Colors.white)),
@@ -309,7 +390,8 @@ class HomePage2 extends StatelessWidget {
                   child: CircleAvatar(
                     backgroundImage: photoUrl.isNotEmpty
                         ? NetworkImage(photoUrl)
-                        : const AssetImage('assets/avatar.jpg') as ImageProvider,
+                        : const AssetImage('assets/avatar.jpg')
+                              as ImageProvider,
                     radius: 18,
                   ),
                 ),
@@ -328,16 +410,14 @@ class HomePage2 extends StatelessWidget {
         onPressed: () {},
       );
     }
-    
+
     return NotificationBadge(
       child: IconButton(
         icon: const Icon(Icons.notifications, size: 28),
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const NotificacionesPage(),
-            ),
+            MaterialPageRoute(builder: (context) => const NotificacionesPage()),
           );
         },
       ),
@@ -377,10 +457,13 @@ class HomePage2 extends StatelessWidget {
             itemBuilder: (context, index) {
               final solicitud = solicitudes[index];
               String fechaTexto = '';
-              if (solicitud.fechaSesion != null && (solicitud.horaInicio ?? '').isNotEmpty) {
-                fechaTexto = '${solicitud.dia ?? ''} ${DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!)} - ${solicitud.horaInicio}';
+              if (solicitud.fechaSesion != null &&
+                  (solicitud.horaInicio ?? '').isNotEmpty) {
+                fechaTexto =
+                    '${solicitud.dia ?? ''} ${DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!)} - ${solicitud.horaInicio}';
               } else {
-                fechaTexto = '${solicitud.dia ?? ''} - ${solicitud.horaInicio ?? ''}';
+                fechaTexto =
+                    '${solicitud.dia ?? ''} - ${solicitud.horaInicio ?? ''}';
               }
               Color estadoColor;
               switch (solicitud.estado) {
@@ -408,14 +491,21 @@ class HomePage2 extends StatelessWidget {
                     children: [
                       Text(
                         solicitud.curso ?? 'Sin curso',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
                         fechaTexto,
-                        style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w500, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.deepPurple,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -423,7 +513,10 @@ class HomePage2 extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: estadoColor.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(8),
@@ -452,29 +545,43 @@ class HomePage2 extends StatelessWidget {
     );
   }
 
-  Stream<List<SolicitudTutoria>> _streamSolicitudesPorEstudiante(String estudianteId) {
+  Stream<List<SolicitudTutoria>> _streamSolicitudesPorEstudiante(
+    String estudianteId,
+  ) {
     return FirebaseFirestore.instance
         .collection('solicitudes_tutoria')
         .where('estudianteId', isEqualTo: estudianteId)
         .orderBy('fechaHora', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => SolicitudTutoria.fromMap(doc.data() as Map<String, dynamic>))
-          .toList();
-    });
+          return snapshot.docs
+              .map(
+                (doc) => SolicitudTutoria.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                ),
+              )
+              .toList();
+        });
   }
 
-  void _mostrarDetalleSolicitud(BuildContext context, SolicitudTutoria solicitud) async {
+  void _mostrarDetalleSolicitud(
+    BuildContext context,
+    SolicitudTutoria solicitud,
+  ) async {
     // Obtener nombre del tutor
     String nombreTutor = 'Tutor';
     if (solicitud.tutorId.isNotEmpty) {
-      final doc = await FirebaseFirestore.instance.collection('tutores').doc(solicitud.tutorId).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('tutores')
+          .doc(solicitud.tutorId)
+          .get();
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
         final nombre = data['nombre'] ?? '';
         final apellidos = data['apellidos'] ?? '';
-        nombreTutor = ('$nombre $apellidos').trim().isEmpty ? 'Tutor' : '$nombre $apellidos';
+        nombreTutor = ('$nombre $apellidos').trim().isEmpty
+            ? 'Tutor'
+            : '$nombre $apellidos';
       }
     }
     showModalBottomSheet(
@@ -499,7 +606,10 @@ class HomePage2 extends StatelessWidget {
                   Expanded(
                     child: Text(
                       solicitud.curso ?? 'Sin curso',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -508,7 +618,9 @@ class HomePage2 extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               _detalleItem('Estado', solicitud.estado.toUpperCase()),
-              if (solicitud.fechaSesion != null && (solicitud.horaInicio ?? '').isNotEmpty && (solicitud.horaFin ?? '').isNotEmpty)
+              if (solicitud.fechaSesion != null &&
+                  (solicitud.horaInicio ?? '').isNotEmpty &&
+                  (solicitud.horaFin ?? '').isNotEmpty)
                 _detalleItem(
                   'Fecha y hora',
                   '${DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!)} ${solicitud.horaInicio} - ${solicitud.horaFin}',
@@ -529,7 +641,13 @@ class HomePage2 extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+          Text(
+            '$label: ',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
           Expanded(
             child: Text(value, style: const TextStyle(color: Colors.black87)),
           ),
@@ -575,7 +693,12 @@ class HomePage2 extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceCard(BuildContext context, String title, IconData icon, Color color) {
+  Widget _buildServiceCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+  ) {
     return GestureDetector(
       onTap: title == 'TUTORÍAS'
           ? () async {
@@ -584,7 +707,8 @@ class HomePage2 extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => SeleccionarTutorPage(estudianteId: user.uid),
+                  builder: (context) =>
+                      SeleccionarTutorPage(estudianteId: user.uid),
                 ),
               );
             }
@@ -696,12 +820,15 @@ class HomePage2 extends StatelessWidget {
         final photoUrl = tutorData['photoUrl'] as String? ?? '';
         final nombre = tutorData['nombre'] as String? ?? 'Tutor';
         final apellidos = tutorData['apellidos'] as String? ?? '';
-        final especialidad = tutorData['especialidad'] as String? ?? 'Especialista';
+        final especialidad =
+            tutorData['especialidad'] as String? ?? 'Especialista';
 
         return Card(
           elevation: 4,
           margin: const EdgeInsets.only(bottom: 20),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -722,7 +849,8 @@ class HomePage2 extends StatelessWidget {
                       radius: 30,
                       backgroundImage: photoUrl.isNotEmpty
                           ? NetworkImage(photoUrl)
-                          : const AssetImage('assets/teacher_avatar.jpg') as ImageProvider,
+                          : const AssetImage('assets/teacher_avatar.jpg')
+                                as ImageProvider,
                     ),
                     const SizedBox(width: 15),
                     Expanded(
@@ -739,13 +867,20 @@ class HomePage2 extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             especialidad,
-                            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.calendar_today, color: Colors.deepPurple, size: 28),
+                      icon: const Icon(
+                        Icons.calendar_today,
+                        color: Colors.deepPurple,
+                        size: 28,
+                      ),
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -758,7 +893,7 @@ class HomePage2 extends StatelessWidget {
                         );
                       },
                       tooltip: 'Agendar Tutoría',
-                    )
+                    ),
                   ],
                 ),
               ],
@@ -787,9 +922,9 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
 
   final List<String> _escuelas = [
     'Ingeniería Informática',
-    'Ingeniería Electrónica', 
+    'Ingeniería Electrónica',
     'Ingeniería de Telecomunicaciones',
-    'Ingeniería Mecatrónica'
+    'Ingeniería Mecatrónica',
   ];
 
   @override
@@ -806,8 +941,9 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
   }
 
   Future<List<QueryDocumentSnapshot>> _obtenerTutores() async {
-    final snapshot =
-        await FirebaseFirestore.instance.collection('tutores').get();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('tutores')
+        .get();
     return snapshot.docs;
   }
 
@@ -842,7 +978,9 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
                         decoration: InputDecoration(
                           hintText: 'Buscar tutor por nombre o apellido',
                           prefixIcon: Icon(Icons.search),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onChanged: (value) => setState(() => _busqueda = value),
                       ),
@@ -876,8 +1014,13 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
                     });
                   },
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ],
@@ -891,10 +1034,13 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (!snapshot.hasData || snapshot.data == null) {
-                  return const Center(child: Text('No se encontraron tutores.'));
+                  return const Center(
+                    child: Text('No se encontraron tutores.'),
+                  );
                 }
 
-                final tutores = snapshot.data![0] as List<QueryDocumentSnapshot>;
+                final tutores =
+                    snapshot.data![0] as List<QueryDocumentSnapshot>;
                 final assignedTutorId = snapshot.data![1] as String?;
 
                 // Lógica de filtrado
@@ -905,7 +1051,8 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
                   filtrados = filtrados.where((doc) {
                     final data = doc.data() as Map<String, dynamic>;
                     final nombreCompleto =
-                        '${data['nombre'] ?? ''} ${data['apellidos'] ?? ''}'.toLowerCase();
+                        '${data['nombre'] ?? ''} ${data['apellidos'] ?? ''}'
+                            .toLowerCase();
                     return nombreCompleto.contains(_busqueda.toLowerCase());
                   }).toList();
                 }
@@ -936,21 +1083,35 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
                     final esAsignado = tutorDoc.id == assignedTutorId;
 
                     return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
                       color: esAsignado ? Colors.deepPurple[50] : null,
                       child: ListTile(
                         leading: CircleAvatar(
                           radius: 25,
-                          backgroundImage: (tutorData['photoUrl'] as String? ?? '').isNotEmpty
+                          backgroundImage:
+                              (tutorData['photoUrl'] as String? ?? '')
+                                  .isNotEmpty
                               ? NetworkImage(tutorData['photoUrl'])
-                              : const AssetImage('assets/teacher_avatar.jpg') as ImageProvider,
+                              : const AssetImage('assets/teacher_avatar.jpg')
+                                    as ImageProvider,
                         ),
-                        title: Text('${tutorData['nombre'] ?? ''} ${tutorData['apellidos'] ?? ''}'),
-                        subtitle: Text(tutorData['especialidad'] ?? 'Especialista'),
+                        title: Text(
+                          '${tutorData['nombre'] ?? ''} ${tutorData['apellidos'] ?? ''}',
+                        ),
+                        subtitle: Text(
+                          tutorData['especialidad'] ?? 'Especialista',
+                        ),
                         trailing: esAsignado
                             ? const Chip(
                                 label: Text('Asignado'),
-                                avatar: Icon(Icons.star, color: Colors.white, size: 14),
+                                avatar: Icon(
+                                  Icons.star,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
                                 backgroundColor: Colors.deepPurple,
                                 labelStyle: TextStyle(color: Colors.white),
                               )

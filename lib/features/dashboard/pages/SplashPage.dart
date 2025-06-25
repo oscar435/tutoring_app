@@ -5,7 +5,7 @@ import 'package:tutoring_app/core/storage/preferencias_usuario.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SplashPage extends StatefulWidget {
-  static const String routeName = AppRoutes.splash;
+  static const String routeName = '/';
 
   const SplashPage({super.key});
 
@@ -13,7 +13,8 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
+class _SplashPageState extends State<SplashPage>
+    with SingleTickerProviderStateMixin {
   final prefs = PreferenciasUsuario();
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -37,30 +38,38 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   }
 
   Future<void> _checkNavigation() async {
-    await Future.delayed(const Duration(milliseconds: 3000)); // Splash de 3 segundos
+    await Future.delayed(
+      const Duration(milliseconds: 3000),
+    ); // Splash de 3 segundos
     final isOnboardingDone = prefs.onboardingCompletado;
     final user = FirebaseAuth.instance.currentUser;
-    
+
     if (!isOnboardingDone) {
-      if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+      if (mounted)
+        Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
       return;
     }
-    
+
     if (user == null) {
-      if (mounted) Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
+      if (mounted)
+        Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
       return;
     }
-    
+
     // La fuente de la verdad para el rol es la colección 'users'
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
       if (!mounted) return; // Comprobar si el widget sigue montado
 
       if (userDoc.exists) {
         final userData = userDoc.data() as Map<String, dynamic>;
         final role = userData['role'] as String?;
-        final isActive = userData['isActive'] ?? true; // Verificar si está activo
+        final isActive =
+            userData['isActive'] ?? true; // Verificar si está activo
 
         // Verificar si el usuario está activo
         if (!isActive) {
@@ -100,7 +109,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
       print('Error verificando usuario en SplashPage: $e');
       // En caso de error, cerrar sesión para evitar un estado inconsistente
       await FirebaseAuth.instance.signOut();
-      if(mounted) {
+      if (mounted) {
         await prefs.clearUserSession();
         Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
       }

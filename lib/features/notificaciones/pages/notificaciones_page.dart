@@ -66,9 +66,7 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
   Widget _buildNotificationsList() {
     final user = _auth.currentUser;
     if (user == null) {
-      return const Center(
-        child: Text('Usuario no autenticado'),
-      );
+      return const Center(child: Text('Usuario no autenticado'));
     }
 
     return StreamBuilder<List<Notificacion>>(
@@ -79,11 +77,7 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: Colors.grey[400],
-                ),
+                Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
                   'Error al cargar notificaciones',
@@ -158,18 +152,15 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
           color: Colors.red.shade700,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(
-          Icons.delete_outline,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
       ),
       onDismissed: (direction) {
-        // _notificacionService.eliminarNotificacion(notificacion.id); // TODO: Re-evaluar esta funcionalidad
+        // Eliminar notificación - funcionalidad deshabilitada temporalmente
+        // _notificacionService.eliminarNotificacion(notificacion.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Notificación eliminada (funcionalidad pendiente)'),
-            backgroundColor: Colors.red.shade600,
+          const SnackBar(
+            content: Text('Funcionalidad de eliminación en desarrollo'),
+            duration: Duration(seconds: 2),
           ),
         );
       },
@@ -214,11 +205,11 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
                                 notificacion.titulo,
                                 style: GoogleFonts.poppins(
                                   fontSize: 16,
-                                  fontWeight: notificacion.leida 
-                                      ? FontWeight.w500 
+                                  fontWeight: notificacion.leida
+                                      ? FontWeight.w500
                                       : FontWeight.w600,
-                                  color: notificacion.leida 
-                                      ? Colors.grey[700] 
+                                  color: notificacion.leida
+                                      ? Colors.grey[700]
                                       : Colors.black87,
                                 ),
                               ),
@@ -266,7 +257,9 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: _getTypeColor(notificacion.tipo).withOpacity(0.1),
+                                color: _getTypeColor(
+                                  notificacion.tipo,
+                                ).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -333,11 +326,7 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
         color: iconColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Icon(
-        iconData,
-        color: iconColor,
-        size: 20,
-      ),
+      child: Icon(iconData, color: iconColor, size: 20),
     );
   }
 
@@ -392,4 +381,4 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
         break;
     }
   }
-} 
+}
