@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MisEstudiantesPage extends StatelessWidget {
   final String tutorId;
-  const MisEstudiantesPage({required this.tutorId, Key? key}) : super(key: key);
+  const MisEstudiantesPage({required this.tutorId, super.key});
 
   Future<List<Map<String, dynamic>>> _obtenerEstudiantes() async {
     // 1. Obtener la lista de IDs de estudiantes asignados al tutor

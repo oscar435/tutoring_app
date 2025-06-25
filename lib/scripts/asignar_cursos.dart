@@ -22,14 +22,14 @@ Future<Map<String, List<String>>> obtenerCursosPorEscuela() async {
   final escuelasSnap = await firestore.collection('escuelas').get();
   final Map<String, List<String>> cursosPorEscuela = {};
   for (var doc in escuelasSnap.docs) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data();
     final nombreEscuela = data.values.first.toString();
     final cursos = <String>[];
     final ciclosSnap = await firestore.collection('escuelas').doc(doc.id).collection('ciclos').get();
     for (var cicloDoc in ciclosSnap.docs) {
       final cursosSnap = await firestore.collection('escuelas').doc(doc.id).collection('ciclos').doc(cicloDoc.id).collection('cursos').get();
       for (var cursoDoc in cursosSnap.docs) {
-        final cursoData = cursoDoc.data() as Map<String, dynamic>;
+        final cursoData = cursoDoc.data();
         final nombreCurso = cursoData['nombre'] ?? cursoDoc.id;
         cursos.add(nombreCurso);
       }
@@ -61,7 +61,7 @@ Future<void> asignarCursosATutores() async {
   final random = Random();
 
   for (var doc in tutoresSnap.docs) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data();
     final escuela = data['escuela'] ?? '';
     if (escuela.isEmpty) continue;
     final cursos = cursosPorEscuela[escuela] ?? [];

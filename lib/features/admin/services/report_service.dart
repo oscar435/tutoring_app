@@ -5,7 +5,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:universal_html/html.dart' as html;
 import 'dart:convert';
-import '../../../core/models/admin_user.dart';
 
 class ReportService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -31,7 +30,7 @@ class ReportService {
       final List<Map<String, dynamic>> userDetails = [];
 
       for (var doc in usersSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final role = data['role'] as String? ?? 'student';
         final isActive = data['isActive'] as bool? ?? true;
         final createdAt = data['createdAt'] as Timestamp?;
@@ -337,7 +336,7 @@ class ReportService {
       // Lista detallada de solicitudes
       final List<Map<String, dynamic>> solicitudDetails = [];
       for (var doc in solicitudesSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final status = data['estado'] as String? ?? 'pendiente';
         final createdAt = data['createdAt'] as Timestamp?;
         final fechaSolicitada = data['fecha_solicitada'] as Timestamp?;
@@ -365,7 +364,7 @@ class ReportService {
       // Lista detallada de sesiones
       final List<Map<String, dynamic>> sesionDetails = [];
       for (var doc in sesionesSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final status = data['estado'] as String? ?? 'programada';
         final fechaInicio = data['fecha_inicio'] as Timestamp?;
         final fechaFin = data['fecha_fin'] as Timestamp?;

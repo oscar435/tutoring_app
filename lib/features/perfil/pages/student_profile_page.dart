@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutoring_app/features/perfil/pages/edit_student_profile_page.dart';
 
 class StudentProfilePage extends StatelessWidget {
-  const StudentProfilePage({Key? key}) : super(key: key);
+  const StudentProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {

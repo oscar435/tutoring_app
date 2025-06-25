@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/notificacion_service.dart';
 
 class NotificacionesConfigPage extends StatefulWidget {
-  const NotificacionesConfigPage({Key? key}) : super(key: key);
+  const NotificacionesConfigPage({super.key});
 
   @override
   State<NotificacionesConfigPage> createState() =>

@@ -9,10 +9,10 @@ class EmailVerificationPage extends StatefulWidget {
   final Map<String, dynamic> userData;
 
   const EmailVerificationPage({
-    Key? key,
+    super.key,
     required this.email,
     required this.userData,
-  }) : super(key: key);
+  });
 
   @override
   State<EmailVerificationPage> createState() => _EmailVerificationPageState();

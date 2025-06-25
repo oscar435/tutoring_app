@@ -1,9 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tutoring_app/core/models/solicitud_tutoria.dart';
-import 'package:tutoring_app/core/models/notificacion.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
-import 'package:tutoring_app/features/notificaciones/services/notificacion_service.dart';
 import 'package:tutoring_app/features/disponibilidad/services/disponibilidad_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';

@@ -17,6 +17,8 @@ void main() async {
 }
 
 class MigrationApp extends StatelessWidget {
+  const MigrationApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -31,6 +33,8 @@ class MigrationApp extends StatelessWidget {
 }
 
 class MigrationPage extends StatefulWidget {
+  const MigrationPage({super.key});
+
   @override
   _MigrationPageState createState() => _MigrationPageState();
 }
@@ -38,7 +42,7 @@ class MigrationPage extends StatefulWidget {
 class _MigrationPageState extends State<MigrationPage> {
   bool _isMigrating = false;
   String _status = 'Listo para migrar';
-  List<String> _logs = [];
+  final List<String> _logs = [];
 
   void _addLog(String message) {
     setState(() {

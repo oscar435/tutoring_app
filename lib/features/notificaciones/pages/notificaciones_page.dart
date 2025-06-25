@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../services/notificacion_service.dart';
 import '../../../core/models/notificacion.dart';
 
 class NotificacionesPage extends StatefulWidget {
-  const NotificacionesPage({Key? key}) : super(key: key);
+  const NotificacionesPage({super.key});
 
   @override
   State<NotificacionesPage> createState() => _NotificacionesPageState();

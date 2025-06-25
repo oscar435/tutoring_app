@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:tutoring_app/core/models/solicitud_tutoria.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
-import 'package:tutoring_app/features/auth/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
 

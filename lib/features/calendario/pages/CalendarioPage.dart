@@ -4,13 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
-import 'package:tutoring_app/core/models/sesion_tutoria.dart';
 import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
 
 class CalendarioPage extends StatefulWidget {
   static const String routeName = AppRoutes.calendario;
-  const CalendarioPage({Key? key}) : super(key: key);
+  const CalendarioPage({super.key});
 
   @override
   State<CalendarioPage> createState() => _CalendarioPageState();

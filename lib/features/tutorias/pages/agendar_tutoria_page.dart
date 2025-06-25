@@ -85,7 +85,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
   Future<void> _cargarCursosTutor() async {
     try {
       final doc = await FirebaseFirestore.instance.collection('tutores').doc(widget.tutorId).get();
-      final data = doc.data() as Map<String, dynamic>?;
+      final data = doc.data();
       
       if (mounted) {
         setState(() {

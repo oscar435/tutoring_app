@@ -8,7 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 class RegisterProfilePhotoPage extends StatefulWidget {
   final Map<String, dynamic> userData;
 
-  const RegisterProfilePhotoPage({Key? key, required this.userData}) : super(key: key);
+  const RegisterProfilePhotoPage({super.key, required this.userData});
 
   @override
   State<RegisterProfilePhotoPage> createState() => _RegisterProfilePhotoPageState();
@@ -140,6 +140,8 @@ class _RegisterProfilePhotoPageState extends State<RegisterProfilePhotoPage> {
 
 // Pantalla de felicitaciones
 class CongratsPage extends StatelessWidget {
+  const CongratsPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:tutoring_app/features/dashboard/pages/inicio.dart';
 import 'package:tutoring_app/features/auth/pages/register_credentials_page.dart';
 import 'package:tutoring_app/core/utils/snackbar.dart';
 import 'package:tutoring_app/features/auth/services/auth_service.dart';

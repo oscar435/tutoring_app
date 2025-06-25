@@ -98,7 +98,7 @@ class _RoleCheckScreenState extends State<RoleCheckScreen> {
           .get();
 
       if (userDoc.exists) {
-        final userData = userDoc.data() as Map<String, dynamic>?;
+        final userData = userDoc.data();
         final userRole = userData?['role'] as String?;
         return userRole == 'admin' || userRole == 'superAdmin';
       }

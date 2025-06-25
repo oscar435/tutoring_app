@@ -45,14 +45,16 @@ class _SplashPageState extends State<SplashPage>
     final user = FirebaseAuth.instance.currentUser;
 
     if (!isOnboardingDone) {
-      if (mounted)
+      if (mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+      }
       return;
     }
 
     if (user == null) {
-      if (mounted)
+      if (mounted) {
         Navigator.pushReplacementNamed(context, AppRoutes.roleSelector);
+      }
       return;
     }
 

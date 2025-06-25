@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tutoring_app/features/perfil/pages/edit_tutor_profile_page.dart';
 
 class TutorProfilePage extends StatelessWidget {
-  const TutorProfilePage({Key? key}) : super(key: key);
+  const TutorProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -107,8 +107,8 @@ class TutorProfilePage extends StatelessWidget {
           );
         },
         backgroundColor: Colors.deepPurple,
-        child: const Icon(Icons.edit, color: Colors.white),
         tooltip: 'Editar Perfil',
+        child: const Icon(Icons.edit, color: Colors.white),
       ),
     );
   }

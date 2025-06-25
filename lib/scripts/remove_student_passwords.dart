@@ -29,7 +29,7 @@ Future<void> main() async {
       final data = doc.data();
       
       // Comprobar si el campo 'password' existe en el documento
-      if ((data as Map<String, dynamic>).containsKey('password')) {
+      if ((data).containsKey('password')) {
         print('Se encontró contraseña en el estudiante con ID: ${doc.id}. Programando eliminación.');
         // Usar FieldValue.delete() para eliminar el campo
         batch.update(doc.reference, {'password': FieldValue.delete()});

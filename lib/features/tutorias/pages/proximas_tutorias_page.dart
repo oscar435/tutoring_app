@@ -12,8 +12,8 @@ class ProximasTutoriasPage extends StatefulWidget {
   const ProximasTutoriasPage({
     required this.userId,
     required this.userRole,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<ProximasTutoriasPage> createState() => _ProximasTutoriasPageState();
@@ -98,7 +98,7 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                     .doc(sesion.estudianteId)
                     .get();
                 final estudianteData =
-                    estudianteDoc.data() as Map<String, dynamic>?;
+                    estudianteDoc.data();
 
                 final nombreEstudiante = estudianteData != null
                     ? '${estudianteData['nombre']} ${estudianteData['apellidos']}'
@@ -112,7 +112,7 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                     .doc(widget.userId)
                     .get();
 
-                final tutorData = tutorDoc.data() as Map<String, dynamic>?;
+                final tutorData = tutorDoc.data();
                 final estudiantesAsignados =
                     (tutorData?['estudiantes_asignados'] as List<dynamic>?)
                         ?.cast<String>() ??

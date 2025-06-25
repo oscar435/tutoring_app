@@ -38,7 +38,7 @@ class _SolicitudesTutorPageState extends State<SolicitudesTutorPage> {
             .doc(estudianteId)
             .get();
 
-        final estudianteData = estudianteDoc.data() as Map<String, dynamic>?;
+        final estudianteData = estudianteDoc.data();
 
         // Verificar si el estudiante está en la lista de estudiantes asignados del tutor
         final tutorDoc = await FirebaseFirestore.instance
@@ -46,7 +46,7 @@ class _SolicitudesTutorPageState extends State<SolicitudesTutorPage> {
             .doc(widget.tutorId)
             .get();
 
-        final tutorData = tutorDoc.data() as Map<String, dynamic>?;
+        final tutorData = tutorDoc.data();
         final estudiantesAsignados =
             (tutorData?['estudiantes_asignados'] as List<dynamic>?)
                 ?.cast<String>() ??

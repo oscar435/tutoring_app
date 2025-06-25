@@ -3,17 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tutoring_app/core/storage/preferencias_usuario.dart';
 import 'package:tutoring_app/features/calendario/pages/CalendarioPage.dart';
-import 'package:tutoring_app/features/auth/pages/login_pages.dart';
 import 'package:tutoring_app/features/perfil/pages/student_profile_page.dart';
 import 'package:tutoring_app/features/materiales/pages/material_educativo_page.dart';
 import 'package:tutoring_app/features/notificaciones/pages/notificaciones_page.dart';
 import 'package:tutoring_app/features/tutorias/pages/TodasTutoriasPage.dart';
 import 'package:tutoring_app/features/tutorias/pages/agendar_tutoria_page.dart';
-import 'package:tutoring_app/features/tutorias/services/solicitud_tutoria_service.dart';
 import 'package:tutoring_app/core/models/solicitud_tutoria.dart';
 import 'package:intl/intl.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
-import 'package:tutoring_app/core/utils/snackbar.dart';
 import 'package:tutoring_app/features/notificaciones/widgets/notification_badge.dart';
 
 class HomePage2 extends StatelessWidget {
@@ -36,8 +33,9 @@ class HomePage2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null)
+    if (user == null) {
       return const Scaffold(body: Center(child: Text('Error: No hay usuario')));
+    }
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -200,14 +198,16 @@ class HomePage2 extends StatelessWidget {
             .doc(userId)
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError)
+          if (snapshot.hasError) {
             return const Drawer(
               child: Center(child: Text('Error al cargar datos')),
             );
-          if (!snapshot.hasData || !snapshot.data!.exists)
+          }
+          if (!snapshot.hasData || !snapshot.data!.exists) {
             return const Drawer(
               child: Center(child: CircularProgressIndicator()),
             );
+          }
 
           final userData = snapshot.data!.data() as Map<String, dynamic>;
           final nombre = userData['nombre'] ?? '';
@@ -557,7 +557,7 @@ class HomePage2 extends StatelessWidget {
           return snapshot.docs
               .map(
                 (doc) => SolicitudTutoria.fromMap(
-                  doc.data() as Map<String, dynamic>,
+                  doc.data(),
                 ),
               )
               .toList();

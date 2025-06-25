@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../services/notificacion_service.dart';
 
 class NotificationBadge extends StatefulWidget {
@@ -9,12 +8,12 @@ class NotificationBadge extends StatefulWidget {
   final double? badgeSize;
 
   const NotificationBadge({
-    Key? key,
+    super.key,
     required this.child,
     this.badgeColor,
     this.textColor,
     this.badgeSize,
-  }) : super(key: key);
+  });
 
   @override
   State<NotificationBadge> createState() => _NotificationBadgeState();

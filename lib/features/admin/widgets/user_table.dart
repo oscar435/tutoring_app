@@ -9,12 +9,12 @@ class UserTable extends StatelessWidget {
   final Function(AdminUser) onDelete;
 
   const UserTable({
-    Key? key,
+    super.key,
     required this.users,
     required this.currentAdmin,
     required this.onEdit,
     required this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

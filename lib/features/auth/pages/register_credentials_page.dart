@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:tutoring_app/features/auth/pages/email_verification_page.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:tutoring_app/core/storage/preferencias_usuario.dart';
 import 'package:tutoring_app/features/auth/pages/login_pages.dart';
 import 'package:tutoring_app/features/dashboard/pages/RoleSelectorPage.dart';
 import 'package:tutoring_app/features/auth/services/auth_service.dart';
 import 'package:tutoring_app/core/utils/snackbar.dart';
-import 'register_personal_info_page.dart';
 
 class RegisterCredentialsPage extends StatefulWidget {
   static const routeName = '/register_credentials';

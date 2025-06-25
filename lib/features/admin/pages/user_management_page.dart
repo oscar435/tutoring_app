@@ -49,7 +49,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
   UserRole _selectedFormRole = UserRole.student;
 
   // Variables para filtros
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   String? _selectedSchool;
   List<String> _schoolOptions = [];
   Timer? _debounce;
@@ -341,7 +341,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
       );
 
       try {
-        final role = user!.role;
+        final role = user.role;
         if (role == UserRole.student || role == UserRole.teacher) {
           final collectionName = role == UserRole.student
               ? 'estudiantes'
@@ -444,8 +444,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
                         enabled: isCreating,
                         validator: (v) {
                           if (v!.isEmpty) return 'Campo requerido';
-                          if (!v.endsWith('@unfv.edu.pe'))
+                          if (!v.endsWith('@unfv.edu.pe')) {
                             return 'Debe ser un correo institucional';
+                          }
                           return null;
                         },
                       ),
@@ -459,10 +460,12 @@ class _UserManagementPageState extends State<UserManagementPage> {
                             border: OutlineInputBorder(),
                           ),
                           validator: (v) {
-                            if (isCreating && v!.isEmpty)
+                            if (isCreating && v!.isEmpty) {
                               return 'Campo requerido';
-                            if (isCreating && v!.length < 6)
+                            }
+                            if (isCreating && v!.length < 6) {
                               return 'Mínimo 6 caracteres';
+                            }
                             return null;
                           },
                         ),
@@ -533,10 +536,12 @@ class _UserManagementPageState extends State<UserManagementPage> {
                           validator: (v) {
                             if (_selectedFormRole == UserRole.student) {
                               if (v!.isEmpty) return 'Campo requerido';
-                              if (v.length != 10)
+                              if (v.length != 10) {
                                 return 'Debe tener 10 dígitos';
-                              if (!RegExp(r'^\d{10}$').hasMatch(v))
+                              }
+                              if (!RegExp(r'^\d{10}$').hasMatch(v)) {
                                 return 'Solo números permitidos';
+                              }
                             }
                             return null;
                           },
@@ -552,8 +557,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
                             if (_selectedFormRole == UserRole.student) {
                               if (v!.isEmpty) return 'Campo requerido';
                               final ciclo = int.tryParse(v);
-                              if (ciclo == null || ciclo < 1 || ciclo > 10)
+                              if (ciclo == null || ciclo < 1 || ciclo > 10) {
                                 return 'Ciclo debe ser del 1 al 10';
+                              }
                             }
                             return null;
                           },
@@ -570,8 +576,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
                             if (_selectedFormRole == UserRole.student) {
                               if (v!.isEmpty) return 'Campo requerido';
                               final edad = int.tryParse(v);
-                              if (edad == null || edad < 16 || edad > 100)
+                              if (edad == null || edad < 16 || edad > 100) {
                                 return 'Edad debe ser entre 16 y 100';
+                              }
                             }
                             return null;
                           },
@@ -950,8 +957,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showUserFormDialog(),
-        child: const Icon(Icons.add),
         tooltip: 'Crear Usuario',
+        child: const Icon(Icons.add),
       ),
     );
   }

@@ -7,7 +7,6 @@ import '../widgets/role_distribution_chart.dart';
 import '../services/report_service.dart';
 import 'user_management_page.dart';
 import 'audit_logs_page.dart';
-import 'package:tutoring_app/features/admin/pages/audit_logs_page.dart';
 import 'package:tutoring_app/features/admin/pages/admin_sessions_page.dart';
 import 'package:tutoring_app/features/admin/pages/admin_requests_page.dart';
 
@@ -78,7 +77,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       };
 
       for (var doc in usersSnapshot.docs) {
-        final role = (doc.data() as Map<String, dynamic>)['role'] as String? ?? 'student';
+        final role = (doc.data())['role'] as String? ?? 'student';
         roleCount[role] = (roleCount[role] ?? 0) + 1;
       }
       return {'byRole': roleCount, 'total': usersSnapshot.docs.length};

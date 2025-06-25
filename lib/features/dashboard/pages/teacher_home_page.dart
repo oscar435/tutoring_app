@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tutoring_app/features/calendario/pages/CalendarioPage.dart';
 import 'package:tutoring_app/features/notificaciones/pages/notificaciones_page.dart';
-import 'package:tutoring_app/core/utils/snackbar.dart';
 import 'package:tutoring_app/features/disponibilidad/pages/editar_disponibilidad_page.dart';
 import 'package:tutoring_app/features/tutorias/pages/solicitudes_tutor_page.dart';
 import 'package:tutoring_app/features/tutorias/pages/proximas_tutorias_page.dart';
@@ -20,7 +19,7 @@ import 'package:tutoring_app/features/notificaciones/widgets/notification_badge.
 
 class TeacherHomePage extends StatefulWidget {
   static const routeName = '/teacher-home';
-  const TeacherHomePage({Key? key}) : super(key: key);
+  const TeacherHomePage({super.key});
 
   @override
   State<TeacherHomePage> createState() => _TeacherHomePageState();
@@ -77,8 +76,9 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null)
+    if (user == null) {
       return const Scaffold(body: Center(child: Text('Error: No hay usuario')));
+    }
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -154,18 +154,16 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       title: 'Próximas Tutorías',
                       trailing: 'Ver todas',
                       onTrailingTap: () {
-                        if (user != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProximasTutoriasPage(
-                                userId: user.uid,
-                                userRole: 'tutor',
-                              ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProximasTutoriasPage(
+                              userId: user.uid,
+                              userRole: 'tutor',
                             ),
-                          );
-                        }
-                      },
+                          ),
+                        );
+                                            },
                     ),
                     _buildTutoriasGrid(),
                     const SizedBox(height: 20),
@@ -180,7 +178,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                SolicitudesTutorPage(tutorId: user?.uid ?? ''),
+                                SolicitudesTutorPage(tutorId: user.uid ?? ''),
                           ),
                         );
                       },
@@ -486,7 +484,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   .get();
 
               final estudianteData =
-                  estudianteDoc.data() as Map<String, dynamic>?;
+                  estudianteDoc.data();
               final nombreEstudiante = estudianteData != null
                   ? '${estudianteData['nombre']} ${estudianteData['apellidos']}'
                   : 'Estudiante';
@@ -503,7 +501,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   .doc(user!.uid)
                   .get();
 
-              final tutorData = tutorDoc.data() as Map<String, dynamic>?;
+              final tutorData = tutorDoc.data();
               final estudiantesAsignados =
                   (tutorData?['estudiantes_asignados'] as List<dynamic>?)
                       ?.cast<String>() ??
@@ -859,7 +857,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         .doc(tutorId)
         .get();
     if (tutorDoc.exists) {
-      final tutorData = tutorDoc.data() as Map<String, dynamic>?;
+      final tutorData = tutorDoc.data();
       final estudiantesAsignados =
           (tutorData?['estudiantes_asignados'] as List<dynamic>?)
               ?.cast<String>() ??
@@ -1010,7 +1008,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         .doc(solicitud.estudianteId)
         .get();
 
-    final estudianteData = estudianteDoc.data() as Map<String, dynamic>?;
+    final estudianteData = estudianteDoc.data();
     final nombreEstudiante =
         estudianteData?['nombre'] != null &&
             estudianteData?['apellidos'] != null
