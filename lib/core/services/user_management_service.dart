@@ -19,9 +19,12 @@ class UserManagementService {
 
       // Aplicar filtros
       if (roleFilter != null) {
-        query = query.where('role', isEqualTo: roleFilter.toString().split('.').last);
+        query = query.where(
+          'role',
+          isEqualTo: roleFilter.toString().split('.').last,
+        );
       }
-      
+
       if (isActiveFilter != null) {
         query = query.where('isActive', isEqualTo: isActiveFilter);
       }
@@ -34,7 +37,7 @@ class UserManagementService {
 
       for (var doc in querySnapshot.docs) {
         final user = AdminUser.fromFirestore(doc);
-        
+
         // Aplicar filtro de búsqueda si existe
         if (searchQuery != null && searchQuery.isNotEmpty) {
           final query = searchQuery.toLowerCase();
@@ -49,7 +52,6 @@ class UserManagementService {
 
       return users;
     } catch (e) {
-      print('Error obteniendo usuarios: $e');
       throw Exception('Error al obtener usuarios: $e');
     }
   }
@@ -63,7 +65,6 @@ class UserManagementService {
       }
       return null;
     } catch (e) {
-      print('Error obteniendo usuario: $e');
       throw Exception('Error al obtener usuario: $e');
     }
   }
@@ -85,16 +86,14 @@ class UserManagementService {
           .collection('users')
           .where('email', isEqualTo: email)
           .get();
-      
+
       if (existingUser.docs.isNotEmpty) {
         throw Exception('El email ya está registrado');
       }
 
       // Crear cuenta de autenticación
-      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(email: email, password: password);
 
       final String userId = userCredential.user!.uid;
       final WriteBatch batch = _firestore.batch();
@@ -117,7 +116,9 @@ class UserManagementService {
       // Crear documento en colección específica ('estudiantes' o 'tutores')
       final String? collectionName = _getCollectionForRole(role);
       if (collectionName != null && specificData != null) {
-        final specificDocRef = _firestore.collection(collectionName).doc(userId);
+        final specificDocRef = _firestore
+            .collection(collectionName)
+            .doc(userId);
         // Añadir campos por defecto que estaban en la UI
         specificData['createdAt'] = FieldValue.serverTimestamp();
         specificData['updatedAt'] = FieldValue.serverTimestamp();
@@ -125,7 +126,7 @@ class UserManagementService {
         specificData['photoUrl'] = '';
         batch.set(specificDocRef, specificData);
       }
-      
+
       await batch.commit();
 
       // Registrar en auditoría
@@ -135,12 +136,12 @@ class UserManagementService {
         resource: AuditResource.user,
         resourceId: userId,
         resourceName: user.fullName,
-        description: 'Usuario creado: ${user.fullName} con rol ${user.roleDisplayName}',
+        description:
+            'Usuario creado: ${user.fullName} con rol ${user.roleDisplayName}',
       );
 
       return userId;
     } catch (e) {
-      print('Error creando usuario: $e');
       throw Exception('Error al crear usuario: $e');
     }
   }
@@ -159,7 +160,7 @@ class UserManagementService {
     try {
       final WriteBatch batch = _firestore.batch();
       final userDocRef = _firestore.collection('users').doc(userId);
-      
+
       final userDoc = await userDocRef.get();
       if (!userDoc.exists) {
         throw Exception('Usuario no encontrado');
@@ -172,10 +173,12 @@ class UserManagementService {
       if (apellidos != null) updates['apellidos'] = apellidos;
       if (role != null) updates['role'] = role.toString().split('.').last;
       if (permissions != null) {
-        updates['permissions'] = permissions.map((p) => p.toString().split('.').last).toList();
+        updates['permissions'] = permissions
+            .map((p) => p.toString().split('.').last)
+            .toList();
       }
       if (isActive != null) updates['isActive'] = isActive;
-      
+
       updates['lastModified'] = Timestamp.fromDate(DateTime.now());
       updates['modifiedBy'] = modifiedBy;
 
@@ -189,25 +192,32 @@ class UserManagementService {
           resourceName: oldUser.fullName,
           oldValues: {'role': oldUser.role.toString().split('.').last},
           newValues: {'role': role.toString().split('.').last},
-          description: 'Rol de ${oldUser.fullName} cambiado de ${oldUser.roleDisplayName} a ${role.displayName}',
+          description:
+              'Rol de ${oldUser.fullName} cambiado de ${oldUser.roleDisplayName} a ${role.displayName}',
         );
 
         // 1. Borrar de la colección antigua
         final oldCollectionName = _getCollectionForRole(oldUser.role);
         if (oldCollectionName != null) {
-          final oldSpecificDocRef = _firestore.collection(oldCollectionName).doc(userId);
+          final oldSpecificDocRef = _firestore
+              .collection(oldCollectionName)
+              .doc(userId);
           batch.delete(oldSpecificDocRef);
         }
 
         // 2. Crear en la nueva colección
         final newCollectionName = _getCollectionForRole(role);
         if (newCollectionName != null && specificData != null) {
-          final newSpecificDocRef = _firestore.collection(newCollectionName).doc(userId);
-          
+          final newSpecificDocRef = _firestore
+              .collection(newCollectionName)
+              .doc(userId);
+
           specificData['updatedAt'] = FieldValue.serverTimestamp();
-          specificData['createdAt'] = oldUser.createdAt; 
-          specificData['photoUrl'] = userDoc.data()!.containsKey('photoUrl') ? userDoc.get('photoUrl') : '';
-          
+          specificData['createdAt'] = oldUser.createdAt;
+          specificData['photoUrl'] = userDoc.data()!.containsKey('photoUrl')
+              ? userDoc.get('photoUrl')
+              : '';
+
           batch.set(newSpecificDocRef, specificData);
         }
       } else {
@@ -215,11 +225,13 @@ class UserManagementService {
         final currentRole = role ?? oldUser.role;
         final collectionName = _getCollectionForRole(currentRole);
         if (collectionName != null && specificData != null) {
-          final specificDocRef = _firestore.collection(collectionName).doc(userId);
-          
+          final specificDocRef = _firestore
+              .collection(collectionName)
+              .doc(userId);
+
           // Añadir campos de auditoría
           specificData['updatedAt'] = FieldValue.serverTimestamp();
-          
+
           // Actualizar el documento específico
           batch.update(specificDocRef, specificData);
         }
@@ -252,7 +264,6 @@ class UserManagementService {
         description: 'Usuario actualizado: ${oldUser.fullName}',
       );
     } catch (e) {
-      print('Error actualizando usuario: $e');
       throw Exception('Error al actualizar usuario: $e');
     }
   }
@@ -281,7 +292,9 @@ class UserManagementService {
       try {
         final role = user.role;
         if (role == UserRole.student || role == UserRole.teacher) {
-          final collectionName = role == UserRole.student ? 'estudiantes' : 'tutores';
+          final collectionName = role == UserRole.student
+              ? 'estudiantes'
+              : 'tutores';
           await _firestore.collection(collectionName).doc(userId).update({
             'isActive': false,
             'deactivatedAt': Timestamp.fromDate(DateTime.now()),
@@ -289,7 +302,6 @@ class UserManagementService {
           });
         }
       } catch (e) {
-        print('Error actualizando colección específica: $e');
         // Continuar aunque falle, lo importante es la colección users
       }
 
@@ -303,7 +315,6 @@ class UserManagementService {
         description: 'Usuario desactivado: ${user.fullName}',
       );
     } catch (e) {
-      print('Error eliminando usuario: $e');
       throw Exception('Error al eliminar usuario: $e');
     }
   }
@@ -312,7 +323,7 @@ class UserManagementService {
   Future<Map<String, int>> getUserStatistics() async {
     try {
       final usersSnapshot = await _firestore.collection('users').get();
-      
+
       Map<String, int> stats = {
         'total': 0,
         'students': 0,
@@ -325,7 +336,7 @@ class UserManagementService {
       for (var doc in usersSnapshot.docs) {
         final user = AdminUser.fromFirestore(doc);
         stats['total'] = (stats['total'] ?? 0) + 1;
-        
+
         if (user.isActive) {
           stats['active'] = (stats['active'] ?? 0) + 1;
         } else {
@@ -348,7 +359,6 @@ class UserManagementService {
 
       return stats;
     } catch (e) {
-      print('Error obteniendo estadísticas: $e');
       throw Exception('Error al obtener estadísticas: $e');
     }
   }
@@ -366,7 +376,7 @@ class UserManagementService {
   }) async {
     try {
       final currentUser = await getUserById(userId);
-      
+
       final auditLog = AuditLog(
         id: '',
         userId: userId,
@@ -384,7 +394,6 @@ class UserManagementService {
 
       await _firestore.collection('audit_logs').add(auditLog.toFirestore());
     } catch (e) {
-      print('Error registrando auditoría: $e');
       // No lanzar excepción para no interrumpir la operación principal
       // TEMPORAL: Lanzamos el error para depurarlo en la UI
       throw Exception('Error al registrar en auditoría: $e');
@@ -392,8 +401,13 @@ class UserManagementService {
   }
 
   // Validar permisos de usuario
-  bool validateUserPermissions(AdminUser user, List<Permission> requiredPermissions) {
-    return requiredPermissions.every((permission) => user.hasPermission(permission));
+  bool validateUserPermissions(
+    AdminUser user,
+    List<Permission> requiredPermissions,
+  ) {
+    return requiredPermissions.every(
+      (permission) => user.hasPermission(permission),
+    );
   }
 
   // Verificar si el email ya existe
@@ -403,10 +417,9 @@ class UserManagementService {
           .collection('users')
           .where('email', isEqualTo: email)
           .get();
-      
+
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
-      print('Error verificando email: $e');
       return false;
     }
   }
@@ -446,7 +459,9 @@ class UserManagementService {
       try {
         final role = user.role;
         if (role == UserRole.student || role == UserRole.teacher) {
-          final collectionName = role == UserRole.student ? 'estudiantes' : 'tutores';
+          final collectionName = role == UserRole.student
+              ? 'estudiantes'
+              : 'tutores';
           await _firestore.collection(collectionName).doc(userId).update({
             'isActive': true,
             'reactivatedAt': Timestamp.fromDate(DateTime.now()),
@@ -454,7 +469,6 @@ class UserManagementService {
           });
         }
       } catch (e) {
-        print('Error actualizando colección específica: $e');
         // Continuar aunque falle, lo importante es la colección users
       }
 
@@ -468,8 +482,7 @@ class UserManagementService {
         description: 'Usuario reactivado: ${user.fullName}',
       );
     } catch (e) {
-      print('Error reactivando usuario: $e');
       throw Exception('Error al reactivar usuario: $e');
     }
   }
-} 
+}

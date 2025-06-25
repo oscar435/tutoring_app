@@ -61,7 +61,5 @@ Future<void> main() async {
       'cursos': cursos.toList(),
       'areaEspecialidad': area,
     });
-    print('Tutor ${doc.id} actualizado con cursos: $cursos');
   }
-  print('¡Todos los tutores han sido actualizados!');
-} 
+}

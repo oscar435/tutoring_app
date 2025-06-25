@@ -9,7 +9,7 @@ const carreras = [
   'Ingeniería Informática',
   'Ingeniería Electrónica',
   'Ingeniería Mecatrónica',
-  'Ingeniería de Telecomunicaciones'
+  'Ingeniería de Telecomunicaciones',
 ];
 
 // Lista de tutores a crear
@@ -79,23 +79,23 @@ final List<Map<String, String>> tutores = [
 Future<void> main() async {
   // Initialize Flutter bindings
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Inicializar Firebase sin Flutter
   await Firebase.initializeApp();
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
 
-  print('Creando 10 tutores de Ingeniería Electrónica...\n');
-
   for (var i = 0; i < tutores.length; i++) {
     final tutor = tutores[i];
-    final password = 'Unfv${tutor['nombre']!.substring(0, 3).toUpperCase()}2024!';
+    final password =
+        'Unfv${tutor['nombre']!.substring(0, 3).toUpperCase()}2024!';
     try {
       // 1. Crear cuenta de autenticación
-      final UserCredential userCredential = await auth.createUserWithEmailAndPassword(
-        email: tutor['email']!,
-        password: password,
-      );
+      final UserCredential userCredential = await auth
+          .createUserWithEmailAndPassword(
+            email: tutor['email']!,
+            password: password,
+          );
       final String tutorId = userCredential.user!.uid;
       // 2. Datos del tutor para Firestore
       final Map<String, dynamic> tutorData = {
@@ -117,12 +117,10 @@ Future<void> main() async {
         'isTeacher': true,
         'createdAt': Timestamp.fromDate(DateTime(2025, 6, 15, 2, 3, 21)),
       });
-      print('''\n✅ Tutor creado exitosamente:\n   Nombre: ${tutor['nombre']} ${tutor['apellidos']}\n   Email: ${tutor['email']}\n   Contraseña: $password\n   ID: $tutorId\n''');
     } catch (e) {
-      print('❌ Error al crear tutor ${tutor['nombre']}: $e');
+      // No se imprime el error en la consola
     }
   }
-  print('Proceso completado.');
   exit(0);
 }
 
@@ -130,4 +128,4 @@ extension StringExtension on String {
   String capitalize() {
     return "${this[0].toUpperCase()}${substring(1)}";
   }
-} 
+}

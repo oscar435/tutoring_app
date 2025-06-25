@@ -25,9 +25,19 @@ Future<Map<String, List<String>>> obtenerCursosPorEscuela() async {
     final data = doc.data();
     final nombreEscuela = data.values.first.toString();
     final cursos = <String>[];
-    final ciclosSnap = await firestore.collection('escuelas').doc(doc.id).collection('ciclos').get();
+    final ciclosSnap = await firestore
+        .collection('escuelas')
+        .doc(doc.id)
+        .collection('ciclos')
+        .get();
     for (var cicloDoc in ciclosSnap.docs) {
-      final cursosSnap = await firestore.collection('escuelas').doc(doc.id).collection('ciclos').doc(cicloDoc.id).collection('cursos').get();
+      final cursosSnap = await firestore
+          .collection('escuelas')
+          .doc(doc.id)
+          .collection('ciclos')
+          .doc(cicloDoc.id)
+          .collection('cursos')
+          .get();
       for (var cursoDoc in cursosSnap.docs) {
         final cursoData = cursoDoc.data();
         final nombreCurso = cursoData['nombre'] ?? cursoDoc.id;
@@ -39,13 +49,14 @@ Future<Map<String, List<String>>> obtenerCursosPorEscuela() async {
   return cursosPorEscuela;
 }
 
-Future<void> asignarEscuelasATutores(List<QueryDocumentSnapshot> tutoresDocs) async {
+Future<void> asignarEscuelasATutores(
+  List<QueryDocumentSnapshot> tutoresDocs,
+) async {
   for (int i = 0; i < tutoresDocs.length && i < escuelasReparto.length; i++) {
     final doc = tutoresDocs[i];
     final nuevaEscuela = escuelasReparto[i];
     await doc.reference.update({'escuela': nuevaEscuela});
     final data = doc.data() as Map<String, dynamic>;
-    print('Tutor ${data['nombre']} ${data['apellidos']} asignado a $nuevaEscuela');
   }
 }
 
@@ -66,7 +77,6 @@ Future<void> asignarCursosATutores() async {
     if (escuela.isEmpty) continue;
     final cursos = cursosPorEscuela[escuela] ?? [];
     if (cursos.length < 3) {
-      print('No hay suficientes cursos para la escuela $escuela');
       continue;
     }
     // Seleccionar 3 cursos aleatorios y distintos
@@ -74,20 +84,16 @@ Future<void> asignarCursosATutores() async {
     cursosCopia.shuffle(random);
     final cursosAsignados = cursosCopia.take(3).toList();
     final especialidad = cursosAsignados.first;
-    await doc.reference.update({'cursos': cursosAsignados, 'especialidad': especialidad});
-    print('Tutor ${data['nombre']} ${data['apellidos']} ($escuela) actualizado con cursos:');
-    for (var curso in cursosAsignados) {
-      print('   • $curso');
-    }
-    print('Especialidad: $especialidad\n');
+    await doc.reference.update({
+      'cursos': cursosAsignados,
+      'especialidad': especialidad,
+    });
   }
-  print('✅ Proceso completado.');
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  print('Iniciando asignación de escuelas y cursos a tutores...\n');
   await asignarCursosATutores();
   exit(0);
 }

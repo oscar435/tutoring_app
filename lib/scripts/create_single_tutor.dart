@@ -22,10 +22,8 @@ Future<void> main() async {
     print('Creando cuenta de tutor...');
 
     // 1. Crear cuenta de autenticación
-    final UserCredential userCredential = await auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    final UserCredential userCredential = await auth
+        .createUserWithEmailAndPassword(email: email, password: password);
     final String tutorId = userCredential.user!.uid;
     print('✅ Cuenta de autenticación creada con ID: $tutorId');
 
@@ -54,7 +52,9 @@ Future<void> main() async {
     });
     print('✅ Referencia creada en users');
 
-    print('''\n¡Tutor creado exitosamente!\nEmail: $email\nContraseña: $password\nID: $tutorId\n''');
+    print(
+      '''\n¡Tutor creado exitosamente!\nEmail: $email\nContraseña: $password\nID: $tutorId\n''',
+    );
     exit(0);
   } catch (e) {
     print('Error al crear tutor: $e');

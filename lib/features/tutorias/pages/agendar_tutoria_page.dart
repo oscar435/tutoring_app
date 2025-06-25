@@ -9,7 +9,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AgendarTutoriaPage extends StatefulWidget {
   final String tutorId;
   final String estudianteId;
-  const AgendarTutoriaPage({required this.tutorId, required this.estudianteId, super.key});
+  const AgendarTutoriaPage({
+    required this.tutorId,
+    required this.estudianteId,
+    super.key,
+  });
 
   @override
   State<AgendarTutoriaPage> createState() => _AgendarTutoriaPageState();
@@ -30,12 +34,12 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
 
   final List<String> _diasSemana = [
     'Lunes',
-    'Martes', 
+    'Martes',
     'Miércoles',
     'Jueves',
     'Viernes',
     'Sábado',
-    'Domingo'
+    'Domingo',
   ];
 
   @override
@@ -53,21 +57,26 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
       });
 
       final servicio = DisponibilidadService();
-      final disponibilidad = await servicio.obtenerDisponibilidad(widget.tutorId);
-      
+      final disponibilidad = await servicio.obtenerDisponibilidad(
+        widget.tutorId,
+      );
+
       if (mounted) {
         setState(() {
           _disponibilidad = disponibilidad;
           _cargando = false;
-          
+
           if (disponibilidad == null) {
             _errorMensaje = 'El tutor no tiene disponibilidad registrada.';
           } else if (disponibilidad.slots.isEmpty) {
             _errorMensaje = 'El tutor no tiene horarios configurados.';
           } else {
-            final slotsActivos = disponibilidad.slots.where((slot) => slot.activo).toList();
+            final slotsActivos = disponibilidad.slots
+                .where((slot) => slot.activo)
+                .toList();
             if (slotsActivos.isEmpty) {
-              _errorMensaje = 'El tutor no tiene horarios activos configurados.';
+              _errorMensaje =
+                  'El tutor no tiene horarios activos configurados.';
             }
           }
         });
@@ -84,9 +93,12 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
 
   Future<void> _cargarCursosTutor() async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('tutores').doc(widget.tutorId).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('tutores')
+          .doc(widget.tutorId)
+          .get();
       final data = doc.data();
-      
+
       if (mounted) {
         setState(() {
           _cursosTutor = (data?['cursos'] as List?)?.cast<String>() ?? [];
@@ -96,33 +108,49 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
         });
       }
     } catch (e) {
-      print('Error al cargar cursos del tutor: $e');
+      // print('Error al cargar cursos del tutor: $e');
     }
   }
 
   String _obtenerDiaSemana(DateTime fecha) {
     switch (fecha.weekday) {
-      case 1: return 'Lunes';
-      case 2: return 'Martes';
-      case 3: return 'Miércoles';
-      case 4: return 'Jueves';
-      case 5: return 'Viernes';
-      case 6: return 'Sábado';
-      case 7: return 'Domingo';
-      default: return 'Desconocido';
+      case 1:
+        return 'Lunes';
+      case 2:
+        return 'Martes';
+      case 3:
+        return 'Miércoles';
+      case 4:
+        return 'Jueves';
+      case 5:
+        return 'Viernes';
+      case 6:
+        return 'Sábado';
+      case 7:
+        return 'Domingo';
+      default:
+        return 'Desconocido';
     }
   }
 
   int _obtenerNumeroDia(String dia) {
     switch (dia) {
-      case 'Lunes': return 1;
-      case 'Martes': return 2;
-      case 'Miércoles': return 3;
-      case 'Jueves': return 4;
-      case 'Viernes': return 5;
-      case 'Sábado': return 6;
-      case 'Domingo': return 7;
-      default: return 1;
+      case 'Lunes':
+        return 1;
+      case 'Martes':
+        return 2;
+      case 'Miércoles':
+        return 3;
+      case 'Jueves':
+        return 4;
+      case 'Viernes':
+        return 5;
+      case 'Sábado':
+        return 6;
+      case 'Domingo':
+        return 7;
+      default:
+        return 1;
     }
   }
 
@@ -130,25 +158,21 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
     final ahora = DateTime.now();
     final numeroDia = _obtenerNumeroDia(dia);
     final diasHastaProximoDia = (numeroDia - ahora.weekday) % 7;
-    
+
     // Si es el mismo día, buscar la próxima semana
     final diasAAdicionar = diasHastaProximoDia == 0 ? 7 : diasHastaProximoDia;
-    
-    return DateTime(
-      ahora.year,
-      ahora.month,
-      ahora.day + diasAAdicionar,
-    );
+
+    return DateTime(ahora.year, ahora.month, ahora.day + diasAAdicionar);
   }
 
   Future<void> _seleccionarDia(String? dia) async {
     if (dia == null) return;
-    
+
     setState(() {
       _diaSeleccionado = dia;
       _fechaSeleccionada = _encontrarProximaFecha(dia);
     });
-    
+
     await _actualizarHorariosDisponibles();
   }
 
@@ -162,14 +186,14 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
     }
 
     setState(() => _cargando = true);
-    
+
     try {
       final servicio = DisponibilidadService();
       final horariosDisponibles = await servicio.obtenerHorariosDisponibles(
         tutorId: widget.tutorId,
         fecha: _fechaSeleccionada!,
       );
-      
+
       if (mounted) {
         setState(() {
           _horariosDisponibles = horariosDisponibles;
@@ -188,9 +212,13 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
   }
 
   Future<void> _agendarTutoria() async {
-    if (_slotSeleccionado == null || _fechaSeleccionada == null || _cursoSeleccionado == null) {
+    if (_slotSeleccionado == null ||
+        _fechaSeleccionada == null ||
+        _cursoSeleccionado == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Por favor, complete todos los campos requeridos')),
+        SnackBar(
+          content: Text('Por favor, complete todos los campos requeridos'),
+        ),
       );
       return;
     }
@@ -210,7 +238,9 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
       if (hayConflicto) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('El horario seleccionado ya no está disponible. Por favor, seleccione otro horario.'),
+            content: Text(
+              'El horario seleccionado ya no está disponible. Por favor, seleccione otro horario.',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -231,7 +261,9 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
       if (!esHorarioValido) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('El horario seleccionado no está dentro de la disponibilidad del tutor.'),
+            content: Text(
+              'El horario seleccionado no está dentro de la disponibilidad del tutor.',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -254,9 +286,9 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
         horaFin: _slotSeleccionado!.horaFin,
         fechaSesion: _fechaSeleccionada,
       );
-      
+
       await solicitudService.crearSolicitud(solicitud);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -297,7 +329,8 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
             SizedBox(width: 8),
             Expanded(
               child: Text(
-                _errorMensaje ?? 'No se pudo cargar la disponibilidad del tutor.',
+                _errorMensaje ??
+                    'No se pudo cargar la disponibilidad del tutor.',
                 style: TextStyle(color: Colors.red[800]),
               ),
             ),
@@ -306,12 +339,17 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
       );
     }
 
-    final slotsActivos = _disponibilidad!.slots.where((slot) => slot.activo).toList();
-    
+    final slotsActivos = _disponibilidad!.slots
+        .where((slot) => slot.activo)
+        .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Disponibilidad del tutor:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(
+          'Disponibilidad del tutor:',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
         SizedBox(height: 10),
         if (slotsActivos.isEmpty)
           Container(
@@ -351,18 +389,23 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                     SizedBox(width: 8),
                     Text(
                       'Horarios configurados:',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green[800]),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[800],
+                      ),
                     ),
                   ],
                 ),
                 SizedBox(height: 8),
-                ...slotsActivos.map((slot) => Padding(
-                  padding: EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '• ${slot.dia}: ${slot.horaInicio} - ${slot.horaFin}',
-                    style: TextStyle(color: Colors.green[700]),
+                ...slotsActivos.map(
+                  (slot) => Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '• ${slot.dia}: ${slot.horaInicio} - ${slot.horaFin}',
+                      style: TextStyle(color: Colors.green[700]),
+                    ),
                   ),
-                )),
+                ),
               ],
             ),
           ),
@@ -384,24 +427,35 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                 children: [
                   // Mostrar información de disponibilidad
                   _mostrarInformacionDisponibilidad(),
-                  
+
                   if (_cursosTutor.isNotEmpty) ...[
-                    Text('Selecciona el curso:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Selecciona el curso:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     SizedBox(height: 10),
                     DropdownButton<String>(
                       value: _cursoSeleccionado,
                       isExpanded: true,
-                      items: _cursosTutor.map((curso) => DropdownMenuItem(
-                        value: curso,
-                        child: Text(curso),
-                      )).toList(),
-                      onChanged: (value) => setState(() => _cursoSeleccionado = value),
+                      items: _cursosTutor
+                          .map(
+                            (curso) => DropdownMenuItem(
+                              value: curso,
+                              child: Text(curso),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _cursoSeleccionado = value),
                     ),
                     SizedBox(height: 20),
                   ],
-                  
+
                   // Filtro por día de la semana
-                  Text('Selecciona el día de la semana:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    'Selecciona el día de la semana:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   SizedBox(height: 10),
                   DropdownButtonFormField<String>(
                     value: _diaSeleccionado,
@@ -415,15 +469,23 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                     }).toList(),
                     onChanged: _seleccionarDia,
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                   SizedBox(height: 20),
-                  
+
                   // Mostrar fecha seleccionada
                   if (_fechaSeleccionada != null) ...[
-                    Text('Fecha seleccionada:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Fecha seleccionada:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     SizedBox(height: 10),
                     Container(
                       padding: EdgeInsets.all(12),
@@ -438,7 +500,10 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                           SizedBox(width: 8),
                           Text(
                             '${_obtenerDiaSemana(_fechaSeleccionada!)} ${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}/${_fechaSeleccionada!.year}',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[800]),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[800],
+                            ),
                           ),
                           Spacer(),
                           TextButton(
@@ -466,8 +531,10 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                     SizedBox(height: 20),
                   ],
                   if (_fechaSeleccionada != null) ...[
-                    Text('Horarios disponibles para ${_obtenerDiaSemana(_fechaSeleccionada!)}:', 
-                         style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Horarios disponibles para ${_obtenerDiaSemana(_fechaSeleccionada!)}:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     SizedBox(height: 10),
                     if (_horariosDisponibles.isEmpty)
                       Container(
@@ -491,12 +558,17 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                         ),
                       )
                     else
-                      ..._horariosDisponibles.map((slot) => RadioListTile<Slot>(
-                            title: Text('${slot.dia}: ${slot.horaInicio} - ${slot.horaFin}'),
-                            value: slot,
-                            groupValue: _slotSeleccionado,
-                            onChanged: (s) => setState(() => _slotSeleccionado = s),
-                          )),
+                      ..._horariosDisponibles.map(
+                        (slot) => RadioListTile<Slot>(
+                          title: Text(
+                            '${slot.dia}: ${slot.horaInicio} - ${slot.horaFin}',
+                          ),
+                          value: slot,
+                          groupValue: _slotSeleccionado,
+                          onChanged: (s) =>
+                              setState(() => _slotSeleccionado = s),
+                        ),
+                      ),
                     SizedBox(height: 20),
                   ],
                   TextField(
@@ -512,18 +584,23 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: (_slotSeleccionado == null || 
-                                 _fechaSeleccionada == null || 
-                                 _cursoSeleccionado == null || 
-                                 _guardando) ? null : _agendarTutoria,
-                      child: _guardando 
+                      onPressed:
+                          (_slotSeleccionado == null ||
+                              _fechaSeleccionada == null ||
+                              _cursoSeleccionado == null ||
+                              _guardando)
+                          ? null
+                          : _agendarTutoria,
+                      child: _guardando
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                                 SizedBox(width: 8),
                                 Text('Enviando solicitud...'),
@@ -537,4 +614,4 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
             ),
     );
   }
-} 
+}

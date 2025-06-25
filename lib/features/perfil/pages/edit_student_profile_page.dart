@@ -27,7 +27,10 @@ class _EditStudentProfilePageState extends State<EditStudentProfilePage> {
 
   Future<void> _loadUserData() async {
     if (user == null) return;
-    final doc = await FirebaseFirestore.instance.collection('estudiantes').doc(user!.uid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('estudiantes')
+        .doc(user!.uid)
+        .get();
     if (doc.exists) {
       setState(() {
         _userData = doc.data();
@@ -37,7 +40,10 @@ class _EditStudentProfilePageState extends State<EditStudentProfilePage> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
@@ -55,7 +61,6 @@ class _EditStudentProfilePageState extends State<EditStudentProfilePage> {
       await ref.putFile(image);
       return await ref.getDownloadURL();
     } catch (e) {
-      print('Error al subir imagen: $e');
       return null;
     }
   }
@@ -69,10 +74,10 @@ class _EditStudentProfilePageState extends State<EditStudentProfilePage> {
       final uploadedUrl = await _uploadImage(_imageFile!);
       if (uploadedUrl != null) photoUrl = uploadedUrl;
     }
-    await FirebaseFirestore.instance.collection('estudiantes').doc(user!.uid).set({
-      ..._userData!,
-      'photoUrl': photoUrl,
-    }, SetOptions(merge: true));
+    await FirebaseFirestore.instance
+        .collection('estudiantes')
+        .doc(user!.uid)
+        .set({..._userData!, 'photoUrl': photoUrl}, SetOptions(merge: true));
     setState(() => _isLoading = false);
     if (mounted) Navigator.pop(context);
   }
@@ -80,9 +85,7 @@ class _EditStudentProfilePageState extends State<EditStudentProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_userData == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Editar Perfil')),
@@ -100,9 +103,10 @@ class _EditStudentProfilePageState extends State<EditStudentProfilePage> {
                   radius: 60,
                   backgroundImage: _imageFile != null
                       ? FileImage(_imageFile!)
-                      : (_userData!['photoUrl'] != null && _userData!['photoUrl'].isNotEmpty)
-                          ? NetworkImage(_userData!['photoUrl'])
-                          : const AssetImage('assets/avatar.jpg') as ImageProvider,
+                      : (_userData!['photoUrl'] != null &&
+                            _userData!['photoUrl'].isNotEmpty)
+                      ? NetworkImage(_userData!['photoUrl'])
+                      : const AssetImage('assets/avatar.jpg') as ImageProvider,
                   child: Align(
                     alignment: Alignment.bottomRight,
                     child: Container(
@@ -111,19 +115,44 @@ class _EditStudentProfilePageState extends State<EditStudentProfilePage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       padding: const EdgeInsets.all(4),
-                      child: const Icon(Icons.edit, size: 20, color: Colors.purple),
+                      child: const Icon(
+                        Icons.edit,
+                        size: 20,
+                        color: Colors.purple,
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
               _buildTextField('Nombre', 'nombre', _userData!['nombre']),
-              _buildTextField('Apellidos', 'apellidos', _userData!['apellidos']),
-              _buildTextField('Edad', 'edad', _userData!['edad']?.toString(), isNumber: true),
-              _buildTextField('Código de estudiante', 'codigo_estudiante', _userData!['codigo_estudiante']),
-              _buildTextField('Especialidad', 'especialidad', _userData!['especialidad']),
+              _buildTextField(
+                'Apellidos',
+                'apellidos',
+                _userData!['apellidos'],
+              ),
+              _buildTextField(
+                'Edad',
+                'edad',
+                _userData!['edad']?.toString(),
+                isNumber: true,
+              ),
+              _buildTextField(
+                'Código de estudiante',
+                'codigo_estudiante',
+                _userData!['codigo_estudiante'],
+              ),
+              _buildTextField(
+                'Especialidad',
+                'especialidad',
+                _userData!['especialidad'],
+              ),
               _buildTextField('Ciclo académico', 'ciclo', _userData!['ciclo']),
-              _buildTextField('Universidad', 'universidad', _userData!['universidad']),
+              _buildTextField(
+                'Universidad',
+                'universidad',
+                _userData!['universidad'],
+              ),
               const SizedBox(height: 30),
               _isLoading
                   ? const CircularProgressIndicator()
@@ -149,7 +178,12 @@ class _EditStudentProfilePageState extends State<EditStudentProfilePage> {
     );
   }
 
-  Widget _buildTextField(String label, String key, String? initialValue, {bool isNumber = false}) {
+  Widget _buildTextField(
+    String label,
+    String key,
+    String? initialValue, {
+    bool isNumber = false,
+  }) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
@@ -159,9 +193,11 @@ class _EditStudentProfilePageState extends State<EditStudentProfilePage> {
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido' : null,
-        onSaved: (value) => _userData![key] = isNumber ? int.tryParse(value ?? '') ?? 0 : value,
+        validator: (value) =>
+            (value == null || value.isEmpty) ? 'Campo requerido' : null,
+        onSaved: (value) =>
+            _userData![key] = isNumber ? int.tryParse(value ?? '') ?? 0 : value,
       ),
     );
   }
-} 
+}

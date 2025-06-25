@@ -63,9 +63,12 @@ class RoleManagementService {
       }
 
       final oldUser = AdminUser.fromFirestore(userDoc);
-      
+
       // Verificar permisos del asignador
-      final assignerDoc = await _firestore.collection('users').doc(assignedBy).get();
+      final assignerDoc = await _firestore
+          .collection('users')
+          .doc(assignedBy)
+          .get();
       if (!assignerDoc.exists) {
         throw Exception('Usuario asignador no encontrado');
       }
@@ -81,7 +84,9 @@ class RoleManagementService {
       // Actualizar usuario
       await _firestore.collection('users').doc(userId).update({
         'role': newRole.toString().split('.').last,
-        'permissions': newPermissions.map((p) => p.toString().split('.').last).toList(),
+        'permissions': newPermissions
+            .map((p) => p.toString().split('.').last)
+            .toList(),
         'lastModified': Timestamp.fromDate(DateTime.now()),
         'modifiedBy': assignedBy,
       });
@@ -95,7 +100,6 @@ class RoleManagementService {
         targetUserName: oldUser.fullName,
       );
     } catch (e) {
-      print('Error asignando rol: $e');
       throw Exception('Error al asignar rol: $e');
     }
   }
@@ -109,9 +113,10 @@ class RoleManagementService {
           .orderBy('createdAt', descending: true)
           .get();
 
-      return querySnapshot.docs.map((doc) => AdminUser.fromFirestore(doc)).toList();
+      return querySnapshot.docs
+          .map((doc) => AdminUser.fromFirestore(doc))
+          .toList();
     } catch (e) {
-      print('Error obteniendo usuarios por rol: $e');
       throw Exception('Error al obtener usuarios por rol: $e');
     }
   }
@@ -120,14 +125,11 @@ class RoleManagementService {
   Future<Map<String, dynamic>> getUsersByRoleReport() async {
     try {
       final usersSnapshot = await _firestore.collection('users').get();
-      
+
       Map<String, dynamic> report = {
         'total': 0,
         'byRole': {},
-        'byStatus': {
-          'active': 0,
-          'inactive': 0,
-        },
+        'byStatus': {'active': 0, 'inactive': 0},
         'recentActivity': [],
       };
 
@@ -145,8 +147,9 @@ class RoleManagementService {
             'users': [],
           };
         }
-        
-        report['byRole'][roleName]['count'] = (report['byRole'][roleName]['count'] as int) + 1;
+
+        report['byRole'][roleName]['count'] =
+            (report['byRole'][roleName]['count'] as int) + 1;
         report['byRole'][roleName]['users'].add({
           'id': user.id,
           'name': user.fullName,
@@ -156,11 +159,15 @@ class RoleManagementService {
         });
 
         if (user.isActive) {
-          report['byStatus']['active'] = (report['byStatus']['active'] as int) + 1;
-          report['byRole'][roleName]['active'] = (report['byRole'][roleName]['active'] as int) + 1;
+          report['byStatus']['active'] =
+              (report['byStatus']['active'] as int) + 1;
+          report['byRole'][roleName]['active'] =
+              (report['byRole'][roleName]['active'] as int) + 1;
         } else {
-          report['byStatus']['inactive'] = (report['byStatus']['inactive'] as int) + 1;
-          report['byRole'][roleName]['inactive'] = (report['byRole'][roleName]['inactive'] as int) + 1;
+          report['byStatus']['inactive'] =
+              (report['byStatus']['inactive'] as int) + 1;
+          report['byRole'][roleName]['inactive'] =
+              (report['byRole'][roleName]['inactive'] as int) + 1;
         }
 
         // Agregar a actividad reciente (últimos 30 días)
@@ -176,12 +183,13 @@ class RoleManagementService {
       }
 
       // Ordenar actividad reciente por fecha
-      report['recentActivity'].sort((a, b) => 
-          DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])));
+      report['recentActivity'].sort(
+        (a, b) =>
+            DateTime.parse(b['date']).compareTo(DateTime.parse(a['date'])),
+      );
 
       return report;
     } catch (e) {
-      print('Error generando reporte: $e');
       throw Exception('Error al generar reporte: $e');
     }
   }
@@ -196,7 +204,10 @@ class RoleManagementService {
     try {
       Query query = _firestore
           .collection('audit_logs')
-          .where('action', isEqualTo: AuditAction.roleChange.toString().split('.').last)
+          .where(
+            'action',
+            isEqualTo: AuditAction.roleChange.toString().split('.').last,
+          )
           .orderBy('timestamp', descending: true)
           .limit(limit);
 
@@ -205,17 +216,24 @@ class RoleManagementService {
       }
 
       if (startDate != null) {
-        query = query.where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+        query = query.where(
+          'timestamp',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
+        );
       }
 
       if (endDate != null) {
-        query = query.where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+        query = query.where(
+          'timestamp',
+          isLessThanOrEqualTo: Timestamp.fromDate(endDate),
+        );
       }
 
       final querySnapshot = await query.get();
-      return querySnapshot.docs.map((doc) => AuditLog.fromFirestore(doc)).toList();
+      return querySnapshot.docs
+          .map((doc) => AuditLog.fromFirestore(doc))
+          .toList();
     } catch (e) {
-      print('Error obteniendo auditoría de roles: $e');
       throw Exception('Error al obtener auditoría de roles: $e');
     }
   }
@@ -256,7 +274,7 @@ class RoleManagementService {
   }) async {
     try {
       final currentUser = await _getUserById(userId);
-      
+
       final auditLog = AuditLog(
         id: '',
         userId: userId,
@@ -268,13 +286,14 @@ class RoleManagementService {
         resourceName: targetUserName,
         oldValues: {'role': oldRole.toString().split('.').last},
         newValues: {'role': newRole.toString().split('.').last},
-        description: 'Rol cambiado de ${_getRoleDisplayName(oldRole)} a ${_getRoleDisplayName(newRole)} para $targetUserName',
+        description:
+            'Rol cambiado de ${_getRoleDisplayName(oldRole)} a ${_getRoleDisplayName(newRole)} para $targetUserName',
         timestamp: DateTime.now(),
       );
 
       await _firestore.collection('audit_logs').add(auditLog.toFirestore());
     } catch (e) {
-      print('Error registrando cambio de rol: $e');
+      throw Exception('Error registrando cambio de rol: $e');
     }
   }
 
@@ -304,4 +323,4 @@ class RoleManagementService {
         return 'Super Administrador';
     }
   }
-} 
+}
