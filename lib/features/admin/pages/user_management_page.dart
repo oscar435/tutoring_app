@@ -981,7 +981,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
           ),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: _getRoleColor(user.role).withOpacity(0.1),
+              backgroundColor: _getRoleColor(
+                user.role,
+              ).withAlpha((0.1 * 255).toInt()),
               foregroundColor: _getRoleColor(user.role),
               child: _getRoleIcon(user.role),
             ),
@@ -1004,7 +1006,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getRoleColor(user.role).withOpacity(0.1),
+                    color: _getRoleColor(
+                      user.role,
+                    ).withAlpha((0.1 * 255).toInt()),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1029,7 +1033,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withAlpha((0.1 * 255).toInt()),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(

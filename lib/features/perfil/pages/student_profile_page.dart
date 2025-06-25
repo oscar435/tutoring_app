@@ -56,13 +56,17 @@ class StudentProfilePage extends StatelessWidget {
                     radius: 60,
                     backgroundImage: photoUrl.isNotEmpty
                         ? NetworkImage(photoUrl)
-                        : const AssetImage('assets/avatar.jpg') as ImageProvider,
+                        : const AssetImage('assets/avatar.jpg')
+                              as ImageProvider,
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
                   '${data['nombre'] ?? ''} ${data['apellidos'] ?? ''}',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
@@ -72,7 +76,10 @@ class StudentProfilePage extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
-                _buildProfileItem('Código de estudiante', data['codigo_estudiante']),
+                _buildProfileItem(
+                  'Código de estudiante',
+                  data['codigo_estudiante'],
+                ),
                 _buildProfileItem('Especialidad', data['especialidad']),
                 _buildProfileItem('Ciclo académico', data['ciclo']),
                 _buildProfileItem('Universidad', data['universidad']),
@@ -95,7 +102,7 @@ class StudentProfilePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withAlpha((0.08 * 255).toInt()),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -111,4 +118,4 @@ class StudentProfilePage extends StatelessWidget {
       ),
     );
   }
-} 
+}

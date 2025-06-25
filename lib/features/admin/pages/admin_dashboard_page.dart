@@ -34,7 +34,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Future<void> _loadInitialData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    
+
     // Cargar datos en paralelo
     final results = await Future.wait([
       _fetchCurrentUser(),
@@ -64,16 +64,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return AdminUser.fromFirestore(doc);
       }
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error cargando usuario: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error cargando usuario: $e')));
     }
     return null;
   }
 
   Future<Map<String, dynamic>?> _fetchRoleReport() async {
-     try {
+    try {
       final usersSnapshot = await _firestore.collection('users').get();
       final Map<String, int> roleCount = {
-        'student': 0, 'teacher': 0, 'admin': 0, 'superAdmin': 0,
+        'student': 0,
+        'teacher': 0,
+        'admin': 0,
+        'superAdmin': 0,
       };
 
       for (var doc in usersSnapshot.docs) {
@@ -82,7 +88,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       }
       return {'byRole': roleCount, 'total': usersSnapshot.docs.length};
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error cargando estadísticas: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error cargando estadísticas: $e')),
+        );
       return null;
     }
   }
@@ -91,18 +100,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     try {
       await _auth.signOut();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cerrar sesión: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al cerrar sesión: $e')));
     }
   }
 
   Future<void> _exportReport() async {
     try {
       setState(() => _isLoading = true);
-      
+
       final filePath = await _reportService.exportToCSV();
-      
+
       if (mounted) {
         setState(() => _isLoading = false);
 
@@ -114,7 +123,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           // Para Web
           message = 'La descarga del reporte de usuarios ha comenzado.';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
@@ -139,9 +148,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Future<void> _exportTutoringReport() async {
     try {
       setState(() => _isLoading = true);
-      
+
       final filePath = await _reportService.exportTutoringToCSV();
-      
+
       if (mounted) {
         setState(() => _isLoading = false);
 
@@ -153,7 +162,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           // Para Web
           message = 'La descarga del reporte de tutorías ha comenzado.';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
@@ -227,11 +236,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue[700],
-              ),
+              decoration: BoxDecoration(color: Colors.blue[700]),
               child: _currentUser == null
-                  ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -247,7 +258,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          _currentUser!.nombre.isNotEmpty ? _currentUser!.fullName : _currentUser!.email,
+                          _currentUser!.nombre.isNotEmpty
+                              ? _currentUser!.fullName
+                              : _currentUser!.email,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -258,7 +271,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         Text(
                           _currentUser!.roleDisplayName,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withAlpha((0.8 * 255).toInt()),
                             fontSize: 14,
                           ),
                         ),
@@ -336,7 +349,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ),
                           ),
                           ElevatedButton.icon(
-                            onPressed: _isLoading ? null : _exportTutoringReport,
+                            onPressed: _isLoading
+                                ? null
+                                : _exportTutoringReport,
                             icon: const Icon(Icons.school),
                             label: const Text('Reporte Tutorías'),
                             style: ElevatedButton.styleFrom(
@@ -349,7 +364,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const UserManagementPage(),
+                                  builder: (context) =>
+                                      const UserManagementPage(),
                                 ),
                               );
                             },
@@ -365,7 +381,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const AdminSessionsPage(),
+                                  builder: (context) =>
+                                      const AdminSessionsPage(),
                                 ),
                               );
                             },
@@ -381,7 +398,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const AdminRequestsPage(),
+                                  builder: (context) =>
+                                      const AdminRequestsPage(),
                                 ),
                               );
                             },
@@ -495,10 +513,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(
-                        flex: 3,
-                        child: RecentActivityWidget(),
-                      ),
+                      const Expanded(flex: 3, child: RecentActivityWidget()),
                     ],
                   ),
                 ],
@@ -506,4 +521,4 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
     );
   }
-} 
+}

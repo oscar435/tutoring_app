@@ -27,29 +27,36 @@ class _AdminRequestsPageState extends State<AdminRequestsPage> {
     });
     try {
       final firestore = FirebaseFirestore.instance;
-      final query = await firestore
-          .collection('solicitudes_tutoria')
-          .get();
+      final query = await firestore.collection('solicitudes_tutoria').get();
       final List<Map<String, dynamic>> requests = [];
       for (final doc in query.docs) {
         final data = doc.data();
         // Buscar nombre de estudiante
         String estudianteNombre = data['estudianteId'] ?? '-';
         if (data['estudianteId'] != null) {
-          final estDoc = await firestore.collection('estudiantes').doc(data['estudianteId']).get();
+          final estDoc = await firestore
+              .collection('estudiantes')
+              .doc(data['estudianteId'])
+              .get();
           if (estDoc.exists) {
             final est = estDoc.data();
-            estudianteNombre = '${est?['nombre'] ?? ''} ${est?['apellidos'] ?? ''}'.trim();
-            if (estudianteNombre.isEmpty) estudianteNombre = data['estudianteId'];
+            estudianteNombre =
+                '${est?['nombre'] ?? ''} ${est?['apellidos'] ?? ''}'.trim();
+            if (estudianteNombre.isEmpty)
+              estudianteNombre = data['estudianteId'];
           }
         }
         // Buscar nombre de tutor
         String tutorNombre = data['tutorId'] ?? '-';
         if (data['tutorId'] != null) {
-          final tutDoc = await firestore.collection('tutores').doc(data['tutorId']).get();
+          final tutDoc = await firestore
+              .collection('tutores')
+              .doc(data['tutorId'])
+              .get();
           if (tutDoc.exists) {
             final tut = tutDoc.data();
-            tutorNombre = '${tut?['nombre'] ?? ''} ${tut?['apellidos'] ?? ''}'.trim();
+            tutorNombre = '${tut?['nombre'] ?? ''} ${tut?['apellidos'] ?? ''}'
+                .trim();
             if (tutorNombre.isEmpty) tutorNombre = data['tutorId'];
           }
         }
@@ -142,126 +149,175 @@ class _AdminRequestsPageState extends State<AdminRequestsPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-              : _requests.isEmpty
-                  ? const Center(child: Text('No hay solicitudes registradas.'))
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _requests.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        final s = _requests[index];
-                        final estado = s['estado'] ?? '-';
-                        return Card(
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: Padding(
-                            padding: const EdgeInsets.all(18),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(_estadoIcon(estado), color: _estadoColor(estado), size: 28),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      s['curso'] ?? '-',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                    ),
-                                    const Spacer(),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: _estadoColor(estado).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        estado.toString().toUpperCase(),
-                                        style: TextStyle(
-                                          color: _estadoColor(estado),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.person, size: 18, color: Colors.deepPurple),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Tooltip(
-                                        message: s['estudianteId'] ?? '-',
-                                        child: Text(
-                                          'Estudiante: ${s['estudianteNombre'] ?? s['estudianteId'] ?? '-'}',
-                                          style: const TextStyle(fontSize: 14, color: Colors.black87),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    const Icon(Icons.school, size: 18, color: Colors.teal),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Tooltip(
-                                        message: s['tutorId'] ?? '-',
-                                        child: Text(
-                                          'Tutor: ${s['tutorNombre'] ?? s['tutorId'] ?? '-'}',
-                                          style: const TextStyle(fontSize: 14, color: Colors.black87),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.calendar_today, size: 18, color: Colors.indigo),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _formatFecha(s['fechaSesion']),
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    const Icon(Icons.access_time, size: 18, color: Colors.orange),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${_formatHora(s['horaInicio'])} - ${_formatHora(s['horaFin'])}',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    const Icon(Icons.today, size: 18, color: Colors.blueGrey),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      s['dia'] ?? '-',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ],
-                                ),
-                                if ((s['mensaje'] ?? '').toString().isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.message, size: 18, color: Colors.blueGrey),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          s['mensaje'],
-                                          style: const TextStyle(fontSize: 13, color: Colors.black54),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
+          ? Center(
+              child: Text(_error!, style: const TextStyle(color: Colors.red)),
+            )
+          : _requests.isEmpty
+          ? const Center(child: Text('No hay solicitudes registradas.'))
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: _requests.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                final s = _requests[index];
+                final estado = s['estado'] ?? '-';
+                return Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              _estadoIcon(estado),
+                              color: _estadoColor(estado),
+                              size: 28,
                             ),
+                            const SizedBox(width: 8),
+                            Text(
+                              s['curso'] ?? '-',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _estadoColor(
+                                  estado,
+                                ).withAlpha((0.1 * 255).toInt()),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                estado.toString().toUpperCase(),
+                                style: TextStyle(
+                                  color: _estadoColor(estado),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.person,
+                              size: 18,
+                              color: Colors.deepPurple,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Tooltip(
+                                message: s['estudianteId'] ?? '-',
+                                child: Text(
+                                  'Estudiante: ${s['estudianteNombre'] ?? s['estudianteId'] ?? '-'}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            const Icon(
+                              Icons.school,
+                              size: 18,
+                              color: Colors.teal,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Tooltip(
+                                message: s['tutorId'] ?? '-',
+                                child: Text(
+                                  'Tutor: ${s['tutorNombre'] ?? s['tutorId'] ?? '-'}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today,
+                              size: 18,
+                              color: Colors.indigo,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatFecha(s['fechaSesion']),
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(width: 16),
+                            const Icon(
+                              Icons.access_time,
+                              size: 18,
+                              color: Colors.orange,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${_formatHora(s['horaInicio'])} - ${_formatHora(s['horaFin'])}',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(width: 16),
+                            const Icon(
+                              Icons.today,
+                              size: 18,
+                              color: Colors.blueGrey,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              s['dia'] ?? '-',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ],
+                        ),
+                        if ((s['mensaje'] ?? '').toString().isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.message,
+                                size: 18,
+                                color: Colors.blueGrey,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  s['mensaje'],
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
+                        ],
+                      ],
                     ),
+                  ),
+                );
+              },
+            ),
     );
   }
-} 
+}

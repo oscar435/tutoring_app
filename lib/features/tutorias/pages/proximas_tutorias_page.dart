@@ -97,8 +97,7 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                     .collection('estudiantes')
                     .doc(sesion.estudianteId)
                     .get();
-                final estudianteData =
-                    estudianteDoc.data();
+                final estudianteData = estudianteDoc.data();
 
                 final nombreEstudiante = estudianteData != null
                     ? '${estudianteData['nombre']} ${estudianteData['apellidos']}'
@@ -300,7 +299,9 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                                       vertical: 8,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.deepPurple.withOpacity(0.1),
+                                      color: Colors.deepPurple.withAlpha(
+                                        (0.1 * 255).toInt(),
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Row(
@@ -329,7 +330,9 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                                       vertical: 8,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.deepPurple.withOpacity(0.1),
+                                      color: Colors.deepPurple.withAlpha(
+                                        (0.1 * 255).toInt(),
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Row(

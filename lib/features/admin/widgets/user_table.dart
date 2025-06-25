@@ -72,7 +72,9 @@ class UserTable extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundColor: _getRoleColor(user.role).withOpacity(0.1),
+                backgroundColor: _getRoleColor(
+                  user.role,
+                ).withAlpha((0.1 * 255).toInt()),
                 child: Text(
                   user.nombre.substring(0, 1).toUpperCase(),
                   style: GoogleFonts.poppins(
@@ -89,9 +91,7 @@ class UserTable extends StatelessWidget {
                   children: [
                     Text(
                       user.fullName,
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
                     ),
                     Text(
                       'ID: ${user.id.substring(0, 8)}...',
@@ -106,17 +106,12 @@ class UserTable extends StatelessWidget {
             ],
           ),
         ),
-        DataCell(
-          Text(
-            user.email,
-            style: GoogleFonts.poppins(),
-          ),
-        ),
+        DataCell(Text(user.email, style: GoogleFonts.poppins())),
         DataCell(
           Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: _getRoleColor(user.role).withOpacity(0.1),
+              color: _getRoleColor(user.role).withAlpha((0.1 * 255).toInt()),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -133,9 +128,9 @@ class UserTable extends StatelessWidget {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: user.isActive 
-                  ? Colors.green.withOpacity(0.1)
-                  : Colors.red.withOpacity(0.1),
+              color: user.isActive
+                  ? Colors.green.withAlpha((0.1 * 255).toInt())
+                  : Colors.red.withAlpha((0.1 * 255).toInt()),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -216,30 +211,32 @@ class UserTable extends StatelessWidget {
   bool _canEditUser(AdminUser user) {
     // Un usuario no puede editarse a sí mismo
     if (user.id == currentAdmin.id) return false;
-    
+
     // Verificar permisos del admin actual
     if (!currentAdmin.hasPermission(Permission.editUsers)) return false;
-    
+
     // Un admin no puede editar super admins
-    if (user.role == UserRole.superAdmin && currentAdmin.role != UserRole.superAdmin) {
+    if (user.role == UserRole.superAdmin &&
+        currentAdmin.role != UserRole.superAdmin) {
       return false;
     }
-    
+
     return true;
   }
 
   bool _canDeleteUser(AdminUser user) {
     // Un usuario no puede eliminarse a sí mismo
     if (user.id == currentAdmin.id) return false;
-    
+
     // Verificar permisos del admin actual
     if (!currentAdmin.hasPermission(Permission.deleteUsers)) return false;
-    
+
     // Un admin no puede eliminar super admins
-    if (user.role == UserRole.superAdmin && currentAdmin.role != UserRole.superAdmin) {
+    if (user.role == UserRole.superAdmin &&
+        currentAdmin.role != UserRole.superAdmin) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -261,7 +258,10 @@ class UserTable extends StatelessWidget {
               if (user.lastLogin != null)
                 _buildDetailRow('Último Login', _formatDate(user.lastLogin!)),
               if (user.lastModified != null)
-                _buildDetailRow('Última Modificación', _formatDate(user.lastModified!)),
+                _buildDetailRow(
+                  'Última Modificación',
+                  _formatDate(user.lastModified!),
+                ),
               if (user.modifiedBy != null)
                 _buildDetailRow('Modificado por', user.modifiedBy!),
               SizedBox(height: 16),
@@ -275,7 +275,7 @@ class UserTable extends StatelessWidget {
                 children: user.permissions.map((permission) {
                   return Chip(
                     label: Text(_getPermissionDisplayName(permission)),
-                    backgroundColor: Colors.blue.withOpacity(0.1),
+                    backgroundColor: Colors.blue.withAlpha((0.1 * 255).toInt()),
                     labelStyle: GoogleFonts.poppins(fontSize: 12),
                   );
                 }).toList(),
@@ -310,10 +310,7 @@ class UserTable extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
+            child: Text(value, style: GoogleFonts.poppins(fontSize: 14)),
           ),
         ],
       ),
@@ -338,4 +335,4 @@ class UserTable extends StatelessWidget {
         return 'Gestionar Sistema';
     }
   }
-} 
+}

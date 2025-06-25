@@ -7,7 +7,8 @@ class EditarDisponibilidadPage extends StatefulWidget {
   const EditarDisponibilidadPage({required this.tutorId, super.key});
 
   @override
-  State<EditarDisponibilidadPage> createState() => _EditarDisponibilidadPageState();
+  State<EditarDisponibilidadPage> createState() =>
+      _EditarDisponibilidadPageState();
 }
 
 class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
@@ -17,7 +18,15 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
   TimeOfDay? _horaInicio;
   TimeOfDay? _horaFin;
 
-  final _dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  final _dias = [
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+    'Domingo',
+  ];
 
   @override
   void initState() {
@@ -60,10 +69,15 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
     }
 
     // Validar que la hora de fin sea después de la hora de inicio
-    if (_horaInicio!.hour > _horaFin!.hour || 
-        (_horaInicio!.hour == _horaFin!.hour && _horaInicio!.minute >= _horaFin!.minute)) {
+    if (_horaInicio!.hour > _horaFin!.hour ||
+        (_horaInicio!.hour == _horaFin!.hour &&
+            _horaInicio!.minute >= _horaFin!.minute)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('La hora de fin debe ser posterior a la hora de inicio')),
+        SnackBar(
+          content: Text(
+            'La hora de fin debe ser posterior a la hora de inicio',
+          ),
+        ),
       );
       return;
     }
@@ -81,18 +95,18 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
 
       // Obtener todos los slots existentes para este día
       final slotsDelDia = nuevosSlots.where((s) => s.dia == dia).toList();
-      
+
       // Verificar si hay solapamiento con algún slot existente
       bool haySolapamiento = false;
       for (final slotExistente in slotsDelDia) {
         final horaInicioExistente = _parseHora(slotExistente.horaInicio);
         final horaFinExistente = _parseHora(slotExistente.horaFin);
-        
+
         if (_haySolapamiento(
-          _horaInicio!, 
-          _horaFin!, 
-          horaInicioExistente, 
-          horaFinExistente
+          _horaInicio!,
+          _horaFin!,
+          horaInicioExistente,
+          horaFinExistente,
         )) {
           haySolapamiento = true;
           algunoSolapado = true;
@@ -129,9 +143,10 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
     if (algunoSolapado) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(algunoAgregado 
-            ? 'Algunos horarios se solapaban y no fueron agregados'
-            : 'Los horarios se solapan con slots existentes'
+          content: Text(
+            algunoAgregado
+                ? 'Algunos horarios se solapaban y no fueron agregados'
+                : 'Los horarios se solapan con slots existentes',
           ),
           backgroundColor: Colors.orange,
         ),
@@ -156,18 +171,15 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
   // Convierte una hora en formato string "HH:mm" a TimeOfDay
   TimeOfDay _parseHora(String hora) {
     final partes = hora.split(':');
-    return TimeOfDay(
-      hour: int.parse(partes[0]), 
-      minute: int.parse(partes[1])
-    );
+    return TimeOfDay(hour: int.parse(partes[0]), minute: int.parse(partes[1]));
   }
 
   // Verifica si hay solapamiento entre dos rangos de hora
   bool _haySolapamiento(
-    TimeOfDay inicio1, 
-    TimeOfDay fin1, 
-    TimeOfDay inicio2, 
-    TimeOfDay fin2
+    TimeOfDay inicio1,
+    TimeOfDay fin1,
+    TimeOfDay inicio2,
+    TimeOfDay fin2,
   ) {
     final inicio1Minutos = inicio1.hour * 60 + inicio1.minute;
     final fin1Minutos = fin1.hour * 60 + fin1.minute;
@@ -188,14 +200,14 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
     await servicio.guardarDisponibilidad(
       Disponibilidad(tutorId: widget.tutorId, slots: _slots),
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Disponibilidad guardada')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Disponibilidad guardada')));
   }
 
   Map<String, List<Slot>> _agruparPorDia() {
     final Map<String, List<Slot>> agrupado = {};
-    
+
     // Primero, agrupar los slots por día
     for (final slot in _slots) {
       if (!agrupado.containsKey(slot.dia)) {
@@ -203,7 +215,7 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
       }
       agrupado[slot.dia]!.add(slot);
     }
-    
+
     // Ordenar los slots dentro de cada día por hora
     agrupado.forEach((dia, slots) {
       slots.sort((a, b) {
@@ -214,13 +226,14 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
         return minutosA.compareTo(minutosB);
       });
     });
-    
+
     // Crear un nuevo mapa ordenado según el orden de los días en _dias
     final ordenado = Map.fromEntries(
-      _dias.where((dia) => agrupado.containsKey(dia))
-          .map((dia) => MapEntry(dia, agrupado[dia]!))
+      _dias
+          .where((dia) => agrupado.containsKey(dia))
+          .map((dia) => MapEntry(dia, agrupado[dia]!)),
     );
-    
+
     return ordenado;
   }
 
@@ -243,31 +256,34 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Selecciona los días:',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: _dias.map((dia) => FilterChip(
-                  label: Text(dia),
-                  selected: _diasSeleccionados.contains(dia),
-                  selectedColor: Colors.deepPurple.withOpacity(0.2),
-                  checkmarkColor: Colors.deepPurple,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        _diasSeleccionados.add(dia);
-                      } else {
-                        _diasSeleccionados.remove(dia);
-                      }
-                    });
-                  },
-                )).toList(),
+                children: _dias
+                    .map(
+                      (dia) => FilterChip(
+                        label: Text(dia),
+                        selected: _diasSeleccionados.contains(dia),
+                        selectedColor: Colors.deepPurple.withAlpha(
+                          (0.2 * 255).toInt(),
+                        ),
+                        checkmarkColor: Colors.deepPurple,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _diasSeleccionados.add(dia);
+                            } else {
+                              _diasSeleccionados.remove(dia);
+                            }
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
               ),
               const SizedBox(height: 16),
               Row(
@@ -276,7 +292,11 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
                     child: OutlinedButton.icon(
                       icon: Icon(Icons.access_time),
                       onPressed: _seleccionarHoraInicio,
-                      label: Text(_horaInicio == null ? 'Hora de inicio' : _horaInicio!.format(context)),
+                      label: Text(
+                        _horaInicio == null
+                            ? 'Hora de inicio'
+                            : _horaInicio!.format(context),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.deepPurple,
                         padding: EdgeInsets.symmetric(vertical: 12),
@@ -288,7 +308,11 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
                     child: OutlinedButton.icon(
                       icon: Icon(Icons.access_time),
                       onPressed: _seleccionarHoraFin,
-                      label: Text(_horaFin == null ? 'Hora de fin' : _horaFin!.format(context)),
+                      label: Text(
+                        _horaFin == null
+                            ? 'Hora de fin'
+                            : _horaFin!.format(context),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.deepPurple,
                         padding: EdgeInsets.symmetric(vertical: 12),
@@ -315,7 +339,11 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.calendar_today, size: 48, color: Colors.grey),
+                            Icon(
+                              Icons.calendar_today,
+                              size: 48,
+                              color: Colors.grey,
+                            ),
                             SizedBox(height: 16),
                             Text(
                               'No has agregado horarios de disponibilidad.',
@@ -346,10 +374,15 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
                               children: slots.asMap().entries.map((e) {
                                 final idx = _slots.indexOf(e.value);
                                 return ListTile(
-                                  leading: Icon(Icons.access_time, color: Colors.deepPurple),
+                                  leading: Icon(
+                                    Icons.access_time,
+                                    color: Colors.deepPurple,
+                                  ),
                                   title: Text(
                                     '${e.value.horaInicio} - ${e.value.horaFin}',
-                                    style: TextStyle(fontWeight: FontWeight.w500),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                   trailing: IconButton(
                                     icon: Icon(Icons.delete_outline),
@@ -382,4 +415,4 @@ class _EditarDisponibilidadPageState extends State<EditarDisponibilidadPage> {
       ),
     );
   }
-} 
+}

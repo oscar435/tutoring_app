@@ -362,7 +362,7 @@ class _NotificacionesConfigPageState extends State<NotificacionesConfigPage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withAlpha((0.1 * 255).toInt()),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: iconColor, size: 20),

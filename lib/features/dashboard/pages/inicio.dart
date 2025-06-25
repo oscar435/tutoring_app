@@ -518,7 +518,9 @@ class HomePage2 extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: estadoColor.withOpacity(0.15),
+                              color: estadoColor.withAlpha(
+                                (0.15 * 255).toInt(),
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -555,11 +557,7 @@ class HomePage2 extends StatelessWidget {
         .snapshots()
         .map((snapshot) {
           return snapshot.docs
-              .map(
-                (doc) => SolicitudTutoria.fromMap(
-                  doc.data(),
-                ),
-              )
+              .map((doc) => SolicitudTutoria.fromMap(doc.data()))
               .toList();
         });
   }

@@ -163,7 +163,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                             ),
                           ),
                         );
-                                            },
+                      },
                     ),
                     _buildTutoriasGrid(),
                     const SizedBox(height: 20),
@@ -483,8 +483,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   .doc(sesion.estudianteId)
                   .get();
 
-              final estudianteData =
-                  estudianteDoc.data();
+              final estudianteData = estudianteDoc.data();
               final nombreEstudiante = estudianteData != null
                   ? '${estudianteData['nombre']} ${estudianteData['apellidos']}'
                   : 'Estudiante';
@@ -1137,7 +1136,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withAlpha((0.1 * 255).toInt()),
                       blurRadius: 4,
                       offset: const Offset(0, -2),
                     ),
