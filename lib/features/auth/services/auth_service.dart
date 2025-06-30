@@ -12,17 +12,17 @@ class AuthService {
       // Extraer el código de estudiante del correo
       final regex = RegExp(r'^(\d{10})@unfv\.edu\.pe$');
       final match = regex.firstMatch(email);
-      
+
       if (match == null) return false;
-      
+
       final studentCode = match.group(1);
-      
+
       // Verificar si el código existe en la colección de códigos válidos
       final doc = await _firestore
           .collection('valid_student_codes')
           .doc(studentCode)
           .get();
-      
+
       return doc.exists;
     } catch (e) {
       print('Error verificando correo institucional: $e');
@@ -31,7 +31,11 @@ class AuthService {
   }
 
   // Método para crear una cuenta nueva y enviar verificación
-  Future<Map<String, dynamic>> createAccount(String correo, String contrasenia, {bool isTeacher = false}) async {
+  Future<Map<String, dynamic>> createAccount(
+    String correo,
+    String contrasenia, {
+    bool isTeacher = false,
+  }) async {
     try {
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: correo, password: contrasenia);
@@ -49,57 +53,61 @@ class AuthService {
 
         // Guardar en la colección correspondiente
         if (isTeacher) {
-          await _firestore.collection('tutores').doc(userCredential.user!.uid).set(userData);
+          await _firestore
+              .collection('tutores')
+              .doc(userCredential.user!.uid)
+              .set(userData);
         } else {
-          await _firestore.collection('estudiantes').doc(userCredential.user!.uid).set(userData);
+          await _firestore
+              .collection('estudiantes')
+              .doc(userCredential.user!.uid)
+              .set(userData);
         }
 
-        // También guardar referencia en users
+        // Guardar referencia en users con la estructura correcta
         await _firestore.collection('users').doc(userCredential.user!.uid).set({
           'email': correo,
-          'isTeacher': isTeacher,
+          'role': isTeacher ? 'teacher' : 'student',
+          'isActive': true,
+          'permissions': isTeacher ? ['viewUsers', 'editUsers'] : ['viewUsers'],
           'createdAt': FieldValue.serverTimestamp(),
+          'ultimaActualizacion': FieldValue.serverTimestamp(),
         });
 
         return {
           'success': true,
           'user': userCredential.user?.uid,
-          'message': 'Por favor, verifica tu correo electrónico'
+          'message': 'Por favor, verifica tu correo electrónico',
         };
       }
 
-      return {
-        'success': false,
-        'message': 'Error al crear la cuenta'
-      };
+      return {'success': false, 'message': 'Error al crear la cuenta'};
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         return {
           'success': false,
           'code': 1,
-          'message': 'La contraseña es demasiado débil'
+          'message': 'La contraseña es demasiado débil',
         };
       } else if (e.code == 'email-already-in-use') {
         return {
           'success': false,
           'code': 2,
-          'message': 'El correo ya está en uso'
+          'message': 'El correo ya está en uso',
         };
       }
-      return {
-        'success': false,
-        'message': 'Error: ${e.message}'
-      };
+      return {'success': false, 'message': 'Error: ${e.message}'};
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error inesperado: $e'
-      };
+      return {'success': false, 'message': 'Error inesperado: $e'};
     }
   }
 
   // Método para iniciar sesión con email y contraseña
-  Future signInEmailAndPassword(String email, String password, {bool requireTeacher = false}) async {
+  Future signInEmailAndPassword(
+    String email,
+    String password, {
+    bool requireTeacher = false,
+  }) async {
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
@@ -107,14 +115,19 @@ class AuthService {
       );
 
       final user = userCredential.user;
-      
+
       if (user?.uid != null) {
         // Primero verificar el tipo de usuario
-        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user!.uid).get();
-        
+        DocumentSnapshot userDoc = await _firestore
+            .collection('users')
+            .doc(user!.uid)
+            .get();
+
         if (userDoc.exists) {
-          Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-          bool isTeacher = (userData['role'] == 'teacher');
+          Map<String, dynamic> userData =
+              userDoc.data() as Map<String, dynamic>;
+          String userRole = userData['role'] ?? 'student';
+          bool isTeacher = (userRole == 'teacher');
           bool isActive = (userData['isActive'] ?? true); // Por defecto activo
 
           // Verificar si el usuario está activo
@@ -138,9 +151,15 @@ class AuthService {
           // Obtener datos específicos según el tipo de usuario
           DocumentSnapshot specificDoc;
           if (isTeacher) {
-            specificDoc = await _firestore.collection('tutores').doc(user.uid).get();
+            specificDoc = await _firestore
+                .collection('tutores')
+                .doc(user.uid)
+                .get();
           } else {
-            specificDoc = await _firestore.collection('estudiantes').doc(user.uid).get();
+            specificDoc = await _firestore
+                .collection('estudiantes')
+                .doc(user.uid)
+                .get();
           }
 
           if (!specificDoc.exists) {
@@ -148,7 +167,9 @@ class AuthService {
             return null;
           }
 
-          final bool isVerifiedInDb = (specificDoc.data() as Map<String, dynamic>?)?['emailVerified'] ?? false;
+          final bool isVerifiedInDb =
+              (specificDoc.data() as Map<String, dynamic>?)?['emailVerified'] ??
+              false;
 
           // Solo verificar email si NO es profesor.
           // Permitir el acceso si el correo está verificado en Firebase Auth O en nuestra base de datos (por un admin).
@@ -156,7 +177,7 @@ class AuthService {
             await _auth.signOut();
             return 4; // Código para correo no verificado
           }
-          
+
           // ✅ ACTUALIZAR FCM TOKEN DESPUÉS DEL LOGIN EXITOSO
           try {
             await NotificacionService().updateFCMTokenAfterLogin();
@@ -164,7 +185,7 @@ class AuthService {
             print('⚠️ Error actualizando FCM token después del login: $e');
             // No fallar el login por este error
           }
-          
+
           return user.uid;
         } else {
           await _auth.signOut();
@@ -176,7 +197,7 @@ class AuthService {
         case 'user-not-found':
         case 'wrong-password':
         case 'invalid-credential':
-        return 1;
+          return 1;
         case 'user-disabled':
           return 5; // Cuenta deshabilitada
         case 'too-many-requests':
@@ -225,7 +246,7 @@ class AuthService {
     try {
       // Limpiar FCM token antes de hacer logout
       await NotificacionService().clearFCMTokenOnLogout();
-      
+
       // Hacer logout de Firebase Auth
       await _auth.signOut();
       print('✅ Logout exitoso');

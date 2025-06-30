@@ -88,115 +88,91 @@ class _EditStudentProfilePageState extends State<EditStudentProfilePage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Editar Perfil')),
-      backgroundColor: const Color(0xfff7f7f7),
+      appBar: AppBar(title: const Text('Editar Perfil de Estudiante')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: _pickImage,
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundImage: _imageFile != null
-                      ? FileImage(_imageFile!)
-                      : (_userData!['photoUrl'] != null &&
-                            _userData!['photoUrl'].isNotEmpty)
-                      ? NetworkImage(_userData!['photoUrl'])
-                      : const AssetImage('assets/avatar.jpg') as ImageProvider,
-                  child: Align(
-                    alignment: Alignment.bottomRight,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding: const EdgeInsets.all(4),
-                      child: const Icon(
-                        Icons.edit,
-                        size: 20,
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: _pickImage,
+              child: CircleAvatar(
+                radius: 70,
+                backgroundColor: Colors.purple[100],
+                backgroundImage: _imageFile != null
+                    ? FileImage(_imageFile!)
+                    : (_userData?['photoUrl'] ?? '').toString().isNotEmpty
+                    ? NetworkImage(_userData!['photoUrl'])
+                    : const AssetImage('assets/avatar.jpg') as ImageProvider,
+                child:
+                    _imageFile == null &&
+                        (_userData?['photoUrl'] ?? '').toString().isEmpty
+                    ? const Icon(
+                        Icons.camera_alt,
+                        size: 50,
                         color: Colors.purple,
-                      ),
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Haz clic en la foto para cambiarla',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 40),
+            _infoRow(Icons.person, 'Nombre', _userData?['nombre'] ?? ''),
+            _infoRow(
+              Icons.person_outline,
+              'Apellidos',
+              _userData?['apellidos'] ?? '',
+            ),
+            _infoRow(
+              Icons.badge,
+              'Código de estudiante',
+              _userData?['codigo_estudiante'] ?? '',
+            ),
+            _infoRow(
+              Icons.school,
+              'Especialidad',
+              _userData?['especialidad'] ?? '',
+            ),
+            _infoRow(
+              Icons.looks_one,
+              'Ciclo académico',
+              _userData?['ciclo'] ?? '',
+            ),
+            _infoRow(
+              Icons.location_city,
+              'Universidad',
+              _userData?['universidad'] ?? '',
+            ),
+            _infoRow(Icons.email, 'Correo', _userData?['email'] ?? ''),
+            const SizedBox(height: 40),
+            _isLoading
+                ? const CircularProgressIndicator()
+                : SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _saveProfile,
+                      child: const Text('Guardar foto de perfil'),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildTextField('Nombre', 'nombre', _userData!['nombre']),
-              _buildTextField(
-                'Apellidos',
-                'apellidos',
-                _userData!['apellidos'],
-              ),
-              _buildTextField(
-                'Edad',
-                'edad',
-                _userData!['edad']?.toString(),
-                isNumber: true,
-              ),
-              _buildTextField(
-                'Código de estudiante',
-                'codigo_estudiante',
-                _userData!['codigo_estudiante'],
-              ),
-              _buildTextField(
-                'Especialidad',
-                'especialidad',
-                _userData!['especialidad'],
-              ),
-              _buildTextField('Ciclo académico', 'ciclo', _userData!['ciclo']),
-              _buildTextField(
-                'Universidad',
-                'universidad',
-                _userData!['universidad'],
-              ),
-              const SizedBox(height: 30),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _saveProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: const Text('Guardar Cambios'),
-                      ),
-                    ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTextField(
-    String label,
-    String key,
-    String? initialValue, {
-    bool isNumber = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: TextFormField(
-        initialValue: initialValue ?? '',
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        validator: (value) =>
-            (value == null || value.isEmpty) ? 'Campo requerido' : null,
-        onSaved: (value) =>
-            _userData![key] = isNumber ? int.tryParse(value ?? '') ?? 0 : value,
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.deepPurple),
+          const SizedBox(width: 12),
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(child: Text(value)),
+        ],
       ),
     );
   }

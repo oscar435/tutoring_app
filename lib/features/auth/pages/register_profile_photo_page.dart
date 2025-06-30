@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tutoring_app/features/notificaciones/services/notificacion_service.dart';
 
 class RegisterProfilePhotoPage extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -11,7 +12,8 @@ class RegisterProfilePhotoPage extends StatefulWidget {
   const RegisterProfilePhotoPage({super.key, required this.userData});
 
   @override
-  State<RegisterProfilePhotoPage> createState() => _RegisterProfilePhotoPageState();
+  State<RegisterProfilePhotoPage> createState() =>
+      _RegisterProfilePhotoPageState();
 }
 
 class _RegisterProfilePhotoPageState extends State<RegisterProfilePhotoPage> {
@@ -20,7 +22,10 @@ class _RegisterProfilePhotoPageState extends State<RegisterProfilePhotoPage> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 75);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
 
     if (pickedFile != null) {
       setState(() {
@@ -57,19 +62,40 @@ class _RegisterProfilePhotoPageState extends State<RegisterProfilePhotoPage> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await FirebaseFirestore.instance.collection('estudiantes').doc(user.uid).set({
-        ...widget.userData,
-        'photoUrl': photoUrl ?? '', // Guarda la URL o vacío si no hay foto
+      // Solo guardar los campos necesarios, excluyendo la contraseña
+      final studentData = {
+        'nombre': widget.userData['nombre'],
+        'apellidos': widget.userData['apellidos'],
+        'email': widget.userData['email'],
+        'codigo_estudiante': widget.userData['codigo_estudiante'],
+        'especialidad': widget.userData['especialidad'],
+        'ciclo': widget.userData['ciclo'],
+        'universidad': widget.userData['universidad'],
+        'photoUrl': photoUrl ?? '',
+        'emailVerified': false,
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      };
+
+      await FirebaseFirestore.instance
+          .collection('estudiantes')
+          .doc(user.uid)
+          .set(studentData, SetOptions(merge: true));
     }
 
     setState(() => _isLoading = false);
 
+    // Actualizar el token FCM después del registro
+    try {
+      await NotificacionService().updateFCMTokenAfterLogin();
+    } catch (e) {
+      print('⚠️ Error actualizando FCM token después del registro: $e');
+    }
+
     // Aquí navega a la pantalla de felicitaciones o Home
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => CongratsPage(), // Reemplaza con tu pantalla de felicitaciones
+        builder: (_) =>
+            CongratsPage(), // Reemplaza con tu pantalla de felicitaciones
       ),
     );
   }
@@ -89,9 +115,15 @@ class _RegisterProfilePhotoPageState extends State<RegisterProfilePhotoPage> {
               child: CircleAvatar(
                 radius: 70,
                 backgroundColor: Colors.purple[100],
-                backgroundImage: _imageFile != null ? FileImage(_imageFile!) : null,
+                backgroundImage: _imageFile != null
+                    ? FileImage(_imageFile!)
+                    : null,
                 child: _imageFile == null
-                    ? const Icon(Icons.camera_alt, size: 50, color: Colors.purple)
+                    ? const Icon(
+                        Icons.camera_alt,
+                        size: 50,
+                        color: Colors.purple,
+                      )
                     : null,
               ),
             ),
@@ -116,7 +148,9 @@ class _RegisterProfilePhotoPageState extends State<RegisterProfilePhotoPage> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _imageFile != null ? () => _finishRegistration() : null,
+                      onPressed: _imageFile != null
+                          ? () => _finishRegistration()
+                          : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
                         foregroundColor: Colors.white,
@@ -152,7 +186,10 @@ class CongratsPage extends StatelessWidget {
           children: [
             const Icon(Icons.check_circle, color: Colors.green, size: 100),
             const SizedBox(height: 20),
-            const Text('¡Felicidades!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text(
+              '¡Felicidades!',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 10),
             const Text('Se ha inscrito correctamente.'),
             const SizedBox(height: 30),
@@ -168,4 +205,4 @@ class CongratsPage extends StatelessWidget {
       ),
     );
   }
-} 
+}

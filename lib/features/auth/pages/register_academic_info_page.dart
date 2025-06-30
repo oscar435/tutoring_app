@@ -49,8 +49,12 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                 ),
                 keyboardType: TextInputType.number,
                 validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(errorText: 'El código de estudiante es requerido'),
-                  FormBuilderValidators.numeric(errorText: 'El código debe ser un número'),
+                  FormBuilderValidators.required(
+                    errorText: 'El código de estudiante es requerido',
+                  ),
+                  FormBuilderValidators.numeric(
+                    errorText: 'El código debe ser un número',
+                  ),
                   FormBuilderValidators.minLength(
                     10,
                     errorText: 'Debe tener exactamente 10 dígitos',
@@ -77,7 +81,9 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                       ),
                     )
                     .toList(),
-                validator: FormBuilderValidators.required(errorText: 'Selecciona una especialidad'),
+                validator: FormBuilderValidators.required(
+                  errorText: 'Selecciona una especialidad',
+                ),
               ),
               const SizedBox(height: 15),
 
@@ -93,17 +99,27 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                           DropdownMenuItem(value: ciclo, child: Text(ciclo)),
                     )
                     .toList(),
-                validator: FormBuilderValidators.required(errorText: 'Selecciona un ciclo académico'),
+                validator: FormBuilderValidators.required(
+                  errorText: 'Selecciona un ciclo académico',
+                ),
               ),
               const SizedBox(height: 15),
 
-              FormBuilderTextField(
+              FormBuilderDropdown<String>(
                 name: 'universidad',
                 decoration: const InputDecoration(
                   labelText: 'Universidad',
                   prefixIcon: Icon(Icons.location_city),
                 ),
-                validator: FormBuilderValidators.required(errorText: 'La universidad es requerida'),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'Universidad Nacional Federico Villarreal',
+                    child: Text('Universidad Nacional Federico Villarreal'),
+                  ),
+                ],
+                validator: FormBuilderValidators.required(
+                  errorText: 'La universidad es requerida',
+                ),
               ),
               const Spacer(),
 
@@ -124,7 +140,8 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                   onPressed: _isLoading
                       ? null
                       : () async {
-                          if (_formKey.currentState?.saveAndValidate() ?? false) {
+                          if (_formKey.currentState?.saveAndValidate() ??
+                              false) {
                             setState(() => _isLoading = true);
 
                             try {
@@ -137,7 +154,9 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                               final currentUser = _auth.getCurrentUser();
                               if (currentUser == null) {
                                 showSnackBar(
-                                    context, "Error: No se encontró el usuario");
+                                  context,
+                                  "Error: No se encontró el usuario",
+                                );
                                 return;
                               }
 
@@ -146,38 +165,47 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                                   .collection('estudiantes')
                                   .doc(currentUser.uid)
                                   .set({
-                                'nombre': allData['nombre'],
-                                'apellidos': allData['apellidos'],
-                                'email': allData['email'],
-                                'edad': allData['edad'],
-                                'codigo_estudiante': allData['codigo_estudiante'],
-                                'especialidad': allData['especialidad'],
-                                'ciclo': allData['ciclo'],
-                                'universidad': allData['universidad'],
-                                'updatedAt': FieldValue.serverTimestamp(),
-                              }, SetOptions(merge: true));
+                                    'nombre': allData['nombre'],
+                                    'apellidos': allData['apellidos'],
+                                    'email': allData['email'],
+                                    'codigo_estudiante':
+                                        allData['codigo_estudiante'],
+                                    'especialidad': allData['especialidad'],
+                                    'ciclo': allData['ciclo'],
+                                    'universidad': allData['universidad'],
+                                    'emailVerified': false,
+                                    'updatedAt': FieldValue.serverTimestamp(),
+                                  }, SetOptions(merge: true));
 
-                              // Mantener solo los datos básicos en users
+                              // Guardar datos completos en users con la estructura correcta
                               await FirebaseFirestore.instance
                                   .collection('users')
                                   .doc(currentUser.uid)
                                   .set({
-                                'email': allData['email'],
-                                'isTeacher': false,
-                                'createdAt': FieldValue.serverTimestamp(),
-                              }, SetOptions(merge: true));
+                                    'email': allData['email'],
+                                    'nombre': allData['nombre'],
+                                    'apellidos': allData['apellidos'],
+                                    'role': 'student',
+                                    'createdAt': FieldValue.serverTimestamp(),
+                                    'ultimaActualizacion':
+                                        FieldValue.serverTimestamp(),
+                                  }, SetOptions(merge: true));
 
                               if (!mounted) return;
 
                               // Navegar a la página de subir foto de perfil
                               Navigator.of(context).pushReplacement(
                                 MaterialPageRoute(
-                                  builder: (_) => RegisterProfilePhotoPage(userData: allData),
+                                  builder: (_) => RegisterProfilePhotoPage(
+                                    userData: allData,
+                                  ),
                                 ),
                               );
                             } catch (e) {
-                              showSnackBar(context,
-                                  "Error al guardar los datos: ${e.toString()}");
+                              showSnackBar(
+                                context,
+                                "Error al guardar los datos: ${e.toString()}",
+                              );
                             } finally {
                               if (mounted) {
                                 setState(() => _isLoading = false);
@@ -191,8 +219,9 @@ class _RegisterAcademicInfoPageState extends State<RegisterAcademicInfoPage> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Text('Finalizar registro'),

@@ -2,9 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutoring_app/features/perfil/pages/edit_student_profile_page.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
-class StudentProfilePage extends StatelessWidget {
+class StudentProfilePage extends StatefulWidget {
   const StudentProfilePage({super.key});
+
+  @override
+  State<StudentProfilePage> createState() => _StudentProfilePageState();
+}
+
+class _StudentProfilePageState extends State<StudentProfilePage> {
+  File? _imageFile;
+  bool _isUploading = false;
+
+  Future<void> _pickAndUploadImage(String uid) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 75,
+    );
+    if (pickedFile != null) {
+      setState(() => _isUploading = true);
+      _imageFile = File(pickedFile.path);
+      try {
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('profile_photos')
+            .child('$uid.jpg');
+        await ref.putFile(_imageFile!);
+        final photoUrl = await ref.getDownloadURL();
+        await FirebaseFirestore.instance
+            .collection('estudiantes')
+            .doc(uid)
+            .update({'photoUrl': photoUrl});
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al subir la foto: $e')));
+      } finally {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,24 +81,27 @@ class StudentProfilePage extends StatelessWidget {
                   alignment: Alignment.topRight,
                   child: IconButton(
                     icon: const Icon(Icons.edit, color: Colors.orange),
-                    tooltip: 'Editar perfil',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditStudentProfilePage(),
-                        ),
-                      );
-                    },
+                    tooltip: 'Cambiar foto de perfil',
+                    onPressed: _isUploading
+                        ? null
+                        : () => _pickAndUploadImage(user.uid),
                   ),
                 ),
                 Center(
-                  child: CircleAvatar(
-                    radius: 60,
-                    backgroundImage: photoUrl.isNotEmpty
-                        ? NetworkImage(photoUrl)
-                        : const AssetImage('assets/avatar.jpg')
-                              as ImageProvider,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundImage: _imageFile != null
+                            ? FileImage(_imageFile!)
+                            : (photoUrl.isNotEmpty
+                                  ? NetworkImage(photoUrl)
+                                  : const AssetImage('assets/avatar.jpg')
+                                        as ImageProvider),
+                      ),
+                      if (_isUploading) const CircularProgressIndicator(),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -83,7 +127,6 @@ class StudentProfilePage extends StatelessWidget {
                 _buildProfileItem('Especialidad', data['especialidad']),
                 _buildProfileItem('Ciclo académico', data['ciclo']),
                 _buildProfileItem('Universidad', data['universidad']),
-                _buildProfileItem('Edad', data['edad']?.toString()),
               ],
             ),
           );

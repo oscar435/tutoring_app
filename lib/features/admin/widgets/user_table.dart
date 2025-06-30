@@ -255,8 +255,6 @@ class UserTable extends StatelessWidget {
               _buildDetailRow('Rol', user.roleDisplayName),
               _buildDetailRow('Estado', user.isActive ? 'Activo' : 'Inactivo'),
               _buildDetailRow('Fecha Creación', _formatDate(user.createdAt)),
-              if (user.lastLogin != null)
-                _buildDetailRow('Último Login', _formatDate(user.lastLogin!)),
               if (user.lastModified != null)
                 _buildDetailRow(
                   'Última Modificación',

@@ -7,6 +7,7 @@ import 'package:tutoring_app/features/admin/pages/assign_students_page.dart';
 import 'package:tutoring_app/features/admin/pages/admin_availability_page.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import 'package:tutoring_app/core/utils/validators.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -36,7 +37,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
   // Controladores para campos específicos de rol
   final _codigoEstudianteController = TextEditingController();
   final _cicloController = TextEditingController();
-  final _edadController = TextEditingController();
   final _especialidadEstudianteController = TextEditingController();
   final _universidadEstudianteController = TextEditingController();
 
@@ -68,7 +68,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
     _passwordController.dispose();
     _codigoEstudianteController.dispose();
     _cicloController.dispose();
-    _edadController.dispose();
     _especialidadEstudianteController.dispose();
     _universidadEstudianteController.dispose();
     _escuelaTutorController.dispose();
@@ -234,7 +233,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
             'email': email,
             'codigo_estudiante': _codigoEstudianteController.text,
             'ciclo': _cicloController.text,
-            'edad': int.tryParse(_edadController.text) ?? 0,
             'especialidad': _especialidadEstudianteController.text,
             'universidad': _universidadEstudianteController.text.isNotEmpty
                 ? _universidadEstudianteController.text
@@ -265,7 +263,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
             'email': email,
             'codigo_estudiante': _codigoEstudianteController.text,
             'ciclo': _cicloController.text,
-            'edad': int.tryParse(_edadController.text) ?? 0,
             'especialidad': _especialidadEstudianteController.text,
             'universidad': _universidadEstudianteController.text.isNotEmpty
                 ? _universidadEstudianteController.text
@@ -382,7 +379,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
     _codigoEstudianteController.text =
         completeUserData['codigo_estudiante'] ?? '';
     _cicloController.text = completeUserData['ciclo'] ?? '';
-    _edadController.text = completeUserData['edad']?.toString() ?? '';
     _especialidadEstudianteController.text =
         completeUserData['especialidad'] ?? '';
     _universidadEstudianteController.text =
@@ -494,7 +490,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
                               // Limpiar todos los campos de roles para evitar conflictos de datos
                               _codigoEstudianteController.clear();
                               _cicloController.clear();
-                              _edadController.clear();
                               _especialidadEstudianteController.clear();
                               _universidadEstudianteController.text = '';
 
@@ -533,6 +528,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
                             labelText: 'Código de Estudiante',
                             border: OutlineInputBorder(),
                           ),
+                          inputFormatters:
+                              Validators.getStudentCodeFormatters(),
                           validator: (v) {
                             if (_selectedFormRole == UserRole.student) {
                               if (v!.isEmpty) return 'Campo requerido';
@@ -547,38 +544,30 @@ class _UserManagementPageState extends State<UserManagementPage> {
                           },
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _cicloController,
+                        DropdownButtonFormField<String>(
+                          value: _cicloController.text.isEmpty
+                              ? null
+                              : _cicloController.text,
                           decoration: const InputDecoration(
-                            labelText: 'Ciclo',
+                            labelText: 'Ciclo académico',
                             border: OutlineInputBorder(),
                           ),
-                          validator: (v) {
-                            if (_selectedFormRole == UserRole.student) {
-                              if (v!.isEmpty) return 'Campo requerido';
-                              final ciclo = int.tryParse(v);
-                              if (ciclo == null || ciclo < 1 || ciclo > 10) {
-                                return 'Ciclo debe ser del 1 al 10';
-                              }
-                            }
-                            return null;
+                          items: List.generate(
+                            10,
+                            (index) => DropdownMenuItem(
+                              value: (index + 1).toString(),
+                              child: Text((index + 1).toString()),
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setDialogState(
+                              () => _cicloController.text = value!,
+                            );
                           },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _edadController,
-                          decoration: const InputDecoration(
-                            labelText: 'Edad',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
                           validator: (v) {
-                            if (_selectedFormRole == UserRole.student) {
-                              if (v!.isEmpty) return 'Campo requerido';
-                              final edad = int.tryParse(v);
-                              if (edad == null || edad < 16 || edad > 100) {
-                                return 'Edad debe ser entre 16 y 100';
-                              }
+                            if (_selectedFormRole == UserRole.student &&
+                                (v == null || v.isEmpty)) {
+                              return 'Selecciona un ciclo académico';
                             }
                             return null;
                           },
@@ -1198,11 +1187,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
                     'Fecha de creación',
                     DateFormat('dd/MM/yyyy HH:mm').format(user.createdAt),
                   ),
-                  if (user.lastLogin != null)
-                    _buildDetailRow(
-                      'Último acceso',
-                      DateFormat('dd/MM/yyyy HH:mm').format(user.lastLogin!),
-                    ),
 
                   if (user.role == UserRole.student) ...[
                     const Divider(),
@@ -1215,10 +1199,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       completeUserData['codigo_estudiante'] ?? '-',
                     ),
                     _buildDetailRow('Ciclo', completeUserData['ciclo'] ?? '-'),
-                    _buildDetailRow(
-                      'Edad',
-                      completeUserData['edad']?.toString() ?? '-',
-                    ),
                     _buildDetailRow(
                       'Especialidad',
                       completeUserData['especialidad'] ?? '-',

@@ -38,7 +38,6 @@ class AdminUser {
   final UserRole role;
   final List<Permission> permissions;
   final DateTime createdAt;
-  final DateTime? lastLogin;
   final bool isActive;
   final String? createdBy;
   final DateTime? lastModified;
@@ -52,7 +51,6 @@ class AdminUser {
     required this.role,
     required this.permissions,
     required this.createdAt,
-    this.lastLogin,
     required this.isActive,
     this.createdBy,
     this.lastModified,
@@ -61,7 +59,7 @@ class AdminUser {
 
   factory AdminUser.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     return AdminUser(
       id: doc.id,
       email: data['email'] ?? '',
@@ -71,39 +69,46 @@ class AdminUser {
         (e) => e.toString().split('.').last == data['role'],
         orElse: () => UserRole.student,
       ),
-      permissions: (data['permissions'] as List<dynamic>?)
-          ?.map((p) => Permission.values.firstWhere(
-                (e) => e.toString().split('.').last == p,
-                orElse: () => Permission.viewUsers,
-              ))
-          .toList() ?? [],
+      permissions:
+          (data['permissions'] as List<dynamic>?)
+              ?.map(
+                (p) => Permission.values.firstWhere(
+                  (e) => e.toString().split('.').last == p,
+                  orElse: () => Permission.viewUsers,
+                ),
+              )
+              .toList() ??
+          [],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
-      lastLogin: data['lastLogin'] != null 
-          ? (data['lastLogin'] as Timestamp).toDate() 
-          : null,
       isActive: data['isActive'] ?? true,
       createdBy: data['createdBy'],
-      lastModified: data['lastModified'] != null 
-          ? (data['lastModified'] as Timestamp).toDate() 
+      lastModified: data['lastModified'] != null
+          ? (data['lastModified'] as Timestamp).toDate()
           : null,
       modifiedBy: data['modifiedBy'],
     );
   }
 
   Map<String, dynamic> toFirestore() {
-    return {
+    final data = {
       'email': email,
       'nombre': nombre,
       'apellidos': apellidos,
       'role': role.toString().split('.').last,
-      'permissions': permissions.map((p) => p.toString().split('.').last).toList(),
+      'permissions': permissions
+          .map((p) => p.toString().split('.').last)
+          .toList(),
       'createdAt': Timestamp.fromDate(createdAt),
-      'lastLogin': lastLogin != null ? Timestamp.fromDate(lastLogin!) : null,
       'isActive': isActive,
       'createdBy': createdBy,
-      'lastModified': lastModified != null ? Timestamp.fromDate(lastModified!) : null,
-      'modifiedBy': modifiedBy,
     };
+    if (lastModified != null) {
+      data['lastModified'] = Timestamp.fromDate(lastModified!);
+    }
+    if (modifiedBy != null) {
+      data['modifiedBy'] = modifiedBy;
+    }
+    return data;
   }
 
   AdminUser copyWith({
@@ -114,7 +119,6 @@ class AdminUser {
     UserRole? role,
     List<Permission>? permissions,
     DateTime? createdAt,
-    DateTime? lastLogin,
     bool? isActive,
     String? createdBy,
     DateTime? lastModified,
@@ -128,7 +132,6 @@ class AdminUser {
       role: role ?? this.role,
       permissions: permissions ?? this.permissions,
       createdAt: createdAt ?? this.createdAt,
-      lastLogin: lastLogin ?? this.lastLogin,
       isActive: isActive ?? this.isActive,
       createdBy: createdBy ?? this.createdBy,
       lastModified: lastModified ?? this.lastModified,
@@ -142,4 +145,4 @@ class AdminUser {
 
   String get fullName => '$nombre $apellidos';
   String get roleDisplayName => role.displayName;
-} 
+}
