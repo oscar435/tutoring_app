@@ -31,33 +31,37 @@ class SolicitudTutoria {
     'id': id,
     'tutorId': tutorId,
     'estudianteId': estudianteId,
-    'fechaHora': fechaHora.toIso8601String(),
+    'fechaHora': Timestamp.fromDate(fechaHora),
     'estado': estado,
     'curso': curso,
     'mensaje': mensaje,
     'dia': dia,
     'horaInicio': horaInicio,
     'horaFin': horaFin,
-    'fechaSesion': fechaSesion?.toIso8601String(),
+    'fechaSesion': fechaSesion != null
+        ? Timestamp.fromDate(fechaSesion!)
+        : null,
   };
 
-  factory SolicitudTutoria.fromMap(Map<String, dynamic> map) => SolicitudTutoria(
-    id: map['id'],
-    tutorId: map['tutorId'],
-    estudianteId: map['estudianteId'],
-    fechaHora: DateTime.parse(map['fechaHora']),
-    estado: map['estado'],
-    curso: map['curso'],
-    mensaje: map['mensaje'],
-    dia: map['dia'],
-    horaInicio: map['horaInicio'],
-    horaFin: map['horaFin'],
-    fechaSesion: _parseFechaSesion(map['fechaSesion']),
-  );
+  factory SolicitudTutoria.fromMap(Map<String, dynamic> map) =>
+      SolicitudTutoria(
+        id: map['id'],
+        tutorId: map['tutorId'],
+        estudianteId: map['estudianteId'],
+        fechaHora: _parseFechaSesion(map['fechaHora'])!,
+        estado: map['estado'],
+        curso: map['curso'],
+        mensaje: map['mensaje'],
+        dia: map['dia'],
+        horaInicio: map['horaInicio'],
+        horaFin: map['horaFin'],
+        fechaSesion: _parseFechaSesion(map['fechaSesion']),
+      );
 
   static DateTime? _parseFechaSesion(dynamic raw) {
     if (raw == null) return null;
     if (raw is DateTime) return raw;
+    if (raw is Timestamp) return raw.toDate();
     if (raw is String) {
       try {
         return DateTime.parse(raw);
@@ -65,7 +69,6 @@ class SolicitudTutoria {
         return null;
       }
     }
-    if (raw is Timestamp) return raw.toDate();
     return null;
   }
-} 
+}

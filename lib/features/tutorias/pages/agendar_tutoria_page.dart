@@ -211,6 +211,18 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
     }
   }
 
+  // Combinar fecha seleccionada y hora de inicio en un solo DateTime
+  DateTime _combinarFechaYHora(DateTime fecha, String horaInicio) {
+    final partes = horaInicio.split(' ');
+    final horaMin = partes[0].split(':');
+    int hora = int.parse(horaMin[0]);
+    int minuto = int.parse(horaMin[1]);
+    final ampm = partes[1];
+    if (ampm == 'PM' && hora != 12) hora += 12;
+    if (ampm == 'AM' && hora == 12) hora = 0;
+    return DateTime(fecha.year, fecha.month, fecha.day, hora, minuto);
+  }
+
   Future<void> _agendarTutoria() async {
     if (_slotSeleccionado == null ||
         _fechaSeleccionada == null ||
@@ -273,6 +285,10 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
 
       // Crear la solicitud
       final solicitudService = SolicitudTutoriaService();
+      final fechaSesion = _combinarFechaYHora(
+        _fechaSeleccionada!,
+        _slotSeleccionado!.horaInicio,
+      );
       final solicitud = SolicitudTutoria(
         id: const Uuid().v4(),
         tutorId: widget.tutorId,
@@ -284,7 +300,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
         dia: _slotSeleccionado!.dia,
         horaInicio: _slotSeleccionado!.horaInicio,
         horaFin: _slotSeleccionado!.horaFin,
-        fechaSesion: _fechaSeleccionada,
+        fechaSesion: fechaSesion,
       );
 
       await solicitudService.crearSolicitud(solicitud);

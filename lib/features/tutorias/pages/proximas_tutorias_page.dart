@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
 import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
+import 'package:tutoring_app/core/utils/validators.dart';
 
 class ProximasTutoriasPage extends StatefulWidget {
   final String userId;
@@ -361,6 +362,66 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                               Icons.chevron_right,
                               color: esAsignado ? Colors.green : Colors.grey,
                             ),
+                            if (widget.userRole == 'estudiante' &&
+                                (sesion.estado == 'pendiente' ||
+                                    sesion.estado == 'aceptada'))
+                              IconButton(
+                                icon: Icon(Icons.cancel, color: Colors.red),
+                                tooltip: 'Cancelar tutoría',
+                                onPressed: () async {
+                                  // Validar plazo de 24 horas
+                                  final fechaSesion =
+                                      sesion.fechaSesion ?? sesion.fechaReserva;
+                                  final mensajeError =
+                                      Validators.getMensajeErrorCancelacion(
+                                        fechaSesion,
+                                      );
+
+                                  if (mensajeError.isNotEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(mensajeError),
+                                        backgroundColor: Colors.red,
+                                        duration: Duration(seconds: 4),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text('Cancelar tutoría'),
+                                      content: Text(
+                                        '¿Estás seguro de que deseas cancelar esta tutoría?',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
+                                          child: Text('No'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
+                                          child: Text('Sí, cancelar'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirm == true) {
+                                    await SesionTutoriaService().cancelarSesion(
+                                      sesion.id,
+                                    );
+                                    // Refresca la lista o muestra un mensaje
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Tutoría cancelada'),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
                           ],
                         ),
                       ),

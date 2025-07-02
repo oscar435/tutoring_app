@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
+import 'package:tutoring_app/core/utils/validators.dart';
 
 class TodasTutoriasPage extends StatelessWidget {
   const TodasTutoriasPage({super.key});
@@ -20,11 +21,12 @@ class TodasTutoriasPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Todas mis tutorías'),
-      ),
+      appBar: AppBar(title: const Text('Todas mis tutorías')),
       body: StreamBuilder<List<SesionTutoria>>(
-        stream: SesionTutoriaService().streamSesionesFuturas(user.uid, 'estudiante'),
+        stream: SesionTutoriaService().streamSesionesFuturas(
+          user.uid,
+          'estudiante',
+        ),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
@@ -36,9 +38,7 @@ class TodasTutoriasPage extends StatelessWidget {
 
           final tutorias = snapshot.data ?? [];
           if (tutorias.isEmpty) {
-            return const Center(
-              child: Text('No tienes tutorías agendadas'),
-            );
+            return const Center(child: Text('No tienes tutorías agendadas'));
           }
 
           return ListView.builder(
@@ -67,11 +67,70 @@ class TodasTutoriasPage extends StatelessWidget {
                           color: tutoria.estado == 'aceptada'
                               ? Colors.green
                               : tutoria.estado == 'pendiente'
-                                  ? Colors.orange
-                                  : Colors.red,
+                              ? Colors.orange
+                              : Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      if (tutoria.estado == 'pendiente' ||
+                          tutoria.estado == 'aceptada')
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: IconButton(
+                            icon: Icon(Icons.cancel, color: Colors.red),
+                            tooltip: 'Cancelar tutoría',
+                            onPressed: () async {
+                              // Validar plazo de 24 horas
+                              final fechaSesion =
+                                  tutoria.fechaSesion ?? tutoria.fechaReserva;
+                              final mensajeError =
+                                  Validators.getMensajeErrorCancelacion(
+                                    fechaSesion,
+                                  );
+
+                              if (mensajeError.isNotEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(mensajeError),
+                                    backgroundColor: Colors.red,
+                                    duration: Duration(seconds: 4),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text('Cancelar tutoría'),
+                                  content: Text(
+                                    '¿Estás seguro de que deseas cancelar esta tutoría?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: Text('No'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: Text('Sí, cancelar'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await SesionTutoriaService().cancelarSesion(
+                                  tutoria.id,
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Tutoría cancelada')),
+                                );
+                              }
+                            },
+                          ),
+                        ),
                     ],
                   ),
                   onTap: () => _mostrarDetalleTutoria(context, tutoria),
@@ -104,10 +163,7 @@ class TodasTutoriasPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Center(
-                  child: Icon(
-                    Icons.drag_handle,
-                    color: Colors.grey,
-                  ),
+                  child: Icon(Icons.drag_handle, color: Colors.grey),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -121,7 +177,10 @@ class TodasTutoriasPage extends StatelessWidget {
                 _buildInfoRow(
                   'Fecha',
                   tutoria.fechaSesion != null
-                      ? DateFormat('EEEE d MMMM', 'es_ES').format(tutoria.fechaSesion!)
+                      ? DateFormat(
+                          'EEEE d MMMM',
+                          'es_ES',
+                        ).format(tutoria.fechaSesion!)
                       : 'Sin fecha',
                 ),
                 _buildInfoRow(
@@ -141,7 +200,8 @@ class TodasTutoriasPage extends StatelessWidget {
                       .get(),
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.exists) {
-                      final tutorData = snapshot.data!.data() as Map<String, dynamic>;
+                      final tutorData =
+                          snapshot.data!.data() as Map<String, dynamic>;
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -153,7 +213,9 @@ class TodasTutoriasPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          Text('${tutorData['nombre']} ${tutorData['apellidos']}'),
+                          Text(
+                            '${tutorData['nombre']} ${tutorData['apellidos']}',
+                          ),
                           Text(tutorData['escuela'] ?? ''),
                         ],
                       );
@@ -185,11 +247,9 @@ class TodasTutoriasPage extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(value),
-          ),
+          Expanded(child: Text(value)),
         ],
       ),
     );
   }
-} 
+}

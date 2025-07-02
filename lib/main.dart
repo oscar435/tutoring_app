@@ -13,12 +13,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PreferenciasUsuario.init(); //importante para inicialiar la app
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
+
   // Inicializar el servicio de notificaciones
   if (!kIsWeb) {
     await NotificacionService().initialize();
   }
-  
+
   runApp(MyApp());
 }
 

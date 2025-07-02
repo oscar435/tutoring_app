@@ -12,6 +12,7 @@ import 'package:tutoring_app/core/models/solicitud_tutoria.dart';
 import 'package:intl/intl.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
 import 'package:tutoring_app/features/notificaciones/widgets/notification_badge.dart';
+import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';

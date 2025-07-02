@@ -133,4 +133,32 @@ class Validators {
       LengthLimitingTextInputFormatter(9), // Máximo 9 dígitos
     ];
   }
+
+  /// Valida si se puede cancelar una tutoría basado en el plazo de 24 horas
+  static bool puedeCancelarTutoria(DateTime fechaSesion) {
+    final ahora = DateTime.now();
+    final diferencia = fechaSesion.difference(ahora);
+
+    // Solo permitir cancelar si faltan más de 24 horas
+    return diferencia.inHours >= 24;
+  }
+
+  /// Obtiene el mensaje de error para cancelación fuera de plazo
+  static String getMensajeErrorCancelacion(DateTime fechaSesion) {
+    final ahora = DateTime.now();
+    final diferencia = fechaSesion.difference(ahora);
+
+    if (diferencia.isNegative) {
+      return 'No se puede cancelar una tutoría que ya pasó';
+    }
+
+    final horasRestantes = diferencia.inHours;
+    final minutosRestantes = diferencia.inMinutes % 60;
+
+    if (horasRestantes < 24) {
+      return 'Solo se puede cancelar hasta 24 horas antes. Faltan $horasRestantes horas y $minutosRestantes minutos';
+    }
+
+    return '';
+  }
 }
