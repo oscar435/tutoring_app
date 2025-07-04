@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
+import 'package:intl/intl.dart';
 
 class SesionTutoriaService {
   final CollectionReference _sesionesRef = FirebaseFirestore.instance
@@ -173,11 +174,15 @@ class SesionTutoriaService {
     required String nuevaHoraFin,
   }) async {
     final firestore = FirebaseFirestore.instance;
+    // Calcular el día en español
+    String nuevoDia = DateFormat('EEEE', 'es').format(nuevaFechaSesion);
+    nuevoDia = nuevoDia.substring(0, 1).toUpperCase() + nuevoDia.substring(1);
     await firestore.collection('solicitudes_tutoria').doc(solicitudId).update({
       'reprogramacionPendiente': {
         'fechaSesion': Timestamp.fromDate(nuevaFechaSesion),
         'horaInicio': nuevaHoraInicio,
         'horaFin': nuevaHoraFin,
+        'dia': nuevoDia,
       },
       'estado': 'reprogramacion_pendiente',
     });
@@ -195,11 +200,13 @@ class SesionTutoriaService {
     final nuevaFechaSesion = (repro['fechaSesion'] as Timestamp).toDate();
     final nuevaHoraInicio = repro['horaInicio'] as String;
     final nuevaHoraFin = repro['horaFin'] as String;
+    final nuevoDia = repro['dia'] as String? ?? '';
     // Actualizar solicitud
     await firestore.collection('solicitudes_tutoria').doc(solicitudId).update({
       'fechaSesion': Timestamp.fromDate(nuevaFechaSesion),
       'horaInicio': nuevaHoraInicio,
       'horaFin': nuevaHoraFin,
+      'dia': nuevoDia,
       'estado': 'aceptada',
       'reprogramacionPendiente': FieldValue.delete(),
     });
@@ -214,6 +221,7 @@ class SesionTutoriaService {
         'fechaSesion': Timestamp.fromDate(nuevaFechaSesion),
         'horaInicio': nuevaHoraInicio,
         'horaFin': nuevaHoraFin,
+        'dia': nuevoDia,
         'estado': 'aceptada',
       });
     }

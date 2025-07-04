@@ -186,6 +186,7 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                           fotoUrl,
                           esAsignado,
                           sesion.estado,
+                          null,
                         );
                       }
                       return FutureBuilder<DocumentSnapshot>(
@@ -212,6 +213,11 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                             fotoUrl,
                             esAsignado,
                             estadoVisual,
+                            solicitudSnapshot.data?.data()
+                                    is Map<String, dynamic>
+                                ? solicitudSnapshot.data?.data()
+                                      as Map<String, dynamic>?
+                                : null,
                           );
                         },
                       );
@@ -233,6 +239,7 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
     String? fotoUrl,
     bool esAsignado,
     String estadoVisual,
+    Map<String, dynamic>? solicitudData,
   ) {
     final fechaSesion = sesion.fechaSesion ?? sesion.fechaReserva;
     final ahora = DateTime.now();
@@ -453,6 +460,274 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                         ),
                       ],
                     ),
+                    SizedBox(height: 8),
+                    // Mostrar nueva fecha/hora propuesta si hay reprogramación pendiente
+                    if (widget.userRole == 'tutor' &&
+                        estadoVisual == 'reprogramacion_pendiente' &&
+                        solicitudData != null &&
+                        solicitudData['reprogramacionPendiente'] != null)
+                      (() {
+                        final repro = solicitudData['reprogramacionPendiente'];
+                        final nuevaFecha = (repro['fechaSesion'] as Timestamp?)
+                            ?.toDate();
+                        final nuevaHoraInicio = repro['horaInicio'] as String?;
+                        final nuevaHoraFin = repro['horaFin'] as String?;
+                        if (nuevaFecha == null ||
+                            nuevaHoraInicio == null ||
+                            nuevaHoraFin == null)
+                          return SizedBox.shrink();
+                        String nuevaFechaFormateada;
+                        try {
+                          nuevaFechaFormateada = DateFormat(
+                            'EEEE d MMMM',
+                            'es',
+                          ).format(nuevaFecha);
+                          nuevaFechaFormateada =
+                              nuevaFechaFormateada
+                                  .substring(0, 1)
+                                  .toUpperCase() +
+                              nuevaFechaFormateada.substring(1);
+                        } catch (e) {
+                          nuevaFechaFormateada = DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(nuevaFecha);
+                        }
+                        return Container(
+                          margin: EdgeInsets.only(bottom: 8),
+                          padding: EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.orange, width: 1),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.schedule,
+                                color: Colors.orange,
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Nueva fecha propuesta:',
+                                      style: TextStyle(
+                                        color: Colors.orange[900],
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      '$nuevaFechaFormateada, $nuevaHoraInicio - $nuevaHoraFin',
+                                      style: TextStyle(
+                                        color: Colors.orange[900],
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      })(),
+                    // Botones de acción para reprogramación pendiente (solo para tutores)
+                    if (widget.userRole == 'tutor' &&
+                        estadoVisual == 'reprogramacion_pendiente')
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.check, color: Colors.green),
+                            tooltip: 'Aceptar reprogramación',
+                            onPressed: () async {
+                              // Obtener el solicitudId de la sesión
+                              final sesionDoc = await FirebaseFirestore.instance
+                                  .collection('sesiones_tutoria')
+                                  .doc(sesion.id)
+                                  .get();
+                              final solicitudId = sesionDoc
+                                  .data()?['solicitudId'];
+
+                              if (solicitudId != null) {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text('Aceptar reprogramación'),
+                                    content: Text(
+                                      '¿Estás seguro de que deseas aceptar la reprogramación de esta tutoría?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: Text('Cancelar'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: Text('Aceptar'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm == true) {
+                                  try {
+                                    await SesionTutoriaService()
+                                        .aceptarReprogramacion(
+                                          solicitudId: solicitudId,
+                                        );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Reprogramación aceptada',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Error al aceptar la reprogramación',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close, color: Colors.red),
+                            tooltip: 'Rechazar reprogramación',
+                            onPressed: () async {
+                              // Obtener el solicitudId de la sesión
+                              final sesionDoc = await FirebaseFirestore.instance
+                                  .collection('sesiones_tutoria')
+                                  .doc(sesion.id)
+                                  .get();
+                              final solicitudId = sesionDoc
+                                  .data()?['solicitudId'];
+
+                              if (solicitudId != null) {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text('Rechazar reprogramación'),
+                                    content: Text(
+                                      '¿Estás seguro de que deseas rechazar la reprogramación? La tutoría será cancelada.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: Text('Cancelar'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: Text('Rechazar'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm == true) {
+                                  try {
+                                    await SesionTutoriaService()
+                                        .rechazarReprogramacion(
+                                          solicitudId: solicitudId,
+                                        );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Reprogramación rechazada',
+                                        ),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Error al rechazar la reprogramación',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    // Botón de cancelar para estudiantes
+                    if (widget.userRole == 'estudiante' &&
+                        (estadoVisual == 'pendiente' ||
+                            estadoVisual == 'aceptada'))
+                      IconButton(
+                        icon: Icon(Icons.cancel, color: Colors.red),
+                        tooltip: 'Cancelar tutoría',
+                        onPressed: () async {
+                          // Validar plazo de 24 horas
+                          final fechaSesion =
+                              sesion.fechaSesion ?? sesion.fechaReserva;
+                          final mensajeError =
+                              Validators.getMensajeErrorCancelacion(
+                                fechaSesion,
+                              );
+
+                          if (mensajeError.isNotEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(mensajeError),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 4),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text('Cancelar tutoría'),
+                              content: Text(
+                                '¿Estás seguro de que deseas cancelar esta tutoría?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: Text('No'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: Text('Sí, cancelar'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            await SesionTutoriaService().cancelarSesion(
+                              sesion.id,
+                            );
+                            // Refresca la lista o muestra un mensaje
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Tutoría cancelada')),
+                            );
+                          }
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -460,58 +735,6 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                 Icons.chevron_right,
                 color: esAsignado ? Colors.green : Colors.grey,
               ),
-              if (widget.userRole == 'estudiante' &&
-                  (estadoVisual == 'pendiente' || estadoVisual == 'aceptada'))
-                IconButton(
-                  icon: Icon(Icons.cancel, color: Colors.red),
-                  tooltip: 'Cancelar tutoría',
-                  onPressed: () async {
-                    // Validar plazo de 24 horas
-                    final fechaSesion =
-                        sesion.fechaSesion ?? sesion.fechaReserva;
-                    final mensajeError = Validators.getMensajeErrorCancelacion(
-                      fechaSesion,
-                    );
-
-                    if (mensajeError.isNotEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(mensajeError),
-                          backgroundColor: Colors.red,
-                          duration: Duration(seconds: 4),
-                        ),
-                      );
-                      return;
-                    }
-
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text('Cancelar tutoría'),
-                        content: Text(
-                          '¿Estás seguro de que deseas cancelar esta tutoría?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: Text('No'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: Text('Sí, cancelar'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirm == true) {
-                      await SesionTutoriaService().cancelarSesion(sesion.id);
-                      // Refresca la lista o muestra un mensaje
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Tutoría cancelada')),
-                      );
-                    }
-                  },
-                ),
             ],
           ),
         ),

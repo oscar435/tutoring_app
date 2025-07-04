@@ -559,7 +559,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: 2,
-                  childAspectRatio: 1.35,
+                  childAspectRatio: 1.1,
                   mainAxisSpacing: 8,
                   crossAxisSpacing: 8,
                   padding: EdgeInsets.symmetric(horizontal: 4),
@@ -578,24 +578,93 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                     // Color especial para la próxima tutoría
                     final isNext = index == 0;
 
-                    return GestureDetector(
-                      onTap: () => _mostrarDetallesTutoria(
-                        sesion,
-                        nombreEstudiante,
-                        fotoUrl,
-                        estudianteData,
-                      ),
-                      child: _buildTutoriaCard(
-                        sesion.curso ?? 'Sin curso',
-                        fechaCompleta,
-                        fechaRelativa,
-                        nombreEstudiante,
-                        isNext
-                            ? Colors.orange
-                            : (esAsignado ? Colors.green : Colors.deepPurple),
-                        isNext: isNext,
-                        esAsignado: esAsignado,
-                      ),
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('sesiones_tutoria')
+                          .doc(sesion.id)
+                          .get(),
+                      builder: (context, sesionSnapshot) {
+                        String? solicitudId;
+                        String estadoVisual = sesion.estado;
+
+                        if (sesionSnapshot.hasData &&
+                            sesionSnapshot.data != null &&
+                            sesionSnapshot.data!.exists) {
+                          final data =
+                              sesionSnapshot.data!.data()
+                                  as Map<String, dynamic>;
+                          solicitudId = data['solicitudId'];
+                        }
+
+                        if (solicitudId != null) {
+                          return FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance
+                                .collection('solicitudes_tutoria')
+                                .doc(solicitudId)
+                                .get(),
+                            builder: (context, solicitudSnapshot) {
+                              if (solicitudSnapshot.hasData &&
+                                  solicitudSnapshot.data != null &&
+                                  solicitudSnapshot.data!.exists) {
+                                final data =
+                                    solicitudSnapshot.data!.data()
+                                        as Map<String, dynamic>;
+                                if (data['estado'] ==
+                                    'reprogramacion_pendiente') {
+                                  estadoVisual = 'reprogramacion_pendiente';
+                                }
+                              }
+
+                              return GestureDetector(
+                                onTap: () => _mostrarDetallesTutoria(
+                                  sesion,
+                                  nombreEstudiante,
+                                  fotoUrl,
+                                  estudianteData,
+                                ),
+                                child: _buildTutoriaCard(
+                                  sesion.curso ?? 'Sin curso',
+                                  fechaCompleta,
+                                  fechaRelativa,
+                                  nombreEstudiante,
+                                  isNext
+                                      ? Colors.orange
+                                      : (esAsignado
+                                            ? Colors.green
+                                            : Colors.deepPurple),
+                                  isNext: isNext,
+                                  esAsignado: esAsignado,
+                                  estadoVisual: estadoVisual,
+                                  solicitudId: solicitudId,
+                                ),
+                              );
+                            },
+                          );
+                        } else {
+                          return GestureDetector(
+                            onTap: () => _mostrarDetallesTutoria(
+                              sesion,
+                              nombreEstudiante,
+                              fotoUrl,
+                              estudianteData,
+                            ),
+                            child: _buildTutoriaCard(
+                              sesion.curso ?? 'Sin curso',
+                              fechaCompleta,
+                              fechaRelativa,
+                              nombreEstudiante,
+                              isNext
+                                  ? Colors.orange
+                                  : (esAsignado
+                                        ? Colors.green
+                                        : Colors.deepPurple),
+                              isNext: isNext,
+                              esAsignado: esAsignado,
+                              estadoVisual: estadoVisual,
+                            ),
+                          );
+                        }
+                      },
                     );
                   }).toList(),
                 ),
@@ -615,6 +684,8 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     Color color, {
     bool isNext = false,
     bool esAsignado = false,
+    String? estadoVisual,
+    String? solicitudId,
   }) {
     return Card(
       elevation: isNext ? 4 : 2,
@@ -672,6 +743,23 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            if (estadoVisual == 'reprogramacion_pendiente')
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                margin: EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'REPROG. PENDIENTE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             Text(

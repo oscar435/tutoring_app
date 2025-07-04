@@ -3,14 +3,16 @@ import 'package:tutoring_app/core/models/disponibilidad.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
 
 class DisponibilidadService {
-  final CollectionReference _disponibilidadRef =
-      FirebaseFirestore.instance.collection('disponibilidades');
-  final CollectionReference _sesionesRef =
-      FirebaseFirestore.instance.collection('sesiones_tutoria');
+  final CollectionReference _disponibilidadRef = FirebaseFirestore.instance
+      .collection('disponibilidades');
+  final CollectionReference _sesionesRef = FirebaseFirestore.instance
+      .collection('sesiones_tutoria');
 
   // Guardar o actualizar la disponibilidad de un tutor
   Future<void> guardarDisponibilidad(Disponibilidad disponibilidad) async {
-    await _disponibilidadRef.doc(disponibilidad.tutorId).set(disponibilidad.toMap());
+    await _disponibilidadRef
+        .doc(disponibilidad.tutorId)
+        .set(disponibilidad.toMap());
   }
 
   // Obtener la disponibilidad de un tutor por su ID
@@ -38,20 +40,22 @@ class DisponibilidadService {
           .get();
 
       final sesiones = query.docs
-          .map((doc) => SesionTutoria.fromMap(doc.data() as Map<String, dynamic>))
+          .map(
+            (doc) => SesionTutoria.fromMap(doc.data() as Map<String, dynamic>),
+          )
           .where((sesion) {
             // Excluir la sesión actual si estamos editando
             if (sesionIdExcluir != null && sesion.id == sesionIdExcluir) {
               return false;
             }
-            
+
             // Verificar si la sesión es para la misma fecha
             final sesionFecha = sesion.fechaSesion;
             if (sesionFecha == null) return false;
-            
+
             return sesionFecha.year == fechaSesion.year &&
-                   sesionFecha.month == fechaSesion.month &&
-                   sesionFecha.day == fechaSesion.day;
+                sesionFecha.month == fechaSesion.month &&
+                sesionFecha.day == fechaSesion.day;
           })
           .toList();
 
@@ -66,8 +70,10 @@ class DisponibilidadService {
 
         // Verificar si hay solapamiento
         if (_haySolapamiento(
-          horaInicioMinutos, horaFinMinutos,
-          sesionHoraInicio, sesionHoraFin,
+          horaInicioMinutos,
+          horaFinMinutos,
+          sesionHoraInicio,
+          sesionHoraFin,
         )) {
           return true; // Hay conflicto
         }
@@ -100,24 +106,26 @@ class DisponibilidadService {
           .get();
 
       final sesionesOcupadas = query.docs
-          .map((doc) => SesionTutoria.fromMap(doc.data() as Map<String, dynamic>))
+          .map(
+            (doc) => SesionTutoria.fromMap(doc.data() as Map<String, dynamic>),
+          )
           .where((sesion) {
             final sesionFecha = sesion.fechaSesion;
             if (sesionFecha == null) return false;
-            
+
             return sesionFecha.year == fecha.year &&
-                   sesionFecha.month == fecha.month &&
-                   sesionFecha.day == fecha.day;
+                sesionFecha.month == fecha.month &&
+                sesionFecha.day == fecha.day;
           })
           .toList();
 
       // Filtrar slots disponibles
       final slotsDisponibles = <Slot>[];
-      
+
       for (final slot in disponibilidad.slots) {
         // Solo considerar slots del día de la semana correspondiente
         if (slot.dia != diaSemana) continue;
-        
+
         if (!slot.activo) continue; // Saltar slots inactivos
 
         // Verificar si el slot está ocupado
@@ -130,8 +138,10 @@ class DisponibilidadService {
           final sesionHoraFin = _convertirHoraAMinutos(sesion.horaFin);
 
           if (_haySolapamiento(
-            slotHoraInicio, slotHoraFin,
-            sesionHoraInicio, sesionHoraFin,
+            slotHoraInicio,
+            slotHoraFin,
+            sesionHoraInicio,
+            sesionHoraFin,
           )) {
             estaOcupado = true;
             break;
@@ -151,10 +161,7 @@ class DisponibilidadService {
   }
 
   // Verificar si dos rangos de tiempo se solapan
-  bool _haySolapamiento(
-    int inicio1, int fin1,
-    int inicio2, int fin2,
-  ) {
+  bool _haySolapamiento(int inicio1, int fin1, int inicio2, int fin2) {
     return inicio1 < fin2 && inicio2 < fin1;
   }
 
@@ -162,10 +169,10 @@ class DisponibilidadService {
   int _convertirHoraAMinutos(String hora) {
     final partes = hora.split(':');
     if (partes.length != 2) return 0;
-    
+
     final horas = int.tryParse(partes[0]) ?? 0;
     final minutos = int.tryParse(partes[1]) ?? 0;
-    
+
     return horas * 60 + minutos;
   }
 
@@ -182,14 +189,15 @@ class DisponibilidadService {
 
       // Buscar un slot que coincida con el día y horario
       for (final slot in disponibilidad.slots) {
-        if (slot.dia == dia && slot.activo) {
+        if (slot.dia.trim().toLowerCase() == dia.trim().toLowerCase() &&
+            slot.activo) {
           final slotHoraInicio = _convertirHoraAMinutos(slot.horaInicio);
           final slotHoraFin = _convertirHoraAMinutos(slot.horaFin);
           final horaInicioMinutos = _convertirHoraAMinutos(horaInicio);
           final horaFinMinutos = _convertirHoraAMinutos(horaFin);
 
           // Verificar que el horario solicitado esté completamente dentro del slot disponible
-          if (horaInicioMinutos >= slotHoraInicio && 
+          if (horaInicioMinutos >= slotHoraInicio &&
               horaFinMinutos <= slotHoraFin &&
               horaInicioMinutos < horaFinMinutos) {
             return true;
@@ -207,14 +215,22 @@ class DisponibilidadService {
   // Convertir número de día de la semana a nombre
   String _obtenerDiaSemana(int weekday) {
     switch (weekday) {
-      case 1: return 'Lunes';
-      case 2: return 'Martes';
-      case 3: return 'Miércoles';
-      case 4: return 'Jueves';
-      case 5: return 'Viernes';
-      case 6: return 'Sábado';
-      case 7: return 'Domingo';
-      default: return 'Desconocido';
+      case 1:
+        return 'Lunes';
+      case 2:
+        return 'Martes';
+      case 3:
+        return 'Miércoles';
+      case 4:
+        return 'Jueves';
+      case 5:
+        return 'Viernes';
+      case 6:
+        return 'Sábado';
+      case 7:
+        return 'Domingo';
+      default:
+        return 'Desconocido';
     }
   }
-} 
+}

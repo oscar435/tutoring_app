@@ -14,7 +14,8 @@ class NotificacionService {
   NotificacionService._internal();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -22,7 +23,8 @@ class NotificacionService {
   bool _isInitialized = false;
 
   Stream<RemoteMessage> get onMessageReceived => FirebaseMessaging.onMessage;
-  Stream<RemoteMessage> get onMessageOpenedApp => FirebaseMessaging.onMessageOpenedApp;
+  Stream<RemoteMessage> get onMessageOpenedApp =>
+      FirebaseMessaging.onMessageOpenedApp;
   Stream<RemoteMessage?> get onInitialMessage =>
       FirebaseMessaging.instance.getInitialMessage().asStream();
 
@@ -45,7 +47,10 @@ class NotificacionService {
   Future<void> _requestPermissions() async {
     if (Platform.isIOS) {
       await _firebaseMessaging.requestPermission(
-        alert: true, badge: true, sound: true, provisional: false,
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
       );
     } else if (Platform.isAndroid) {
       await Permission.notification.request();
@@ -53,9 +58,12 @@ class NotificacionService {
   }
 
   Future<void> _configureFCM() async {
-    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-      alert: true, badge: true, sound: true,
-    );
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
   }
 
   Future<void> _configureLocalNotifications() async {
@@ -63,10 +71,11 @@ class NotificacionService {
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings();
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
     await _localNotifications.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
@@ -109,13 +118,13 @@ class NotificacionService {
   Future<void> updateFCMTokenAfterLogin() async {
     try {
       debugPrint('🔄 Actualizando FCM token después del login...');
-      
+
       // Obtener un token FRESCO cada vez (no reutilizar el almacenado)
       final token = await _firebaseMessaging.getToken();
       if (token != null) {
         _fcmToken = token;
         debugPrint('📱 FCM Token obtenido: $token');
-        
+
         // Guardar en Firestore
         await _saveFCMToken(token);
         debugPrint('✅ FCM Token guardado en Firestore');
@@ -136,7 +145,7 @@ class NotificacionService {
   Future<void> clearFCMTokenOnLogout() async {
     try {
       debugPrint('🧹 Limpiando FCM token al hacer logout...');
-      
+
       final user = _auth.currentUser;
       if (user != null) {
         // Eliminar el token de Firestore
@@ -146,7 +155,7 @@ class NotificacionService {
         });
         debugPrint('✅ FCM Token eliminado de Firestore');
       }
-      
+
       // Limpiar el token en memoria
       _fcmToken = null;
     } catch (e) {
@@ -157,7 +166,9 @@ class NotificacionService {
   void _setupMessageHandlers() {
     // 1. Mensaje recibido mientras la app está en primer plano
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('Mensaje recibido en primer plano: ${message.notification?.title}');
+      debugPrint(
+        'Mensaje recibido en primer plano: ${message.notification?.title}',
+      );
       // Solo mostramos la notificación visualmente.
       // El backend es ahora el único responsable de crear el documento en Firestore.
       _showLocalNotification(message);
@@ -165,21 +176,31 @@ class NotificacionService {
 
     // 2. Usuario toca la notificación y abre la app (desde segundo plano)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('Notificación tocada para abrir la app: ${message.notification?.title}');
+      debugPrint(
+        'Notificación tocada para abrir la app: ${message.notification?.title}',
+      );
       _handleNotificationTap(message);
     });
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'tutoring_app_channel',
-      'Tutoring App Notifications',
-      channelDescription: 'Canal para notificaciones de la app de tutorías',
-      importance: Importance.max,
-      priority: Priority.high,
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'tutoring_app_channel',
+          'Tutoring App Notifications',
+          channelDescription: 'Canal para notificaciones de la app de tutorías',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentSound: true,
+      presentBadge: true,
+      presentAlert: true,
     );
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(presentSound: true, presentBadge: true, presentAlert: true);
-    const NotificationDetails platformDetails = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -195,7 +216,9 @@ class NotificacionService {
       try {
         final data = json.decode(response.payload!);
         // Creamos un RemoteMessage "falso" para reutilizar el handler
-        _handleNotificationTap(RemoteMessage(data: Map<String, dynamic>.from(data)));
+        _handleNotificationTap(
+          RemoteMessage(data: Map<String, dynamic>.from(data)),
+        );
       } catch (e) {
         debugPrint('Error decodificando payload de notificación: $e');
       }
@@ -269,9 +292,11 @@ class NotificacionService {
         .where('usuarioId', isEqualTo: user.uid)
         .orderBy('fechaCreacion', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Notificacion.fromFirestore(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Notificacion.fromFirestore(doc.data()))
+              .toList(),
+        );
   }
 
   Stream<int> getUnreadNotificationsCount() {
@@ -286,4 +311,4 @@ class NotificacionService {
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
-} 
+}
