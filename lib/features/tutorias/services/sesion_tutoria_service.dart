@@ -132,4 +132,110 @@ class SesionTutoriaService {
       );
     }
   }
+
+  Future<void> reprogramarSesionYSolicitud({
+    required String sesionId,
+    required DateTime nuevaFechaSesion,
+    required String nuevaHoraInicio,
+    required String nuevaHoraFin,
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+    // 1. Actualizar la sesión
+    await firestore.collection('sesiones_tutoria').doc(sesionId).update({
+      'fechaSesion': Timestamp.fromDate(nuevaFechaSesion),
+      'horaInicio': nuevaHoraInicio,
+      'horaFin': nuevaHoraFin,
+      'estado': 'aceptada',
+    });
+    // 2. Obtener el campo solicitudId de la sesión
+    final sesionDoc = await firestore
+        .collection('sesiones_tutoria')
+        .doc(sesionId)
+        .get();
+    final solicitudId = sesionDoc.data()?['solicitudId'];
+    if (solicitudId != null) {
+      await firestore
+          .collection('solicitudes_tutoria')
+          .doc(solicitudId)
+          .update({
+            'fechaSesion': Timestamp.fromDate(nuevaFechaSesion),
+            'horaInicio': nuevaHoraInicio,
+            'horaFin': nuevaHoraFin,
+            'estado': 'pendiente',
+          });
+    }
+  }
+
+  Future<void> solicitarReprogramacion({
+    required String solicitudId,
+    required DateTime nuevaFechaSesion,
+    required String nuevaHoraInicio,
+    required String nuevaHoraFin,
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+    await firestore.collection('solicitudes_tutoria').doc(solicitudId).update({
+      'reprogramacionPendiente': {
+        'fechaSesion': Timestamp.fromDate(nuevaFechaSesion),
+        'horaInicio': nuevaHoraInicio,
+        'horaFin': nuevaHoraFin,
+      },
+      'estado': 'reprogramacion_pendiente',
+    });
+  }
+
+  Future<void> aceptarReprogramacion({required String solicitudId}) async {
+    final firestore = FirebaseFirestore.instance;
+    final solicitudDoc = await firestore
+        .collection('solicitudes_tutoria')
+        .doc(solicitudId)
+        .get();
+    final data = solicitudDoc.data();
+    if (data == null || data['reprogramacionPendiente'] == null) return;
+    final repro = data['reprogramacionPendiente'];
+    final nuevaFechaSesion = (repro['fechaSesion'] as Timestamp).toDate();
+    final nuevaHoraInicio = repro['horaInicio'] as String;
+    final nuevaHoraFin = repro['horaFin'] as String;
+    // Actualizar solicitud
+    await firestore.collection('solicitudes_tutoria').doc(solicitudId).update({
+      'fechaSesion': Timestamp.fromDate(nuevaFechaSesion),
+      'horaInicio': nuevaHoraInicio,
+      'horaFin': nuevaHoraFin,
+      'estado': 'aceptada',
+      'reprogramacionPendiente': FieldValue.delete(),
+    });
+    // Buscar la sesión asociada
+    final sesiones = await firestore
+        .collection('sesiones_tutoria')
+        .where('solicitudId', isEqualTo: solicitudId)
+        .get();
+    if (sesiones.docs.isNotEmpty) {
+      final sesionId = sesiones.docs.first.id;
+      await firestore.collection('sesiones_tutoria').doc(sesionId).update({
+        'fechaSesion': Timestamp.fromDate(nuevaFechaSesion),
+        'horaInicio': nuevaHoraInicio,
+        'horaFin': nuevaHoraFin,
+        'estado': 'aceptada',
+      });
+    }
+  }
+
+  Future<void> rechazarReprogramacion({required String solicitudId}) async {
+    final firestore = FirebaseFirestore.instance;
+    // Limpiar reprogramacionPendiente y cambiar estado a cancelada
+    await firestore.collection('solicitudes_tutoria').doc(solicitudId).update({
+      'reprogramacionPendiente': FieldValue.delete(),
+      'estado': 'cancelada',
+    });
+    // Buscar la sesión asociada y cancelarla
+    final sesiones = await firestore
+        .collection('sesiones_tutoria')
+        .where('solicitudId', isEqualTo: solicitudId)
+        .get();
+    if (sesiones.docs.isNotEmpty) {
+      final sesionId = sesiones.docs.first.id;
+      await firestore.collection('sesiones_tutoria').doc(sesionId).update({
+        'estado': 'cancelada',
+      });
+    }
+  }
 }

@@ -513,26 +513,40 @@ class HomePage2 extends StatelessWidget {
                       const Spacer(),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: estadoColor.withAlpha(
-                                (0.15 * 255).toInt(),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
                               ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              solicitud.estado.toUpperCase(),
-                              style: TextStyle(
-                                color: estadoColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
+                              decoration: BoxDecoration(
+                                color:
+                                    solicitud.estado ==
+                                        'reprogramacion_pendiente'
+                                    ? Colors.orange.withAlpha(
+                                        (0.15 * 255).toInt(),
+                                      )
+                                    : estadoColor.withAlpha(
+                                        (0.15 * 255).toInt(),
+                                      ),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              child: Text(
+                                solicitud.estado == 'reprogramacion_pendiente'
+                                    ? 'REPROGRAMACIÓN PENDIENTE'
+                                    : solicitud.estado.toUpperCase(),
+                                style: TextStyle(
+                                  color:
+                                      solicitud.estado ==
+                                          'reprogramacion_pendiente'
+                                      ? Colors.orange
+                                      : estadoColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
                         ],
