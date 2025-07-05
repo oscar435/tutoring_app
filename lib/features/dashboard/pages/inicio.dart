@@ -13,6 +13,9 @@ import 'package:intl/intl.dart';
 import 'package:tutoring_app/routes/app_routes.dart';
 import 'package:tutoring_app/features/notificaciones/widgets/notification_badge.dart';
 import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -148,30 +151,14 @@ class HomePage2 extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    _buildSectionTitle(
-                      'Noticias recientes',
-                      trailing: TextButton(
-                        onPressed: () {
-                          // Navegación a noticias - implementación básica
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Funcionalidad de noticias en desarrollo',
-                              ),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        child: const Text('Todas las noticias'),
-                      ),
-                    ),
+                    _buildSectionTitle('Noticias recientes'),
                     _buildNewsList(),
                     const SizedBox(height: 20),
-                    _buildSectionTitle('Eventos'),
-                    _buildEventCard('21 Mayo', 'Encuesta estudiantil'),
+                    _buildSectionTitle('Eventos Unfv'),
+                    _buildEventosList(),
                     const SizedBox(height: 20),
                     _buildSectionTitle(
-                      'Materiales disponibles',
+                      'Herramientas para tu Éxito',
                       trailing: TextButton(
                         onPressed: () {
                           // Navegación a materiales educativos
@@ -180,7 +167,7 @@ class HomePage2 extends StatelessWidget {
                         child: const Text('Ver todos'),
                       ),
                     ),
-                    _buildMaterialsRow(),
+                    _buildContenidoPsicopedagogicoList(),
                   ],
                 ),
               ),
@@ -762,100 +749,112 @@ class HomePage2 extends StatelessWidget {
   }
 
   Widget _buildNewsList() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            children: [
-              Image.asset('assets/news.png'),
-              const Text(
-                'FIEI da la bienvenida a sus ingresantes 2025',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ],
+    return FutureBuilder<List<Noticia>>(
+      future: fetchNoticias(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No hay noticias disponibles.'));
+        }
+        // Filtrar solo noticias
+        final noticias = filtrarPorTipo(snapshot.data!, 'noticia')
+          ..sort((a, b) => b.fecha.compareTo(a.fecha));
+
+        if (noticias.isEmpty) {
+          return const Center(child: Text('No hay noticias disponibles.'));
+        }
+
+        return SizedBox(
+          height: 100,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: noticias.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final noticia = noticias[index];
+              return SizedBox(
+                width: 200,
+                child: _NoticiaCard(noticia: noticia),
+              );
+            },
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            children: [
-              Image.asset('assets/news2.png'),
-              const Text(
-                'Villarrealinos presentan muestra escultórica',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildEventCard(String date, String description) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.orange,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            date,
-            style: const TextStyle(
-              fontSize: 18,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+  Widget _buildEventosList() {
+    return FutureBuilder<List<Noticia>>(
+      future: fetchNoticias(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No hay eventos disponibles.'));
+        }
+        // Filtrar solo eventos
+        final eventos = filtrarPorTipo(snapshot.data!, 'eventoUNFV')
+          ..sort((a, b) => b.fecha.compareTo(a.fecha));
+
+        if (eventos.isEmpty) {
+          return const Center(child: Text('No hay eventos disponibles.'));
+        }
+
+        return SizedBox(
+          height: 120,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: eventos.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final evento = eventos[index];
+              return SizedBox(width: 200, child: _EventoCard(evento: evento));
+            },
           ),
-          const SizedBox(height: 4),
-          Text(
-            description,
-            style: const TextStyle(color: Colors.white),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildMaterialsRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            children: [
-              Image.asset('assets/info_curso.jpg'),
-              const Text(
-                'Introducción a la Ingeniería Informática',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ],
+  Widget _buildContenidoPsicopedagogicoList() {
+    return FutureBuilder<List<Noticia>>(
+      future: fetchNoticias(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No hay contenido disponible.'));
+        }
+        // Filtrar solo contenido psicopedagógico
+        final contenidos = filtrarPorTipo(
+          snapshot.data!,
+          'contenidoPsicopedagogico',
+        )..sort((a, b) => b.fecha.compareTo(a.fecha));
+
+        if (contenidos.isEmpty) {
+          return const Center(child: Text('No hay contenido disponible.'));
+        }
+
+        return SizedBox(
+          height: 140,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: contenidos.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final contenido = contenidos[index];
+              return SizedBox(
+                width: 180,
+                child: _ContenidoPsicopedagogicoCard(contenido: contenido),
+              );
+            },
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            children: [
-              Image.asset('assets/oratoria_curso.jpg'),
-              const Text(
-                'Dominar la oratoria y el discurso',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -1188,6 +1187,318 @@ class _SeleccionarTutorPageState extends State<SeleccionarTutorPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Modelo para Noticia
+class Noticia {
+  final int id;
+  final String texto;
+  final String imagenUrl;
+  final String link;
+  final DateTime fecha;
+  final String tipo;
+
+  Noticia({
+    required this.id,
+    required this.texto,
+    required this.imagenUrl,
+    required this.link,
+    required this.fecha,
+    required this.tipo,
+  });
+
+  factory Noticia.fromJson(Map<String, dynamic> json) {
+    return Noticia(
+      id: json['ID'] ?? 0,
+      texto: json['TEXTO'] ?? '',
+      imagenUrl: json['IMAGEN_URL'] ?? '',
+      link: json['LINK'] ?? '',
+      fecha: DateTime.tryParse(json['FECHA'] ?? '') ?? DateTime.now(),
+      tipo: json['TIPO'] ?? 'noticia',
+    );
+  }
+}
+
+Future<List<Noticia>> fetchNoticias() async {
+  const url =
+      'https://script.google.com/macros/s/AKfycbxpFBL47pHkhm5EQckB_2MKURpr8cfI0LSlHcWQaObaElGQcAXiRzDPdwEHAaph_bi3/exec';
+  final response = await http.get(Uri.parse(url));
+  if (response.statusCode == 200) {
+    final List<dynamic> data = json.decode(response.body);
+    return data.map((json) => Noticia.fromJson(json)).toList();
+  } else {
+    throw Exception('Error al cargar noticias');
+  }
+}
+
+// Función para filtrar por tipo
+List<Noticia> filtrarPorTipo(List<Noticia> noticias, String tipo) {
+  return noticias
+      .where((noticia) => noticia.tipo.toLowerCase() == tipo.toLowerCase())
+      .toList();
+}
+
+Future<void> _abrirLink(String url) async {
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+// Página para mostrar todas las noticias
+class TodasLasNoticiasPage extends StatelessWidget {
+  const TodasLasNoticiasPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Todas las noticias')),
+      body: FutureBuilder<List<Noticia>>(
+        future: fetchNoticias(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No hay noticias disponibles.'));
+          }
+          final noticias = List<Noticia>.from(snapshot.data!)
+            ..sort((a, b) => b.fecha.compareTo(a.fecha));
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: noticias.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final noticia = noticias[index];
+              return _NoticiaCard(noticia: noticia);
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _NoticiaCard extends StatefulWidget {
+  final Noticia noticia;
+  const _NoticiaCard({required this.noticia});
+
+  @override
+  State<_NoticiaCard> createState() => _NoticiaCardState();
+}
+
+class _NoticiaCardState extends State<_NoticiaCard> {
+  bool _highlighted = false;
+  DateTime? _lastTap;
+
+  void _onTap() {
+    setState(() {
+      _highlighted = !_highlighted;
+    });
+  }
+
+  void _onDoubleTap() {
+    _abrirLink(widget.noticia.link);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fechaStr = DateFormat('dd/MM/yyyy').format(widget.noticia.fecha);
+    return GestureDetector(
+      onTap: _onTap,
+      onDoubleTap: _onDoubleTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: _highlighted
+              ? Colors.deepPurple.withOpacity(0.1)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.deepPurple.withOpacity(0.2)),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              children: [
+                // Fecha encima de la miniatura
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    fechaStr,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (widget.noticia.imagenUrl.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      widget.noticia.imagenUrl,
+                      height: 50,
+                      width: 50,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                widget.noticia.texto,
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 10),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Widget para eventos (sin miniatura)
+class _EventoCard extends StatefulWidget {
+  final Noticia evento;
+  const _EventoCard({required this.evento});
+
+  @override
+  State<_EventoCard> createState() => _EventoCardState();
+}
+
+class _EventoCardState extends State<_EventoCard> {
+  bool _highlighted = false;
+
+  void _onTap() {
+    setState(() {
+      _highlighted = !_highlighted;
+    });
+  }
+
+  void _onDoubleTap() {
+    _abrirLink(widget.evento.link);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fechaStr = DateFormat('dd/MM/yyyy').format(widget.evento.fecha);
+    return GestureDetector(
+      onTap: _onTap,
+      onDoubleTap: _onDoubleTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: _highlighted ? Colors.orange.withOpacity(0.1) : Colors.orange,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                fechaStr,
+                style: const TextStyle(
+                  color: Colors.orange,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.evento.texto,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Widget para contenido psicopedagógico
+class _ContenidoPsicopedagogicoCard extends StatefulWidget {
+  final Noticia contenido;
+  const _ContenidoPsicopedagogicoCard({required this.contenido});
+
+  @override
+  State<_ContenidoPsicopedagogicoCard> createState() =>
+      _ContenidoPsicopedagogicoCardState();
+}
+
+class _ContenidoPsicopedagogicoCardState
+    extends State<_ContenidoPsicopedagogicoCard> {
+  bool _highlighted = false;
+
+  void _onTap() {
+    setState(() {
+      _highlighted = !_highlighted;
+    });
+  }
+
+  void _onDoubleTap() {
+    _abrirLink(widget.contenido.link);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _onTap,
+      onDoubleTap: _onDoubleTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: _highlighted ? Colors.green.withOpacity(0.1) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.withOpacity(0.2)),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.contenido.imagenUrl.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  widget.contenido.imagenUrl,
+                  height: 80,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            const SizedBox(height: 8),
+            Text(
+              widget.contenido.texto,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
       ),
     );
   }
