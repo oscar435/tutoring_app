@@ -167,13 +167,41 @@ class DisponibilidadService {
 
   // Convertir hora en formato "HH:MM" a minutos
   int _convertirHoraAMinutos(String hora) {
-    final partes = hora.split(':');
+    // Manejar diferentes formatos de hora
+    String horaNormalizada = _normalizarFormatoHora(hora);
+
+    final partes = horaNormalizada.split(':');
     if (partes.length != 2) return 0;
 
     final horas = int.tryParse(partes[0]) ?? 0;
     final minutos = int.tryParse(partes[1]) ?? 0;
 
     return horas * 60 + minutos;
+  }
+
+  // Normalizar formato de hora para manejar AM/PM y formato 24h
+  String _normalizarFormatoHora(String hora) {
+    // Si ya está en formato 24h (HH:MM), devolver tal como está
+    if (hora.contains(':')) {
+      final partes = hora.split(' ');
+      if (partes.length == 1) {
+        // Formato 24h (HH:MM)
+        return hora;
+      } else if (partes.length == 2) {
+        // Formato 12h con AM/PM (HH:MM AM/PM)
+        final horaMin = partes[0].split(':');
+        int hora = int.parse(horaMin[0]);
+        int minuto = int.parse(horaMin[1]);
+        final ampm = partes[1].toUpperCase();
+
+        if (ampm == 'PM' && hora != 12) hora += 12;
+        if (ampm == 'AM' && hora == 12) hora = 0;
+
+        return '${hora.toString().padLeft(2, '0')}:${minuto.toString().padLeft(2, '0')}';
+      }
+    }
+
+    return hora; // Devolver tal como está si no se puede parsear
   }
 
   // Validar que un horario esté dentro de la disponibilidad del tutor

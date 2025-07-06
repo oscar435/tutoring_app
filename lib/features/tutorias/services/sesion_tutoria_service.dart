@@ -16,7 +16,7 @@ class SesionTutoriaService {
   Future<List<SesionTutoria>> obtenerSesionesPorTutor(String tutorId) async {
     final query = await _sesionesRef
         .where('tutorId', isEqualTo: tutorId)
-        .where('estado', isEqualTo: 'aceptada')
+        .where('estado', whereIn: ['aceptada', 'completada'])
         .orderBy('fechaSesion', descending: false)
         .orderBy('fechaReserva', descending: false)
         .get();
@@ -31,7 +31,7 @@ class SesionTutoriaService {
     final ahora = DateTime.now();
     final query = await _sesionesRef
         .where('tutorId', isEqualTo: tutorId)
-        .where('estado', isEqualTo: 'aceptada')
+        .where('estado', whereIn: ['aceptada', 'completada'])
         .orderBy('fechaSesion', descending: false)
         .orderBy('fechaReserva', descending: false)
         .get();
@@ -71,8 +71,7 @@ class SesionTutoriaService {
 
     return _sesionesRef
         .where(userField, isEqualTo: userId)
-        .where('estado', isEqualTo: 'aceptada')
-        .where('fechaSesion', isGreaterThan: ahora) // Filtrado en el servidor
+        .where('estado', whereIn: ['aceptada', 'completada'])
         .orderBy('fechaSesion', descending: false)
         .snapshots()
         .map((snapshot) {
@@ -84,6 +83,24 @@ class SesionTutoriaService {
                 (doc) =>
                     SesionTutoria.fromMap(doc.data() as Map<String, dynamic>),
               )
+              .where((sesion) {
+                final ahora = DateTime.now();
+                final fechaSesion = sesion.fechaSesion ?? sesion.fechaReserva;
+                // Para sesiones aceptadas, mostrar si la fecha es futura o es hoy
+                if (sesion.estado == 'aceptada') {
+                  final esHoy =
+                      fechaSesion.year == ahora.year &&
+                      fechaSesion.month == ahora.month &&
+                      fechaSesion.day == ahora.day;
+                  return (fechaSesion.isAfter(ahora) || esHoy);
+                }
+                // Para sesiones completadas, mostrar si la fecha es futura o es hoy
+                final esHoy =
+                    fechaSesion.year == ahora.year &&
+                    fechaSesion.month == ahora.month &&
+                    fechaSesion.day == ahora.day;
+                return (fechaSesion.isAfter(ahora) || esHoy);
+              })
               .toList();
           return sesiones;
         });
@@ -94,7 +111,7 @@ class SesionTutoriaService {
   ) async {
     final query = await _sesionesRef
         .where('estudianteId', isEqualTo: estudianteId)
-        .where('estado', isEqualTo: 'aceptada')
+        .where('estado', whereIn: ['aceptada', 'completada'])
         .orderBy('fechaSesion', descending: false)
         .orderBy('fechaReserva', descending: false)
         .get();
@@ -245,5 +262,60 @@ class SesionTutoriaService {
         'estado': 'cancelada',
       });
     }
+  }
+
+  // Obtener sesiones completadas por tutor
+  Future<List<SesionTutoria>> obtenerSesionesCompletadasPorTutor(
+    String tutorId,
+  ) async {
+    final query = await _sesionesRef
+        .where('tutorId', isEqualTo: tutorId)
+        .where('estado', isEqualTo: 'completada')
+        .orderBy('fechaSesion', descending: true)
+        .get();
+    return query.docs
+        .map((doc) => SesionTutoria.fromMap(doc.data() as Map<String, dynamic>))
+        .toList();
+  }
+
+  // Obtener sesiones completadas por estudiante
+  Future<List<SesionTutoria>> obtenerSesionesCompletadasPorEstudiante(
+    String estudianteId,
+  ) async {
+    final query = await _sesionesRef
+        .where('estudianteId', isEqualTo: estudianteId)
+        .where('estado', isEqualTo: 'completada')
+        .orderBy('fechaSesion', descending: true)
+        .get();
+    return query.docs
+        .map((doc) => SesionTutoria.fromMap(doc.data() as Map<String, dynamic>))
+        .toList();
+  }
+
+  // Obtener historial de sesiones (completadas y pasadas)
+  Future<List<SesionTutoria>> obtenerHistorialSesiones(
+    String userId,
+    String userRole,
+  ) async {
+    final ahora = DateTime.now();
+    final userField = userRole == 'tutor' ? 'tutorId' : 'estudianteId';
+
+    final query = await _sesionesRef
+        .where(userField, isEqualTo: userId)
+        .where('estado', whereIn: ['completada'])
+        .orderBy('fechaSesion', descending: true)
+        .get();
+
+    // DEBUG: Mostrar todas las sesiones encontradas antes del filtro
+    print('Sesiones encontradas para $userRole ($userId):');
+    for (var doc in query.docs) {
+      print(doc.data());
+    }
+
+    final sesiones = query.docs
+        .map((doc) => SesionTutoria.fromMap(doc.data() as Map<String, dynamic>))
+        .toList();
+
+    return sesiones;
   }
 }

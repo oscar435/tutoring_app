@@ -213,14 +213,39 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
 
   // Combinar fecha seleccionada y hora de inicio en un solo DateTime
   DateTime _combinarFechaYHora(DateTime fecha, String horaInicio) {
-    final partes = horaInicio.split(' ');
-    final horaMin = partes[0].split(':');
-    int hora = int.parse(horaMin[0]);
-    int minuto = int.parse(horaMin[1]);
-    final ampm = partes[1];
-    if (ampm == 'PM' && hora != 12) hora += 12;
-    if (ampm == 'AM' && hora == 12) hora = 0;
+    // Normalizar el formato de hora
+    String horaNormalizada = _normalizarFormatoHora(horaInicio);
+
+    final partes = horaNormalizada.split(':');
+    int hora = int.parse(partes[0]);
+    int minuto = int.parse(partes[1]);
+
     return DateTime(fecha.year, fecha.month, fecha.day, hora, minuto);
+  }
+
+  // Normalizar formato de hora para manejar AM/PM y formato 24h
+  String _normalizarFormatoHora(String hora) {
+    // Si ya está en formato 24h (HH:MM), devolver tal como está
+    if (hora.contains(':')) {
+      final partes = hora.split(' ');
+      if (partes.length == 1) {
+        // Formato 24h (HH:MM)
+        return hora;
+      } else if (partes.length == 2) {
+        // Formato 12h con AM/PM (HH:MM AM/PM)
+        final horaMin = partes[0].split(':');
+        int hora = int.parse(horaMin[0]);
+        int minuto = int.parse(horaMin[1]);
+        final ampm = partes[1].toUpperCase();
+
+        if (ampm == 'PM' && hora != 12) hora += 12;
+        if (ampm == 'AM' && hora == 12) hora = 0;
+
+        return '${hora.toString().padLeft(2, '0')}:${minuto.toString().padLeft(2, '0')}';
+      }
+    }
+
+    return hora; // Devolver tal como está si no se puede parsear
   }
 
   Future<void> _agendarTutoria() async {

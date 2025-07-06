@@ -16,6 +16,10 @@ import 'package:tutoring_app/features/tutorias/services/solicitud_tutoria_servic
 import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
 import 'package:intl/intl.dart';
 import 'package:tutoring_app/features/notificaciones/widgets/notification_badge.dart';
+import 'package:tutoring_app/features/tutorias/pages/registro_post_sesion_page.dart';
+import 'package:tutoring_app/features/tutorias/services/registro_post_sesion_service.dart';
+import 'package:tutoring_app/features/tutorias/pages/historial_sesiones_page.dart';
+import 'package:tutoring_app/features/tutorias/pages/resumen_post_sesion_page.dart';
 
 class TeacherHomePage extends StatefulWidget {
   static const routeName = '/teacher-home';
@@ -392,6 +396,17 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                         ),
                       ),
                       _buildDrawerItem(
+                        Icons.history,
+                        'Historial de sesiones',
+                        context,
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HistorialSesionesPage(),
+                          ),
+                        ),
+                      ),
+                      _buildDrawerItem(
                         Icons.assessment,
                         'Reportes',
                         context,
@@ -538,6 +553,24 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               return fechaA.compareTo(fechaB);
             });
 
+            // Determinar la próxima tutoría pendiente (la que su hora de fin aún no ha pasado)
+            DateTime now = DateTime.now();
+            int? nextIndex;
+            for (int i = 0; i < sesionesConNombres.length; i++) {
+              final s = sesionesConNombres[i];
+              final sesion = s['sesion'] as SesionTutoria;
+              final fechaSesion = sesion.fechaSesion ?? sesion.fechaReserva;
+              // Combinar fecha y horaFin para obtener el DateTime de fin
+              DateTime fechaHoraFin = _combinarFechaYHora(
+                fechaSesion,
+                sesion.horaFin,
+              );
+              if (fechaHoraFin.isAfter(now)) {
+                nextIndex = i;
+                break;
+              }
+            }
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -576,7 +609,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                     final esAsignado = s['esAsignado'] as bool;
 
                     // Color especial para la próxima tutoría
-                    final isNext = index == 0;
+                    final isNext = nextIndex != null && index == nextIndex;
 
                     return FutureBuilder<DocumentSnapshot>(
                       future: FirebaseFirestore.instance
@@ -687,16 +720,26 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     String? estadoVisual,
     String? solicitudId,
   }) {
+    // Determinar el color de fondo basado en el estado
+    Color? backgroundColor;
+    if (estadoVisual == 'completada') {
+      backgroundColor = Colors.blue[50];
+    } else if (esAsignado) {
+      backgroundColor = Colors.green[50];
+    }
+
     return Card(
       elevation: isNext ? 4 : 2,
-      color: esAsignado ? Colors.green[50] : null,
+      color: backgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: isNext
             ? BorderSide(color: Colors.orange, width: 2)
-            : (esAsignado
-                  ? BorderSide(color: Colors.green, width: 2)
-                  : BorderSide.none),
+            : (estadoVisual == 'completada'
+                  ? BorderSide(color: Colors.blue, width: 2)
+                  : (esAsignado
+                        ? BorderSide(color: Colors.green, width: 2)
+                        : BorderSide.none)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -762,12 +805,62 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                   ),
                 ),
               ),
+            if (estadoVisual == 'aceptada')
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                margin: EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.schedule, color: Colors.white, size: 10),
+                    SizedBox(width: 2),
+                    Text(
+                      'CONFIRMADA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (estadoVisual == 'completada')
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                margin: EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white, size: 10),
+                    SizedBox(width: 2),
+                    Text(
+                      'COMPLETADA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Text(
               subject,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: esAsignado ? Colors.green[800] : Colors.black,
+                color: estadoVisual == 'completada'
+                    ? Colors.blue[800]
+                    : (esAsignado ? Colors.green[800] : Colors.black),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -797,9 +890,13 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             Text(
               students,
               style: TextStyle(
-                color: esAsignado ? Colors.green[700] : Color(0xFFAAAAAA),
+                color: estadoVisual == 'completada'
+                    ? Colors.blue[700]
+                    : (esAsignado ? Colors.green[700] : Color(0xFFAAAAAA)),
                 fontSize: 11,
-                fontWeight: esAsignado ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: (estadoVisual == 'completada' || esAsignado)
+                    ? FontWeight.w600
+                    : FontWeight.normal,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1429,6 +1526,59 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                         'Email estudiante',
                         estudianteData['email'],
                       ),
+                    const SizedBox(height: 20),
+                    // Botón de registro post-sesión
+                    if (sesion.estado == 'aceptada' ||
+                        sesion.estado == 'completada')
+                      FutureBuilder<bool>(
+                        future: RegistroPostSesionService().sesionTieneRegistro(
+                          sesion.id,
+                        ),
+                        builder: (context, snapshot) {
+                          final tieneRegistro = snapshot.data ?? false;
+                          return SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              icon: Icon(
+                                tieneRegistro
+                                    ? Icons.visibility
+                                    : Icons.assignment,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context); // Cerrar modal
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => tieneRegistro
+                                        ? ResumenPostSesionPage(
+                                            sesionId: sesion.id,
+                                          )
+                                        : RegistroPostSesionPage(
+                                            sesionId: sesion.id,
+                                            sesion: sesion,
+                                          ),
+                                  ),
+                                );
+                              },
+                              label: Text(
+                                tieneRegistro
+                                    ? 'Ver resumen post-sesión'
+                                    : 'Registrar Post-Sesión',
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: tieneRegistro
+                                    ? Colors.blue
+                                    : Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -1473,5 +1623,40 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     } else {
       return 'Ahora';
     }
+  }
+
+  DateTime _combinarFechaYHora(DateTime fecha, String? horaFin) {
+    if (horaFin != null) {
+      String horaNormalizada = _normalizarFormatoHora(horaFin);
+      final partes = horaNormalizada.split(':');
+      int hora = int.parse(partes[0]);
+      int minuto = int.parse(partes[1]);
+      return DateTime(fecha.year, fecha.month, fecha.day, hora, minuto);
+    }
+    return fecha;
+  }
+
+  // Normalizar formato de hora para manejar AM/PM y formato 24h
+  String _normalizarFormatoHora(String hora) {
+    // Si ya está en formato 24h (HH:MM), devolver tal como está
+    if (hora.contains(':')) {
+      final partes = hora.split(' ');
+      if (partes.length == 1) {
+        // Formato 24h (HH:MM)
+        return hora;
+      } else if (partes.length == 2) {
+        // Formato 12h con AM/PM (HH:MM AM/PM)
+        final horaMin = partes[0].split(':');
+        int hora = int.parse(horaMin[0]);
+        int minuto = int.parse(horaMin[1]);
+        final ampm = partes[1].toUpperCase();
+
+        if (ampm == 'PM' && hora != 12) hora += 12;
+        if (ampm == 'AM' && hora == 12) hora = 0;
+
+        return '${hora.toString().padLeft(2, '0')}:${minuto.toString().padLeft(2, '0')}';
+      }
+    }
+    return hora; // Devolver tal como está si no se puede parsear
   }
 }

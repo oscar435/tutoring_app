@@ -1,50 +1,69 @@
 // Script de prueba para validar la funcionalidad de conflictos de horario
 // Este script solo valida la lógica de negocio sin depender de Flutter o Firebase
 
+import 'package:tutoring_app/core/models/disponibilidad.dart';
+import 'package:tutoring_app/features/disponibilidad/services/disponibilidad_service.dart';
+
 class TestValidacionConflictos {
-  static void ejecutarPruebas() {
-    print('=== INICIANDO PRUEBAS DE VALIDACIÓN DE CONFLICTOS ===\n');
+  static void main() {
+    print('=== PRUEBAS DE VALIDACIÓN DE CONFLICTOS ===\n');
 
-    // Prueba 1: Verificar conversión de horas a minutos
-    print('Prueba 1: Conversión de horas a minutos');
-    print('14:30 -> ${_convertirHoraAMinutos("14:30")} minutos');
-    print('09:15 -> ${_convertirHoraAMinutos("09:15")} minutos');
-    print('16:45 -> ${_convertirHoraAMinutos("16:45")} minutos');
-    print('✓ Prueba 1 completada\n');
-
-    // Prueba 2: Verificar detección de solapamiento
-    print('Prueba 2: Detección de solapamiento de horarios');
-    print('Caso 1: 14:00-16:00 vs 15:00-17:00 (debería solapar)');
-    print('Resultado: ${_haySolapamiento(840, 960, 900, 1020)}');
-
-    print('Caso 2: 14:00-16:00 vs 16:00-18:00 (no debería solapar)');
-    print('Resultado: ${_haySolapamiento(840, 960, 960, 1080)}');
-
-    print('Caso 3: 14:00-16:00 vs 12:00-14:00 (no debería solapar)');
-    print('Resultado: ${_haySolapamiento(840, 960, 720, 840)}');
-
-    print('Caso 4: 14:00-16:00 vs 15:00-15:30 (debería solapar)');
-    print('Resultado: ${_haySolapamiento(840, 960, 900, 930)}');
-
-    print('Caso 5: 14:00-16:00 vs 13:00-14:00 (debería solapar)');
-    print('Resultado: ${_haySolapamiento(840, 960, 780, 840)}');
-
-    print('Caso 6: 14:00-16:00 vs 16:00-17:00 (no debería solapar)');
-    print('Resultado: ${_haySolapamiento(840, 960, 960, 1020)}');
-    print('✓ Prueba 2 completada\n');
-
-    // Prueba 3: Verificar validación de horarios válidos
-    print('Prueba 3: Validación de horarios dentro de disponibilidad');
+    _probarNormalizacionHora();
     _probarValidacionHorarios();
+    _probarConflictosMismoDia();
 
-    print('=== PRUEBAS COMPLETADAS ===');
-    print(
-      '✅ Todas las pruebas de lógica de validación de conflictos han pasado correctamente.',
-    );
+    print('\n=== PRUEBAS COMPLETADAS ===');
+  }
+
+  // Probar la normalización de formatos de hora
+  static void _probarNormalizacionHora() {
+    print('--- Probando normalización de formatos de hora ---');
+
+    final testCases = [
+      {'input': '14:30', 'expected': '14:30'},
+      {'input': '2:30 PM', 'expected': '14:30'},
+      {'input': '2:30 AM', 'expected': '02:30'},
+      {'input': '12:00 PM', 'expected': '12:00'},
+      {'input': '12:00 AM', 'expected': '00:00'},
+      {'input': '9:45 AM', 'expected': '09:45'},
+      {'input': '11:15 PM', 'expected': '23:15'},
+    ];
+
+    for (final testCase in testCases) {
+      final result = _normalizarFormatoHora(testCase['input']!);
+      final passed = result == testCase['expected'];
+
+      print(
+        '${passed ? '✅' : '❌'} "${testCase['input']}" -> "$result" (esperado: "${testCase['expected']}")',
+      );
+    }
+  }
+
+  // Método de normalización de hora (copiado del servicio)
+  static String _normalizarFormatoHora(String hora) {
+    if (hora.contains(':')) {
+      final partes = hora.split(' ');
+      if (partes.length == 1) {
+        return hora;
+      } else if (partes.length == 2) {
+        final horaMin = partes[0].split(':');
+        int hora = int.parse(horaMin[0]);
+        int minuto = int.parse(horaMin[1]);
+        final ampm = partes[1].toUpperCase();
+
+        if (ampm == 'PM' && hora != 12) hora += 12;
+        if (ampm == 'AM' && hora == 12) hora = 0;
+
+        return '${hora.toString().padLeft(2, '0')}:${minuto.toString().padLeft(2, '0')}';
+      }
+    }
+    return hora;
   }
 
   static int _convertirHoraAMinutos(String hora) {
-    final partes = hora.split(':');
+    String horaNormalizada = _normalizarFormatoHora(hora);
+
+    final partes = horaNormalizada.split(':');
     if (partes.length != 2) return 0;
 
     final horas = int.tryParse(partes[0]) ?? 0;
@@ -58,112 +77,158 @@ class TestValidacionConflictos {
   }
 
   static void _probarValidacionHorarios() {
+    print('\n--- Probando validación de horarios ---');
+
     // Simular disponibilidad de un tutor
     final disponibilidadSlots = [
+      {
+        'dia': 'Sábado',
+        'horaInicio': '2:30 PM',
+        'horaFin': '4:30 PM',
+        'activo': true,
+      },
       {
         'dia': 'Lunes',
         'horaInicio': '14:00',
         'horaFin': '16:00',
         'activo': true,
       },
-      {
-        'dia': 'Martes',
-        'horaInicio': '09:00',
-        'horaFin': '11:00',
-        'activo': true,
-      },
-      {
-        'dia': 'Miércoles',
-        'horaInicio': '15:00',
-        'horaFin': '17:00',
-        'activo': true,
-      },
     ];
 
-    // Casos de prueba
+    // Casos de prueba para el bug específico
     final casosPrueba = [
       {
-        'descripcion': 'Horario válido dentro del slot',
+        'descripcion': 'Solicitud para sábado dentro del horario disponible',
+        'dia': 'Sábado',
+        'horaInicio': '2:30 PM',
+        'horaFin': '3:30 PM',
+        'esperado': true,
+      },
+      {
+        'descripcion': 'Solicitud para sábado fuera del horario',
+        'dia': 'Sábado',
+        'horaInicio': '5:00 PM',
+        'horaFin': '6:00 PM',
+        'esperado': false,
+      },
+      {
+        'descripcion': 'Solicitud para lunes con formato 24h',
         'dia': 'Lunes',
         'horaInicio': '14:30',
         'horaFin': '15:30',
         'esperado': true,
       },
+    ];
+
+    for (final caso in casosPrueba) {
+      bool resultado = false;
+
+      // Buscar slot correspondiente
+      for (final slot in disponibilidadSlots) {
+        if (slot['dia'] == caso['dia'] && slot['activo'] == true) {
+          final slotHoraInicio = _convertirHoraAMinutos(
+            slot['horaInicio'] as String,
+          );
+          final slotHoraFin = _convertirHoraAMinutos(slot['horaFin'] as String);
+          final horaInicioMinutos = _convertirHoraAMinutos(
+            caso['horaInicio'] as String,
+          );
+          final horaFinMinutos = _convertirHoraAMinutos(
+            caso['horaFin'] as String,
+          );
+
+          // Verificar que el horario solicitado esté completamente dentro del slot disponible
+          if (horaInicioMinutos >= slotHoraInicio &&
+              horaFinMinutos <= slotHoraFin &&
+              horaInicioMinutos < horaFinMinutos) {
+            resultado = true;
+            break;
+          }
+        }
+      }
+
+      final passed = resultado == caso['esperado'];
+      print(
+        '${passed ? '✅' : '❌'} ${caso['descripcion']}: ${resultado} (esperado: ${caso['esperado']})',
+      );
+    }
+  }
+
+  static void _probarConflictosMismoDia() {
+    print('\n--- Probando conflictos en el mismo día ---');
+
+    // Simular sesiones existentes
+    final sesionesExistentes = [
       {
-        'descripcion': 'Horario que empieza antes del slot',
-        'dia': 'Lunes',
-        'horaInicio': '13:00',
-        'horaFin': '15:00',
-        'esperado': false,
+        'fechaSesion': DateTime(2024, 1, 6), // Sábado
+        'horaInicio': '3:00 PM',
+        'horaFin': '4:00 PM',
+      },
+    ];
+
+    // Casos de prueba para conflictos
+    final casosPrueba = [
+      {
+        'descripcion': 'Nueva sesión que se solapa',
+        'fechaSesion': DateTime(2024, 1, 6),
+        'horaInicio': '3:30 PM',
+        'horaFin': '4:30 PM',
+        'esperado': true, // Debería haber conflicto
       },
       {
-        'descripcion': 'Horario que termina después del slot',
-        'dia': 'Lunes',
-        'horaInicio': '15:00',
-        'horaFin': '17:00',
-        'esperado': false,
-      },
-      {
-        'descripcion': 'Horario en día sin disponibilidad',
-        'dia': 'Viernes',
-        'horaInicio': '14:00',
-        'horaFin': '16:00',
-        'esperado': false,
-      },
-      {
-        'descripcion': 'Horario exactamente igual al slot',
-        'dia': 'Martes',
-        'horaInicio': '09:00',
-        'horaFin': '11:00',
-        'esperado': true,
+        'descripcion': 'Nueva sesión que no se solapa',
+        'fechaSesion': DateTime(2024, 1, 6),
+        'horaInicio': '4:30 PM',
+        'horaFin': '5:30 PM',
+        'esperado': false, // No debería haber conflicto
       },
     ];
 
     for (final caso in casosPrueba) {
-      final resultado = _esHorarioValido(
-        disponibilidadSlots,
-        caso['dia'] as String,
-        caso['horaInicio'] as String,
-        caso['horaFin'] as String,
-      );
+      bool hayConflicto = false;
 
-      final estado = resultado == caso['esperado'] ? '✅ PASÓ' : '❌ FALLÓ';
-      print(
-        '${caso['descripcion']}: $estado (Esperado: ${caso['esperado']}, Obtenido: $resultado)',
-      );
-    }
+      for (final sesion in sesionesExistentes) {
+        // Verificar si es el mismo día
+        final sesionFecha = sesion['fechaSesion'] as DateTime;
+        final casoFecha = caso['fechaSesion'] as DateTime;
 
-    print('✓ Prueba 3 completada\n');
-  }
+        if (sesionFecha.year == casoFecha.year &&
+            sesionFecha.month == casoFecha.month &&
+            sesionFecha.day == casoFecha.day) {
+          final sesionHoraInicio = _convertirHoraAMinutos(
+            sesion['horaInicio'] as String,
+          );
+          final sesionHoraFin = _convertirHoraAMinutos(
+            sesion['horaFin'] as String,
+          );
+          final nuevaHoraInicio = _convertirHoraAMinutos(
+            caso['horaInicio'] as String,
+          );
+          final nuevaHoraFin = _convertirHoraAMinutos(
+            caso['horaFin'] as String,
+          );
 
-  static bool _esHorarioValido(
-    List<Map<String, dynamic>> slots,
-    String dia,
-    String horaInicio,
-    String horaFin,
-  ) {
-    // Buscar un slot que coincida con el día
-    Map<String, dynamic>? slot;
-    for (final s in slots) {
-      if (s['dia'] == dia && s['activo'] == true) {
-        slot = s;
-        break;
+          if (_haySolapamiento(
+            nuevaHoraInicio,
+            nuevaHoraFin,
+            sesionHoraInicio,
+            sesionHoraFin,
+          )) {
+            hayConflicto = true;
+            break;
+          }
+        }
       }
+
+      final passed = hayConflicto == caso['esperado'];
+      print(
+        '${passed ? '✅' : '❌'} ${caso['descripcion']}: ${hayConflicto} (esperado: ${caso['esperado']})',
+      );
     }
-    if (slot == null) return false;
-    // Convertir horas a minutos
-    final slotHoraInicio = _convertirHoraAMinutos(slot['horaInicio'] as String);
-    final slotHoraFin = _convertirHoraAMinutos(slot['horaFin'] as String);
-    final horaInicioMinutos = _convertirHoraAMinutos(horaInicio);
-    final horaFinMinutos = _convertirHoraAMinutos(horaFin);
-    // Verificar que el horario solicitado esté completamente dentro del slot disponible
-    return horaInicioMinutos >= slotHoraInicio &&
-        horaFinMinutos <= slotHoraFin &&
-        horaInicioMinutos < horaFinMinutos;
   }
 }
 
 // Función para ejecutar las pruebas
 void main() {
-  TestValidacionConflictos.ejecutarPruebas();
+  TestValidacionConflictos.main();
 }

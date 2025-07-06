@@ -3,8 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.dart';
 import 'package:tutoring_app/core/utils/validators.dart';
+import 'package:tutoring_app/features/disponibilidad/services/disponibilidad_service.dart';
+import 'package:tutoring_app/core/models/disponibilidad.dart';
+import 'package:tutoring_app/features/tutorias/pages/registro_post_sesion_page.dart';
+import 'package:tutoring_app/features/tutorias/services/registro_post_sesion_service.dart';
+import 'package:tutoring_app/features/tutorias/pages/historial_sesiones_page.dart';
 
 class ProximasTutoriasPage extends StatefulWidget {
   final String userId;
@@ -60,6 +66,20 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.history),
+            tooltip: 'Ver historial de sesiones',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HistorialSesionesPage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<List<SesionTutoria>>(
         stream: SesionTutoriaService().streamSesionesFuturas(
@@ -430,6 +450,8 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                                     )
                                   : estadoVisual == 'aceptada'
                                   ? Colors.green.withAlpha((0.15 * 255).toInt())
+                                  : estadoVisual == 'completada'
+                                  ? Colors.blue.withAlpha((0.15 * 255).toInt())
                                   : estadoVisual == 'pendiente'
                                   ? Colors.orange.withAlpha(
                                       (0.15 * 255).toInt(),
@@ -440,6 +462,8 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                             child: Text(
                               estadoVisual == 'reprogramacion_pendiente'
                                   ? 'REPROG. PENDIENTE'
+                                  : estadoVisual == 'completada'
+                                  ? 'COMPLETADA'
                                   : estadoVisual.toUpperCase(),
                               style: TextStyle(
                                 color:
@@ -447,6 +471,8 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                                     ? Colors.orange
                                     : estadoVisual == 'aceptada'
                                     ? Colors.green
+                                    : estadoVisual == 'completada'
+                                    ? Colors.blue
                                     : estadoVisual == 'pendiente'
                                     ? Colors.orange
                                     : Colors.red,
@@ -726,6 +752,34 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
                               SnackBar(content: Text('Tutoría cancelada')),
                             );
                           }
+                        },
+                      ),
+                    // Botón de registro post-sesión para tutores
+                    if (widget.userRole == 'tutor' &&
+                        (estadoVisual == 'aceptada' ||
+                            estadoVisual == 'completada'))
+                      FutureBuilder<bool>(
+                        future: RegistroPostSesionService().sesionTieneRegistro(
+                          sesion.id,
+                        ),
+                        builder: (context, snapshot) {
+                          final tieneRegistro = snapshot.data ?? false;
+                          if (tieneRegistro) return SizedBox.shrink();
+                          return IconButton(
+                            icon: Icon(Icons.assignment, color: Colors.green),
+                            tooltip: 'Registrar post-sesión',
+                            onPressed: () async {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => RegistroPostSesionPage(
+                                    sesionId: sesion.id,
+                                    sesion: sesion,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
                         },
                       ),
                   ],
