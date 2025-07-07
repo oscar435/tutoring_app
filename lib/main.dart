@@ -8,6 +8,22 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:tutoring_app/features/admin/pages/admin_dashboard_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tutoring_app/features/notificaciones/services/notificacion_service.dart';
+import 'package:provider/provider.dart';
+
+class ThemeProvider extends ChangeNotifier {
+  bool _highContrast = false;
+  bool get highContrast => _highContrast;
+
+  void toggleContrast() {
+    _highContrast = !_highContrast;
+    notifyListeners();
+  }
+
+  void setContrast(bool value) {
+    _highContrast = value;
+    notifyListeners();
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +35,12 @@ void main() async {
     await NotificacionService().initialize();
   }
 
-  runApp(MyApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => ThemeProvider())],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -29,12 +50,46 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final ThemeData highContrastTheme = ThemeData(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: Colors.black,
+      primaryColor: Colors.yellow,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.yellow,
+        brightness: Brightness.dark,
+        primary: Colors.yellow,
+        secondary: Colors.cyanAccent,
+        background: Colors.black,
+        onBackground: Colors.white,
+        onPrimary: Colors.black,
+      ),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        bodyMedium: TextStyle(color: Colors.white),
+        bodySmall: TextStyle(color: Colors.white),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.yellow,
+          foregroundColor: Colors.black,
+        ),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.yellow,
+      ),
+      useMaterial3: true,
+    );
+
     // Si estamos en web, mostrar solo el panel de administración
     if (kIsWeb) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Panel de Administración - UNFV Tutorías',
-        theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+        theme: themeProvider.highContrast
+            ? highContrastTheme
+            : ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
         home: AuthGate(),
       );
     }
@@ -43,6 +98,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       initialRoute: AppRoutes.splash,
+      theme: themeProvider.highContrast
+          ? highContrastTheme
+          : ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       routes: AppRoutes.routes,
     );
   }

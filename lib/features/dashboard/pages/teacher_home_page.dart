@@ -20,6 +20,8 @@ import 'package:tutoring_app/features/tutorias/pages/registro_post_sesion_page.d
 import 'package:tutoring_app/features/tutorias/services/registro_post_sesion_service.dart';
 import 'package:tutoring_app/features/tutorias/pages/historial_sesiones_page.dart';
 import 'package:tutoring_app/features/tutorias/pages/resumen_post_sesion_page.dart';
+import 'package:provider/provider.dart';
+import '../../../main.dart';
 
 class TeacherHomePage extends StatefulWidget {
   static const routeName = '/teacher-home';
@@ -211,6 +213,16 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
         ),
         Row(
           children: [
+            IconButton(
+              icon: const Icon(Icons.contrast),
+              tooltip: 'Modo alto contraste',
+              onPressed: () {
+                Provider.of<ThemeProvider>(
+                  context,
+                  listen: false,
+                ).toggleContrast();
+              },
+            ),
             NotificationBadge(
               child: IconButton(
                 icon: const Icon(Icons.notifications, size: 28),

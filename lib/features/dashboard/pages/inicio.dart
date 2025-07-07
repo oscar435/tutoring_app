@@ -21,6 +21,12 @@ import 'package:tutoring_app/core/models/sesion_tutoria.dart';
 import 'package:tutoring_app/features/tutorias/widgets/encuesta_satisfaccion_modal.dart';
 import 'package:tutoring_app/features/tutorias/services/encuesta_satisfaccion_service.dart';
 import 'package:tutoring_app/core/models/encuesta_satisfaccion.dart';
+import 'package:provider/provider.dart';
+import '../../../main.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:tutoring_app/features/perfil/pages/mis_reportes_page.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -283,6 +289,22 @@ class HomePage2 extends StatelessWidget {
                         },
                       ),
                       ListTile(
+                        leading: const Icon(Icons.flag, color: Colors.white),
+                        title: const Text(
+                          'Mis reportes',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MisReportesPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      ListTile(
                         leading: const Icon(Icons.logout, color: Colors.white),
                         title: const Text(
                           'Cerrar sesión',
@@ -336,6 +358,16 @@ class HomePage2 extends StatelessWidget {
           ),
           Row(
             children: [
+              IconButton(
+                icon: const Icon(Icons.contrast),
+                tooltip: 'Modo alto contraste',
+                onPressed: () {
+                  Provider.of<ThemeProvider>(
+                    context,
+                    listen: false,
+                  ).toggleContrast();
+                },
+              ),
               _buildNotificationIcon(context, ''),
               const SizedBox(width: 10),
               CircleAvatar(
@@ -369,6 +401,16 @@ class HomePage2 extends StatelessWidget {
             ),
             Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.contrast),
+                  tooltip: 'Modo alto contraste',
+                  onPressed: () {
+                    Provider.of<ThemeProvider>(
+                      context,
+                      listen: false,
+                    ).toggleContrast();
+                  },
+                ),
                 _buildNotificationIcon(context, user.uid),
                 const SizedBox(width: 10),
                 GestureDetector(
@@ -655,6 +697,162 @@ class HomePage2 extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (sesion.estado == 'completada')
+                    IconButton(
+                      icon: const Icon(Icons.flag, color: Colors.redAccent),
+                      tooltip: 'Reportar incidente',
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            bool anonimo = false;
+                            String tipo = 'Acoso';
+                            String ubicacion = '';
+                            String descripcion = '';
+                            XFile? imagen;
+                            final picker = ImagePicker();
+                            return StatefulBuilder(
+                              builder: (context, setState) => AlertDialog(
+                                title: const Text('Reportar incidente'),
+                                content: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Checkbox(
+                                            value: anonimo,
+                                            onChanged: (v) => setState(
+                                              () => anonimo = v ?? false,
+                                            ),
+                                          ),
+                                          const Text('Enviar como anónimo'),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      DropdownButtonFormField<String>(
+                                        value: tipo,
+                                        items: const [
+                                          DropdownMenuItem(
+                                            value: 'Acoso',
+                                            child: Text('Acoso'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Problema técnico',
+                                            child: Text('Problema técnico'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Otro',
+                                            child: Text('Otro'),
+                                          ),
+                                        ],
+                                        onChanged: (v) =>
+                                            setState(() => tipo = v ?? 'Acoso'),
+                                        decoration: const InputDecoration(
+                                          labelText: 'Tipo de incidente',
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextField(
+                                        decoration: const InputDecoration(
+                                          labelText: 'Ubicación (opcional)',
+                                        ),
+                                        onChanged: (v) => ubicacion = v,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextField(
+                                        decoration: const InputDecoration(
+                                          labelText: 'Descripción',
+                                        ),
+                                        maxLines: 3,
+                                        onChanged: (v) => descripcion = v,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          ElevatedButton.icon(
+                                            icon: const Icon(
+                                              Icons.photo_camera,
+                                            ),
+                                            label: const Text('Adjuntar foto'),
+                                            onPressed: () async {
+                                              final picked = await picker
+                                                  .pickImage(
+                                                    source: ImageSource.gallery,
+                                                  );
+                                              if (picked != null)
+                                                setState(() => imagen = picked);
+                                            },
+                                          ),
+                                          if (imagen != null) ...[
+                                            const SizedBox(width: 8),
+                                            const Icon(
+                                              Icons.check_circle,
+                                              color: Colors.green,
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      final user =
+                                          FirebaseAuth.instance.currentUser;
+                                      String? imageUrl;
+                                      if (imagen != null) {
+                                        final storageRef = FirebaseStorage
+                                            .instance
+                                            .ref()
+                                            .child(
+                                              'reportes_incidentes/${DateTime.now().millisecondsSinceEpoch}_${imagen!.name}',
+                                            );
+                                        final uploadTask = await storageRef
+                                            .putFile(File(imagen!.path));
+                                        imageUrl = await storageRef
+                                            .getDownloadURL();
+                                      }
+                                      await FirebaseFirestore.instance
+                                          .collection('reportes_incidentes')
+                                          .add({
+                                            'sesionId': sesion.id,
+                                            'usuarioId': anonimo
+                                                ? null
+                                                : user?.uid,
+                                            'anonimo': anonimo,
+                                            'tipo': tipo,
+                                            'ubicacion': ubicacion,
+                                            'descripcion': descripcion,
+                                            'fecha': DateTime.now(),
+                                            'imagen': imageUrl,
+                                          });
+                                      Navigator.of(context).pop();
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Reporte enviado.'),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text('Enviar'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
                 ],
               ),
               const SizedBox(height: 16),

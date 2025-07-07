@@ -10,6 +10,9 @@ import 'audit_logs_page.dart';
 import 'package:tutoring_app/features/admin/pages/admin_sessions_page.dart';
 import 'package:tutoring_app/features/admin/pages/admin_requests_page.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
+import '../../../main.dart';
+import 'incident_reports_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -245,6 +248,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
+            icon: const Icon(Icons.contrast),
+            tooltip: 'Modo alto contraste',
+            onPressed: () {
+              Provider.of<ThemeProvider>(
+                context,
+                listen: false,
+              ).toggleContrast();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _handleLogout,
             tooltip: 'Cerrar sesión',
@@ -328,6 +341,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const AuditLogsPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag),
+              title: const Text('Reportes de Incidentes'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const IncidentReportsPage(),
                   ),
                 );
               },

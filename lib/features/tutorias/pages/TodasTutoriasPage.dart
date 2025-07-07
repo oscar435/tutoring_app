@@ -8,6 +8,9 @@ import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.d
 import 'package:tutoring_app/core/utils/validators.dart';
 import 'package:tutoring_app/features/disponibilidad/services/disponibilidad_service.dart';
 import 'package:tutoring_app/core/models/disponibilidad.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 class TodasTutoriasPage extends StatelessWidget {
   const TodasTutoriasPage({super.key});
@@ -593,6 +596,175 @@ class TodasTutoriasPage extends StatelessWidget {
                           ),
                         );
                       }
+                    },
+                  ),
+                ],
+              ),
+            if (tutoria.estado == 'completada')
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.flag, color: Colors.redAccent),
+                    tooltip: 'Reportar incidente',
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          bool anonimo = false;
+                          String tipo = 'Acoso';
+                          String ubicacion = '';
+                          String descripcion = '';
+                          XFile? imagen;
+                          final picker = ImagePicker();
+
+                          return StatefulBuilder(
+                            builder: (context, setState) {
+                              return AlertDialog(
+                                title: const Text('Reportar incidente'),
+                                content: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Checkbox(
+                                            value: anonimo,
+                                            onChanged: (v) => setState(
+                                              () => anonimo = v ?? false,
+                                            ),
+                                          ),
+                                          const Text('Reporte anónimo'),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      DropdownButtonFormField<String>(
+                                        value: tipo,
+                                        items: const [
+                                          DropdownMenuItem(
+                                            value: 'Acoso',
+                                            child: Text('Acoso'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Problema técnico',
+                                            child: Text('Problema técnico'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Otro',
+                                            child: Text('Otro'),
+                                          ),
+                                        ],
+                                        onChanged: (v) =>
+                                            setState(() => tipo = v ?? 'Acoso'),
+                                        decoration: const InputDecoration(
+                                          labelText: 'Tipo de incidente',
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextField(
+                                        decoration: const InputDecoration(
+                                          labelText: 'Ubicación (opcional)',
+                                        ),
+                                        onChanged: (v) => ubicacion = v,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextField(
+                                        decoration: const InputDecoration(
+                                          labelText: 'Descripción',
+                                        ),
+                                        maxLines: 3,
+                                        onChanged: (v) => descripcion = v,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          ElevatedButton.icon(
+                                            onPressed: () async {
+                                              final XFile? photo = await picker
+                                                  .pickImage(
+                                                    source: ImageSource.gallery,
+                                                  );
+                                              if (photo != null) {
+                                                setState(() => imagen = photo);
+                                              }
+                                            },
+                                            icon: const Icon(
+                                              Icons.photo_library,
+                                            ),
+                                            label: const Text('Adjuntar foto'),
+                                          ),
+                                          if (imagen != null) ...[
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                imagen!.name,
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      final user =
+                                          FirebaseAuth.instance.currentUser;
+                                      String? imageUrl;
+                                      if (imagen != null) {
+                                        final storageRef = FirebaseStorage
+                                            .instance
+                                            .ref()
+                                            .child(
+                                              'reportes_incidentes/${DateTime.now().millisecondsSinceEpoch}_${imagen!.name}',
+                                            );
+                                        final uploadTask = await storageRef
+                                            .putFile(File(imagen!.path));
+                                        imageUrl = await uploadTask.ref
+                                            .getDownloadURL();
+                                      }
+                                      await FirebaseFirestore.instance
+                                          .collection('reportes_incidentes')
+                                          .add({
+                                            'sesionId': tutoria.id,
+                                            'usuarioId': anonimo
+                                                ? null
+                                                : user?.uid,
+                                            'anonimo': anonimo,
+                                            'tipo': tipo,
+                                            'ubicacion': ubicacion,
+                                            'descripcion': descripcion,
+                                            'fecha': DateTime.now(),
+                                            'imagen': imageUrl,
+                                          });
+                                      Navigator.of(context).pop();
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Reporte enviado.'),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text('Enviar'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      );
                     },
                   ),
                 ],
