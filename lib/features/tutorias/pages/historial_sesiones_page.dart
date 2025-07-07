@@ -8,6 +8,7 @@ import '../services/sesion_tutoria_service.dart';
 import '../services/registro_post_sesion_service.dart';
 import '../../../core/storage/preferencias_usuario.dart';
 import 'registro_post_sesion_page.dart';
+import 'resumen_post_sesion_page.dart';
 
 class HistorialSesionesPage extends StatefulWidget {
   @override
@@ -195,146 +196,156 @@ class _HistorialSesionesPageState extends State<HistorialSesionesPage> {
               ],
             ),
             SizedBox(height: 12),
-            if (sesion.estado == 'completada')
-              FutureBuilder<RegistroPostSesion?>(
-                future: _registroService.obtenerRegistroPorSesion(sesion.id),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Row(
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Cargando detalles...',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    );
-                  }
-
-                  final registro = snapshot.data;
-
-                  if (registro == null) {
-                    return Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 16,
-                          color: Colors.orange,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Sin registro post-sesión',
-                          style: TextStyle(color: Colors.orange),
-                        ),
-                      ],
-                    );
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (registro.temasTratados.isNotEmpty) ...[
-                        Text(
-                          'Temas cubiertos:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          registro.temasTratados.join(', '),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                      ],
-                      if (registro.recomendaciones.isNotEmpty) ...[
-                        Text(
-                          'Recomendaciones:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          registro.recomendaciones,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                      ],
-                      Row(
-                        children: [
-                          Icon(
-                            registro.asistioEstudiante
-                                ? Icons.check_circle
-                                : Icons.cancel,
-                            size: 16,
-                            color: registro.asistioEstudiante
-                                ? Colors.green
-                                : Colors.red,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            registro.asistioEstudiante
-                                ? 'Asistió'
-                                : 'No asistió',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: registro.asistioEstudiante
-                                  ? Colors.green
-                                  : Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
-              ),
-            SizedBox(height: 12),
             if (_userRole == 'tutor' && sesion.estado == 'completada')
               FutureBuilder<bool>(
                 future: _registroService.sesionTieneRegistro(sesion.id),
                 builder: (context, snapshot) {
                   final tieneRegistro = snapshot.data ?? false;
-                  if (tieneRegistro) return SizedBox.shrink();
-                  return ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RegistroPostSesionPage(
-                            sesionId: sesion.id,
-                            sesion: sesion,
+                  return SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: Icon(
+                        tieneRegistro ? Icons.visibility : Icons.assignment,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => tieneRegistro
+                                ? ResumenPostSesionPage(sesionId: sesion.id)
+                                : RegistroPostSesionPage(
+                                    sesionId: sesion.id,
+                                    sesion: sesion,
+                                  ),
                           ),
-                        ),
-                      );
-                    },
-                    icon: Icon(Icons.assignment, size: 16),
-                    label: Text('Registrar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                        );
+                      },
+                      label: Text(
+                        tieneRegistro
+                            ? 'Ver resumen post-sesión'
+                            : 'Registrar Post-Sesión',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: tieneRegistro
+                            ? Colors.blue
+                            : Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   );
                 },
               ),
+            if (!(_userRole == 'tutor' && sesion.estado == 'completada'))
+              if (sesion.estado == 'completada')
+                FutureBuilder<RegistroPostSesion?>(
+                  future: _registroService.obtenerRegistroPorSesion(sesion.id),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Row(
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Cargando detalles...',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      );
+                    }
+
+                    final registro = snapshot.data;
+
+                    if (registro == null) {
+                      return Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Colors.orange,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Sin registro post-sesión',
+                            style: TextStyle(color: Colors.orange),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (registro.temasTratados.isNotEmpty) ...[
+                          Text(
+                            'Temas cubiertos:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            registro.temasTratados.join(', '),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                        ],
+                        if (registro.recomendaciones.isNotEmpty) ...[
+                          Text(
+                            'Recomendaciones:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            registro.recomendaciones,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                        ],
+                        Row(
+                          children: [
+                            Icon(
+                              registro.asistioEstudiante
+                                  ? Icons.check_circle
+                                  : Icons.cancel,
+                              size: 16,
+                              color: registro.asistioEstudiante
+                                  ? Colors.green
+                                  : Colors.red,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              registro.asistioEstudiante
+                                  ? 'Asistió'
+                                  : 'No asistió',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: registro.asistioEstudiante
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
           ],
         ),
       ),

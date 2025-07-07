@@ -16,6 +16,8 @@ import 'package:tutoring_app/features/tutorias/services/sesion_tutoria_service.d
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:tutoring_app/features/tutorias/pages/historial_sesiones_page.dart';
+import 'package:tutoring_app/core/models/sesion_tutoria.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -257,7 +259,7 @@ class HomePage2 extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const TodasTutoriasPage(),
+                              builder: (context) => HistorialSesionesPage(),
                             ),
                           );
                         },
@@ -426,8 +428,8 @@ class HomePage2 extends StatelessWidget {
   }
 
   Widget _buildSolicitudesEstudiante(String estudianteId) {
-    return StreamBuilder<List<SolicitudTutoria>>(
-      stream: _streamSolicitudesPorEstudiante(estudianteId),
+    return StreamBuilder<List<SesionTutoria>>(
+      stream: _streamSesionesPorEstudiante(estudianteId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -435,28 +437,30 @@ class HomePage2 extends StatelessWidget {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(child: Text('No tienes tutorías agendadas.'));
         }
-        final solicitudes = snapshot.data!;
+        final sesiones = snapshot.data!;
         return SizedBox(
           height: 120,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: solicitudes.length,
+            itemCount: sesiones.length,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (context, index) {
-              final solicitud = solicitudes[index];
+              final sesion = sesiones[index];
               String fechaTexto = '';
-              if (solicitud.fechaSesion != null &&
-                  (solicitud.horaInicio ?? '').isNotEmpty) {
+              if (sesion.fechaSesion != null &&
+                  (sesion.horaInicio ?? '').isNotEmpty) {
                 fechaTexto =
-                    '${solicitud.dia ?? ''} ${DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!)} - ${solicitud.horaInicio}';
+                    '${sesion.dia ?? ''} ${DateFormat('dd/MM/yyyy').format(sesion.fechaSesion!)} - ${sesion.horaInicio}';
               } else {
-                fechaTexto =
-                    '${solicitud.dia ?? ''} - ${solicitud.horaInicio ?? ''}';
+                fechaTexto = '${sesion.dia ?? ''} - ${sesion.horaInicio ?? ''}';
               }
               Color estadoColor;
-              switch (solicitud.estado) {
+              switch (sesion.estado) {
                 case 'aceptada':
                   estadoColor = Colors.green;
+                  break;
+                case 'completada':
+                  estadoColor = Colors.blue;
                   break;
                 case 'rechazada':
                   estadoColor = Colors.red;
@@ -465,12 +469,12 @@ class HomePage2 extends StatelessWidget {
                   estadoColor = Colors.orange;
               }
               return GestureDetector(
-                onTap: () => _mostrarDetalleSolicitud(context, solicitud),
+                onTap: () => _mostrarDetalleSesion(context, sesion),
                 child: Container(
                   width: 180,
                   margin: const EdgeInsets.only(bottom: 6),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple[50],
+                    color: const Color(0xFFF5F6FA),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   padding: const EdgeInsets.all(10),
@@ -478,10 +482,11 @@ class HomePage2 extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        solicitud.curso ?? 'Sin curso',
+                        sesion.curso ?? 'Sin curso',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
+                          color: Colors.black,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -490,7 +495,7 @@ class HomePage2 extends StatelessWidget {
                       Text(
                         fechaTexto,
                         style: const TextStyle(
-                          color: Colors.deepPurple,
+                          color: Colors.black87,
                           fontWeight: FontWeight.w500,
                           fontSize: 13,
                         ),
@@ -508,8 +513,7 @@ class HomePage2 extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color:
-                                    solicitud.estado ==
-                                        'reprogramacion_pendiente'
+                                    sesion.estado == 'reprogramacion_pendiente'
                                     ? Colors.orange.withAlpha(
                                         (0.15 * 255).toInt(),
                                       )
@@ -519,12 +523,12 @@ class HomePage2 extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                solicitud.estado == 'reprogramacion_pendiente'
+                                sesion.estado == 'reprogramacion_pendiente'
                                     ? 'REPROGRAMACIÓN PENDIENTE'
-                                    : solicitud.estado.toUpperCase(),
+                                    : sesion.estado.toUpperCase(),
                                 style: TextStyle(
                                   color:
-                                      solicitud.estado ==
+                                      sesion.estado ==
                                           'reprogramacion_pendiente'
                                       ? Colors.orange
                                       : estadoColor,
@@ -549,31 +553,28 @@ class HomePage2 extends StatelessWidget {
     );
   }
 
-  Stream<List<SolicitudTutoria>> _streamSolicitudesPorEstudiante(
+  Stream<List<SesionTutoria>> _streamSesionesPorEstudiante(
     String estudianteId,
   ) {
     return FirebaseFirestore.instance
-        .collection('solicitudes_tutoria')
+        .collection('sesiones_tutoria')
         .where('estudianteId', isEqualTo: estudianteId)
-        .orderBy('fechaHora', descending: true)
+        .orderBy('fechaReserva', descending: true)
         .snapshots()
         .map((snapshot) {
           return snapshot.docs
-              .map((doc) => SolicitudTutoria.fromMap(doc.data()))
+              .map((doc) => SesionTutoria.fromMap(doc.data()))
               .toList();
         });
   }
 
-  void _mostrarDetalleSolicitud(
-    BuildContext context,
-    SolicitudTutoria solicitud,
-  ) async {
+  void _mostrarDetalleSesion(BuildContext context, SesionTutoria sesion) async {
     // Obtener nombre del tutor
     String nombreTutor = 'Tutor';
-    if (solicitud.tutorId.isNotEmpty) {
+    if (sesion.tutorId.isNotEmpty) {
       final doc = await FirebaseFirestore.instance
           .collection('tutores')
-          .doc(solicitud.tutorId)
+          .doc(sesion.tutorId)
           .get();
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
@@ -605,7 +606,7 @@ class HomePage2 extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      solicitud.curso ?? 'Sin curso',
+                      sesion.curso ?? 'Sin curso',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -617,16 +618,16 @@ class HomePage2 extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              _detalleItem('Estado', solicitud.estado.toUpperCase()),
-              if (solicitud.fechaSesion != null &&
-                  (solicitud.horaInicio ?? '').isNotEmpty &&
-                  (solicitud.horaFin ?? '').isNotEmpty)
+              _detalleItem('Estado', sesion.estado.toUpperCase()),
+              if (sesion.fechaSesion != null &&
+                  (sesion.horaInicio ?? '').isNotEmpty &&
+                  (sesion.horaFin ?? '').isNotEmpty)
                 _detalleItem(
                   'Fecha y hora',
-                  '${DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!)} ${solicitud.horaInicio} - ${solicitud.horaFin}',
+                  '${DateFormat('dd/MM/yyyy').format(sesion.fechaSesion!)} ${sesion.horaInicio} - ${sesion.horaFin}',
                 ),
-              if (solicitud.mensaje != null && solicitud.mensaje!.isNotEmpty)
-                _detalleItem('Mensaje', solicitud.mensaje!),
+              if (sesion.mensaje != null && sesion.mensaje!.isNotEmpty)
+                _detalleItem('Mensaje', sesion.mensaje!),
               _detalleItem('Tutor', nombreTutor),
             ],
           ),

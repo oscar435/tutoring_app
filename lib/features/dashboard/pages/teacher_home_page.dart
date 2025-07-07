@@ -553,19 +553,21 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               return fechaA.compareTo(fechaB);
             });
 
-            // Determinar la próxima tutoría pendiente (la que su hora de fin aún no ha pasado)
+            // Determinar la próxima tutoría pendiente (la que su hora de fin aún no ha pasado y está activa)
             DateTime now = DateTime.now();
             int? nextIndex;
             for (int i = 0; i < sesionesConNombres.length; i++) {
               final s = sesionesConNombres[i];
               final sesion = s['sesion'] as SesionTutoria;
               final fechaSesion = sesion.fechaSesion ?? sesion.fechaReserva;
-              // Combinar fecha y horaFin para obtener el DateTime de fin
               DateTime fechaHoraFin = _combinarFechaYHora(
                 fechaSesion,
                 sesion.horaFin,
               );
-              if (fechaHoraFin.isAfter(now)) {
+              // Solo considerar tutorías activas (no completadas, canceladas, rechazadas)
+              if ((sesion.estado == 'pendiente' ||
+                      sesion.estado == 'aceptada') &&
+                  fechaHoraFin.isAfter(now)) {
                 nextIndex = i;
                 break;
               }
@@ -720,26 +722,19 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
     String? estadoVisual,
     String? solicitudId,
   }) {
-    // Determinar el color de fondo basado en el estado
-    Color? backgroundColor;
-    if (estadoVisual == 'completada') {
-      backgroundColor = Colors.blue[50];
-    } else if (esAsignado) {
-      backgroundColor = Colors.green[50];
-    }
+    Color? backgroundColor = const Color(
+      0xFFF5F6FA,
+    ); // gris muy suave para todas
 
     return Card(
       elevation: isNext ? 4 : 2,
       color: backgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isNext
-            ? BorderSide(color: Colors.orange, width: 2)
-            : (estadoVisual == 'completada'
-                  ? BorderSide(color: Colors.blue, width: 2)
-                  : (esAsignado
-                        ? BorderSide(color: Colors.green, width: 2)
-                        : BorderSide.none)),
+        side: BorderSide(
+          color: Colors.grey.shade200,
+          width: 1,
+        ), // borde gris claro
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -858,9 +853,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: estadoVisual == 'completada'
-                    ? Colors.blue[800]
-                    : (esAsignado ? Colors.green[800] : Colors.black),
+                color: Colors.black, // solo negro
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -869,7 +862,7 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             Text(
               relativeTime,
               style: TextStyle(
-                color: color,
+                color: Colors.grey[800], // gris oscuro
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
               ),
@@ -890,13 +883,9 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
             Text(
               students,
               style: TextStyle(
-                color: estadoVisual == 'completada'
-                    ? Colors.blue[700]
-                    : (esAsignado ? Colors.green[700] : Color(0xFFAAAAAA)),
+                color: Colors.grey[700], // gris neutro
                 fontSize: 11,
-                fontWeight: (estadoVisual == 'completada' || esAsignado)
-                    ? FontWeight.w600
-                    : FontWeight.normal,
+                fontWeight: FontWeight.normal,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

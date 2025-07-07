@@ -280,517 +280,130 @@ class _ProximasTutoriasPageState extends State<ProximasTutoriasPage> {
     }
 
     return Card(
-      elevation: 0,
-      color: esAsignado ? Colors.green[50] : null,
+      elevation: 2,
+      color: const Color(0xFFF5F6FA),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: esAsignado
-              ? Colors.green
-              : (esMismoDia ? Colors.orange : Colors.grey.shade200),
-          width: esAsignado ? 2 : (esMismoDia ? 2 : 1),
-        ),
+        side: BorderSide(color: Colors.grey.shade200, width: 1),
       ),
-      child: InkWell(
-        onTap: () {
-          // Aquí podrías añadir navegación a detalles si es necesario
-        },
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
-            children: [
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Etiquetas de estado
+            if (estadoVisual == 'reprogramacion_pendiente')
               Container(
-                width: 52,
-                height: 52,
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                margin: EdgeInsets.only(bottom: 4),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: esAsignado
-                      ? Border.all(color: Colors.green, width: 2)
-                      : null,
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: CircleAvatar(
-                  radius: 24,
-                  backgroundImage: (fotoUrl != null && fotoUrl.isNotEmpty)
-                      ? NetworkImage(fotoUrl)
-                      : const AssetImage('assets/avatar.jpg') as ImageProvider,
+                child: Text(
+                  'REPROG. PENDIENTE',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            if (estadoVisual == 'aceptada')
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                margin: EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            nombreEstudiante,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: esAsignado
-                                  ? Colors.green[800]
-                                  : Colors.black,
-                            ),
-                          ),
-                        ),
-                        if (esAsignado)
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.star, color: Colors.white, size: 10),
-                                SizedBox(width: 2),
-                                Text(
-                                  'ASIGNADO',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: 4),
+                    Icon(Icons.schedule, color: Colors.white, size: 10),
+                    SizedBox(width: 2),
                     Text(
-                      sesion.curso ?? 'Sin curso asignado',
+                      'CONFIRMADA',
                       style: TextStyle(
-                        color: esAsignado
-                            ? Colors.green[700]
-                            : Colors.grey[600],
-                        fontSize: 14,
-                        fontWeight: esAsignado
-                            ? FontWeight.w500
-                            : FontWeight.normal,
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple.withAlpha((0.1 * 255).toInt()),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.calendar_today_rounded,
-                            size: 20,
-                            color: Colors.deepPurple,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            fechaFormateada,
-                            style: TextStyle(
-                              color: Colors.deepPurple,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple.withAlpha((0.1 * 255).toInt()),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.access_time_rounded,
-                            size: 20,
-                            color: Colors.deepPurple,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            '${sesion.horaInicio} - ${sesion.horaFin}',
-                            style: TextStyle(
-                              color: Colors.deepPurple,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Container(
-                            margin: EdgeInsets.only(top: 6, bottom: 6),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: estadoVisual == 'reprogramacion_pendiente'
-                                  ? Colors.orange.withAlpha(
-                                      (0.15 * 255).toInt(),
-                                    )
-                                  : estadoVisual == 'aceptada'
-                                  ? Colors.green.withAlpha((0.15 * 255).toInt())
-                                  : estadoVisual == 'completada'
-                                  ? Colors.blue.withAlpha((0.15 * 255).toInt())
-                                  : estadoVisual == 'pendiente'
-                                  ? Colors.orange.withAlpha(
-                                      (0.15 * 255).toInt(),
-                                    )
-                                  : Colors.red.withAlpha((0.15 * 255).toInt()),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              estadoVisual == 'reprogramacion_pendiente'
-                                  ? 'REPROG. PENDIENTE'
-                                  : estadoVisual == 'completada'
-                                  ? 'COMPLETADA'
-                                  : estadoVisual.toUpperCase(),
-                              style: TextStyle(
-                                color:
-                                    estadoVisual == 'reprogramacion_pendiente'
-                                    ? Colors.orange
-                                    : estadoVisual == 'aceptada'
-                                    ? Colors.green
-                                    : estadoVisual == 'completada'
-                                    ? Colors.blue
-                                    : estadoVisual == 'pendiente'
-                                    ? Colors.orange
-                                    : Colors.red,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    // Mostrar nueva fecha/hora propuesta si hay reprogramación pendiente
-                    if (widget.userRole == 'tutor' &&
-                        estadoVisual == 'reprogramacion_pendiente' &&
-                        solicitudData != null &&
-                        solicitudData['reprogramacionPendiente'] != null)
-                      (() {
-                        final repro = solicitudData['reprogramacionPendiente'];
-                        final nuevaFecha = (repro['fechaSesion'] as Timestamp?)
-                            ?.toDate();
-                        final nuevaHoraInicio = repro['horaInicio'] as String?;
-                        final nuevaHoraFin = repro['horaFin'] as String?;
-                        if (nuevaFecha == null ||
-                            nuevaHoraInicio == null ||
-                            nuevaHoraFin == null)
-                          return SizedBox.shrink();
-                        String nuevaFechaFormateada;
-                        try {
-                          nuevaFechaFormateada = DateFormat(
-                            'EEEE d MMMM',
-                            'es',
-                          ).format(nuevaFecha);
-                          nuevaFechaFormateada =
-                              nuevaFechaFormateada
-                                  .substring(0, 1)
-                                  .toUpperCase() +
-                              nuevaFechaFormateada.substring(1);
-                        } catch (e) {
-                          nuevaFechaFormateada = DateFormat(
-                            'dd/MM/yyyy',
-                          ).format(nuevaFecha);
-                        }
-                        return Container(
-                          margin: EdgeInsets.only(bottom: 8),
-                          padding: EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.orange, width: 1),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.schedule,
-                                color: Colors.orange,
-                                size: 20,
-                              ),
-                              SizedBox(width: 8),
-                              Flexible(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Nueva fecha propuesta:',
-                                      style: TextStyle(
-                                        color: Colors.orange[900],
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      '$nuevaFechaFormateada, $nuevaHoraInicio - $nuevaHoraFin',
-                                      style: TextStyle(
-                                        color: Colors.orange[900],
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      })(),
-                    // Botones de acción para reprogramación pendiente (solo para tutores)
-                    if (widget.userRole == 'tutor' &&
-                        estadoVisual == 'reprogramacion_pendiente')
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.check, color: Colors.green),
-                            tooltip: 'Aceptar reprogramación',
-                            onPressed: () async {
-                              // Obtener el solicitudId de la sesión
-                              final sesionDoc = await FirebaseFirestore.instance
-                                  .collection('sesiones_tutoria')
-                                  .doc(sesion.id)
-                                  .get();
-                              final solicitudId = sesionDoc
-                                  .data()?['solicitudId'];
-
-                              if (solicitudId != null) {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text('Aceptar reprogramación'),
-                                    content: Text(
-                                      '¿Estás seguro de que deseas aceptar la reprogramación de esta tutoría?',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, false),
-                                        child: Text('Cancelar'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, true),
-                                        child: Text('Aceptar'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-
-                                if (confirm == true) {
-                                  try {
-                                    await SesionTutoriaService()
-                                        .aceptarReprogramacion(
-                                          solicitudId: solicitudId,
-                                        );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Reprogramación aceptada',
-                                        ),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Error al aceptar la reprogramación',
-                                        ),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                }
-                              }
-                            },
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.close, color: Colors.red),
-                            tooltip: 'Rechazar reprogramación',
-                            onPressed: () async {
-                              // Obtener el solicitudId de la sesión
-                              final sesionDoc = await FirebaseFirestore.instance
-                                  .collection('sesiones_tutoria')
-                                  .doc(sesion.id)
-                                  .get();
-                              final solicitudId = sesionDoc
-                                  .data()?['solicitudId'];
-
-                              if (solicitudId != null) {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text('Rechazar reprogramación'),
-                                    content: Text(
-                                      '¿Estás seguro de que deseas rechazar la reprogramación? La tutoría será cancelada.',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, false),
-                                        child: Text('Cancelar'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, true),
-                                        child: Text('Rechazar'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-
-                                if (confirm == true) {
-                                  try {
-                                    await SesionTutoriaService()
-                                        .rechazarReprogramacion(
-                                          solicitudId: solicitudId,
-                                        );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Reprogramación rechazada',
-                                        ),
-                                        backgroundColor: Colors.orange,
-                                      ),
-                                    );
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Error al rechazar la reprogramación',
-                                        ),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                }
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    // Botón de cancelar para estudiantes
-                    if (widget.userRole == 'estudiante' &&
-                        (estadoVisual == 'pendiente' ||
-                            estadoVisual == 'aceptada'))
-                      IconButton(
-                        icon: Icon(Icons.cancel, color: Colors.red),
-                        tooltip: 'Cancelar tutoría',
-                        onPressed: () async {
-                          // Validar plazo de 24 horas
-                          final fechaSesion =
-                              sesion.fechaSesion ?? sesion.fechaReserva;
-                          final mensajeError =
-                              Validators.getMensajeErrorCancelacion(
-                                fechaSesion,
-                              );
-
-                          if (mensajeError.isNotEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(mensajeError),
-                                backgroundColor: Colors.red,
-                                duration: Duration(seconds: 4),
-                              ),
-                            );
-                            return;
-                          }
-
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text('Cancelar tutoría'),
-                              content: Text(
-                                '¿Estás seguro de que deseas cancelar esta tutoría?',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context, false),
-                                  child: Text('No'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: Text('Sí, cancelar'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirm == true) {
-                            await SesionTutoriaService().cancelarSesion(
-                              sesion.id,
-                            );
-                            // Refresca la lista o muestra un mensaje
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Tutoría cancelada')),
-                            );
-                          }
-                        },
-                      ),
-                    // Botón de registro post-sesión para tutores
-                    if (widget.userRole == 'tutor' &&
-                        (estadoVisual == 'aceptada' ||
-                            estadoVisual == 'completada'))
-                      FutureBuilder<bool>(
-                        future: RegistroPostSesionService().sesionTieneRegistro(
-                          sesion.id,
-                        ),
-                        builder: (context, snapshot) {
-                          final tieneRegistro = snapshot.data ?? false;
-                          if (tieneRegistro) return SizedBox.shrink();
-                          return IconButton(
-                            icon: Icon(Icons.assignment, color: Colors.green),
-                            tooltip: 'Registrar post-sesión',
-                            onPressed: () async {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => RegistroPostSesionPage(
-                                    sesionId: sesion.id,
-                                    sesion: sesion,
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: esAsignado ? Colors.green : Colors.grey,
+            if (estadoVisual == 'completada')
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                margin: EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white, size: 10),
+                    SizedBox(width: 2),
+                    Text(
+                      'COMPLETADA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            // Título del curso
+            Text(
+              sesion.curso ?? 'Sin curso asignado',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Colors.black,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            // Fecha relativa
+            Text(
+              fechaFormateada,
+              style: TextStyle(
+                color: Colors.grey[800],
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            // Hora
+            Text(
+              '${sesion.horaInicio} - ${sesion.horaFin}',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+                fontSize: 11,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            // Nombre del estudiante
+            Text(
+              nombreEstudiante,
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 11,
+                fontWeight: FontWeight.normal,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

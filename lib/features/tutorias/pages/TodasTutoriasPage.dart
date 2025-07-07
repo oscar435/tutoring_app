@@ -445,6 +445,8 @@ class TodasTutoriasPage extends StatelessWidget {
                           ? Colors.green.withAlpha((0.15 * 255).toInt())
                           : estadoVisual == 'pendiente'
                           ? Colors.orange.withAlpha((0.15 * 255).toInt())
+                          : estadoVisual == 'completada'
+                          ? Colors.green.withAlpha((0.15 * 255).toInt())
                           : Colors.red.withAlpha((0.15 * 255).toInt()),
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -459,6 +461,8 @@ class TodasTutoriasPage extends StatelessWidget {
                             ? Colors.green
                             : estadoVisual == 'pendiente'
                             ? Colors.orange
+                            : estadoVisual == 'completada'
+                            ? Colors.green
                             : Colors.red,
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
