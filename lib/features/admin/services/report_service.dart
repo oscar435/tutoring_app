@@ -13,7 +13,7 @@ class ReportService {
   Future<Map<String, dynamic>> generateUserReport() async {
     try {
       final usersSnapshot = await _firestore.collection('users').get();
-      
+
       // Estadísticas por rol
       final Map<String, int> roleCount = {
         'student': 0,
@@ -48,11 +48,14 @@ class ReportService {
 
         // Obtener datos específicos según el rol
         Map<String, dynamic> roleSpecificData = {};
-        
+
         if (role == 'student') {
           // Buscar en la colección de estudiantes
           try {
-            final studentDoc = await _firestore.collection('students').doc(doc.id).get();
+            final studentDoc = await _firestore
+                .collection('students')
+                .doc(doc.id)
+                .get();
             if (studentDoc.exists) {
               final studentData = studentDoc.data() as Map<String, dynamic>;
               roleSpecificData = {
@@ -69,13 +72,17 @@ class ReportService {
         } else if (role == 'teacher') {
           // Buscar en la colección de tutores
           try {
-            final teacherDoc = await _firestore.collection('tutors').doc(doc.id).get();
+            final teacherDoc = await _firestore
+                .collection('tutors')
+                .doc(doc.id)
+                .get();
             if (teacherDoc.exists) {
               final teacherData = teacherDoc.data() as Map<String, dynamic>;
               roleSpecificData = {
                 'escuela': teacherData['escuela'] ?? '',
                 'especialidad': teacherData['especialidad'] ?? '',
-                'cursos': (teacherData['cursos'] as List<dynamic>?)?.join(', ') ?? '',
+                'cursos':
+                    (teacherData['cursos'] as List<dynamic>?)?.join(', ') ?? '',
                 'universidad': teacherData['universidad'] ?? '',
                 'facultad': teacherData['facultad'] ?? '',
               };
@@ -93,10 +100,10 @@ class ReportService {
           'email': data['email'] ?? '',
           'rol': _getRoleDisplayName(role),
           'estado': isActive ? 'Activo' : 'Inactivo',
-          'fecha_creacion': createdAt != null 
+          'fecha_creacion': createdAt != null
               ? DateFormat('dd/MM/yyyy HH:mm').format(createdAt.toDate())
               : 'N/A',
-          'ultimo_login': lastLogin != null 
+          'ultimo_login': lastLogin != null
               ? DateFormat('dd/MM/yyyy HH:mm').format(lastLogin.toDate())
               : 'Nunca',
           'creado_por': data['createdBy'] ?? 'Sistema',
@@ -133,7 +140,9 @@ class ReportService {
 
       // Encabezado del reporte
       csvContent.writeln('REPORTE DE USUARIOS - SISTEMA DE TUTORÍAS UNFV');
-      csvContent.writeln('Generado el: ${DateFormat('dd/MM/yyyy HH:mm').format(generatedAt)}');
+      csvContent.writeln(
+        'Generado el: ${DateFormat('dd/MM/yyyy HH:mm').format(generatedAt)}',
+      );
       csvContent.writeln('');
 
       // Resumen estadístico
@@ -155,7 +164,8 @@ class ReportService {
       csvContent.writeln('ESTADÍSTICAS POR CARRERA (ESTUDIANTES)');
       final Map<String, int> carreraCount = {};
       for (final user in userDetails) {
-        if (user['rol'] == 'Estudiante' && user['especialidad']?.isNotEmpty == true) {
+        if (user['rol'] == 'Estudiante' &&
+            user['especialidad']?.isNotEmpty == true) {
           final carrera = user['especialidad'] as String;
           carreraCount[carrera] = (carreraCount[carrera] ?? 0) + 1;
         }
@@ -189,33 +199,40 @@ class ReportService {
 
       // Detalles de usuarios
       csvContent.writeln('DETALLES DE USUARIOS');
-      csvContent.writeln('ID,Nombre,Apellidos,Email,Rol,Estado,Fecha Creación,Último Login,Creado Por,Código Estudiante,Ciclo,Edad,Especialidad Estudiante,Universidad Estudiante,Escuela Tutor,Especialidad Tutor,Cursos Tutor,Universidad Tutor,Facultad Tutor');
-      
+      csvContent.writeln(
+        'ID,Nombre,Apellidos,Email,Rol,Estado,Fecha Creación,Último Login,Creado Por,Código Estudiante,Ciclo,Edad,Especialidad Estudiante,Universidad Estudiante,Escuela Tutor,Especialidad Tutor,Cursos Tutor,Universidad Tutor,Facultad Tutor',
+      );
+
       for (final user in userDetails) {
-        csvContent.writeln([
-          user['id'],
-          user['nombre'],
-          user['apellidos'],
-          user['email'],
-          user['rol'],
-          user['estado'],
-          user['fecha_creacion'],
-          user['ultimo_login'],
-          user['creado_por'],
-          user['codigo_estudiante'] ?? '',
-          user['ciclo'] ?? '',
-          user['edad'] ?? '',
-          user['especialidad'] ?? '',
-          user['universidad'] ?? '',
-          user['escuela'] ?? '',
-          user['especialidad_tutor'] ?? '',
-          user['cursos'] ?? '',
-          user['universidad_tutor'] ?? '',
-          user['facultad'] ?? '',
-        ].map((field) => '"${field.toString().replaceAll('"', '""')}"').join(','));
+        csvContent.writeln(
+          [
+                user['id'],
+                user['nombre'],
+                user['apellidos'],
+                user['email'],
+                user['rol'],
+                user['estado'],
+                user['fecha_creacion'],
+                user['ultimo_login'],
+                user['creado_por'],
+                user['codigo_estudiante'] ?? '',
+                user['ciclo'] ?? '',
+                user['edad'] ?? '',
+                user['especialidad'] ?? '',
+                user['universidad'] ?? '',
+                user['escuela'] ?? '',
+                user['especialidad_tutor'] ?? '',
+                user['cursos'] ?? '',
+                user['universidad_tutor'] ?? '',
+                user['facultad'] ?? '',
+              ]
+              .map((field) => '"${field.toString().replaceAll('"', '""')}"')
+              .join(','),
+        );
       }
 
-      final fileName = 'reporte_usuarios_${DateFormat('yyyyMMdd_HHmmss').format(generatedAt)}.csv';
+      final fileName =
+          'reporte_usuarios_${DateFormat('yyyyMMdd_HHmmss').format(generatedAt)}.csv';
 
       if (kIsWeb) {
         // Implementación para Web
@@ -226,7 +243,7 @@ class ReportService {
           ..href = url
           ..style.display = 'none'
           ..download = fileName;
-        
+
         html.document.body!.children.add(anchor);
         anchor.click();
         html.document.body!.children.remove(anchor);
@@ -256,11 +273,17 @@ class ReportService {
           .orderBy('timestamp', descending: true);
 
       if (startDate != null) {
-        query = query.where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+        query = query.where(
+          'timestamp',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
+        );
       }
 
       if (endDate != null) {
-        query = query.where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+        query = query.where(
+          'timestamp',
+          isLessThanOrEqualTo: Timestamp.fromDate(endDate),
+        );
       }
 
       final logsSnapshot = await query.get();
@@ -285,7 +308,7 @@ class ReportService {
           'accion': _getActionDisplayName(action),
           'recurso': data['resourceName'] ?? '',
           'descripcion': data['description'] ?? '',
-          'fecha': timestamp != null 
+          'fecha': timestamp != null
               ? DateFormat('dd/MM/yyyy HH:mm').format(timestamp.toDate())
               : 'N/A',
         });
@@ -312,10 +335,14 @@ class ReportService {
   Future<Map<String, dynamic>> generateTutoringReport() async {
     try {
       // Obtener solicitudes de tutoría
-      final solicitudesSnapshot = await _firestore.collection('solicitudes_tutoria').get();
-      
+      final solicitudesSnapshot = await _firestore
+          .collection('solicitudes_tutoria')
+          .get();
+
       // Obtener sesiones de tutoría
-      final sesionesSnapshot = await _firestore.collection('sesiones_tutoria').get();
+      final sesionesSnapshot = await _firestore
+          .collection('sesiones_tutoria')
+          .get();
 
       // Estadísticas de solicitudes
       final Map<String, int> solicitudStatus = {
@@ -350,10 +377,10 @@ class ReportService {
           'materia': data['materia'] ?? '',
           'tema': data['tema'] ?? '',
           'estado': _getSolicitudStatusDisplayName(status),
-          'fecha_solicitud': createdAt != null 
+          'fecha_solicitud': createdAt != null
               ? DateFormat('dd/MM/yyyy HH:mm').format(createdAt.toDate())
               : 'N/A',
-          'fecha_solicitada': fechaSolicitada != null 
+          'fecha_solicitada': fechaSolicitada != null
               ? DateFormat('dd/MM/yyyy HH:mm').format(fechaSolicitada.toDate())
               : 'N/A',
           'duracion': data['duracion']?.toString() ?? '',
@@ -379,10 +406,10 @@ class ReportService {
           'materia': data['materia'] ?? '',
           'tema': data['tema'] ?? '',
           'estado': _getSesionStatusDisplayName(status),
-          'fecha_inicio': fechaInicio != null 
+          'fecha_inicio': fechaInicio != null
               ? DateFormat('dd/MM/yyyy HH:mm').format(fechaInicio.toDate())
               : 'N/A',
-          'fecha_fin': fechaFin != null 
+          'fecha_fin': fechaFin != null
               ? DateFormat('dd/MM/yyyy HH:mm').format(fechaFin.toDate())
               : 'N/A',
           'duracion_real': data['duracion_real']?.toString() ?? '',
@@ -412,8 +439,10 @@ class ReportService {
     try {
       final report = await generateTutoringReport();
       final summary = report['summary'] as Map<String, dynamic>;
-      final solicitudDetails = report['solicitud_details'] as List<Map<String, dynamic>>;
-      final sesionDetails = report['sesion_details'] as List<Map<String, dynamic>>;
+      final solicitudDetails =
+          report['solicitud_details'] as List<Map<String, dynamic>>;
+      final sesionDetails =
+          report['sesion_details'] as List<Map<String, dynamic>>;
       final generatedAt = report['generated_at'] as DateTime;
 
       // Crear contenido CSV
@@ -421,18 +450,23 @@ class ReportService {
 
       // Encabezado del reporte
       csvContent.writeln('REPORTE DE TUTORÍAS - SISTEMA DE TUTORÍAS UNFV');
-      csvContent.writeln('Generado el: ${DateFormat('dd/MM/yyyy HH:mm').format(generatedAt)}');
+      csvContent.writeln(
+        'Generado el: ${DateFormat('dd/MM/yyyy HH:mm').format(generatedAt)}',
+      );
       csvContent.writeln('');
 
       // Resumen estadístico
       csvContent.writeln('RESUMEN ESTADÍSTICO');
-      csvContent.writeln('Total de Solicitudes,${summary['total_solicitudes']}');
+      csvContent.writeln(
+        'Total de Solicitudes,${summary['total_solicitudes']}',
+      );
       csvContent.writeln('Total de Sesiones,${summary['total_sesiones']}');
       csvContent.writeln('');
 
       // Distribución de solicitudes por estado
       csvContent.writeln('SOLICITUDES POR ESTADO');
-      final solicitudStatus = summary['solicitudes_por_estado'] as Map<String, dynamic>;
+      final solicitudStatus =
+          summary['solicitudes_por_estado'] as Map<String, dynamic>;
       solicitudStatus.forEach((status, count) {
         csvContent.writeln('${_getSolicitudStatusDisplayName(status)},$count');
       });
@@ -440,7 +474,8 @@ class ReportService {
 
       // Distribución de sesiones por estado
       csvContent.writeln('SESIONES POR ESTADO');
-      final sesionStatus = summary['sesiones_por_estado'] as Map<String, dynamic>;
+      final sesionStatus =
+          summary['sesiones_por_estado'] as Map<String, dynamic>;
       sesionStatus.forEach((status, count) {
         csvContent.writeln('${_getSesionStatusDisplayName(status)},$count');
       });
@@ -448,46 +483,59 @@ class ReportService {
 
       // Detalles de solicitudes
       csvContent.writeln('DETALLES DE SOLICITUDES');
-      csvContent.writeln('ID,Estudiante ID,Tutor ID,Materia,Tema,Estado,Fecha Solicitud,Fecha Solicitada,Duración,Modalidad');
-      
+      csvContent.writeln(
+        'ID,Estudiante ID,Tutor ID,Materia,Tema,Estado,Fecha Solicitud,Fecha Solicitada,Duración,Modalidad',
+      );
+
       for (final solicitud in solicitudDetails) {
-        csvContent.writeln([
-          solicitud['id'],
-          solicitud['estudiante_id'],
-          solicitud['tutor_id'],
-          solicitud['materia'],
-          solicitud['tema'],
-          solicitud['estado'],
-          solicitud['fecha_solicitud'],
-          solicitud['fecha_solicitada'],
-          solicitud['duracion'],
-          solicitud['modalidad'],
-        ].map((field) => '"${field.toString().replaceAll('"', '""')}"').join(','));
+        csvContent.writeln(
+          [
+                solicitud['id'],
+                solicitud['estudiante_id'],
+                solicitud['tutor_id'],
+                solicitud['materia'],
+                solicitud['tema'],
+                solicitud['estado'],
+                solicitud['fecha_solicitud'],
+                solicitud['fecha_solicitada'],
+                solicitud['duracion'],
+                solicitud['modalidad'],
+              ]
+              .map((field) => '"${field.toString().replaceAll('"', '""')}"')
+              .join(','),
+        );
       }
       csvContent.writeln('');
 
       // Detalles de sesiones
       csvContent.writeln('DETALLES DE SESIONES');
-      csvContent.writeln('ID,Solicitud ID,Estudiante ID,Tutor ID,Materia,Tema,Estado,Fecha Inicio,Fecha Fin,Duración Real,Modalidad,Notas');
-      
+      csvContent.writeln(
+        'ID,Solicitud ID,Estudiante ID,Tutor ID,Materia,Tema,Estado,Fecha Inicio,Fecha Fin,Duración Real,Modalidad,Notas',
+      );
+
       for (final sesion in sesionDetails) {
-        csvContent.writeln([
-          sesion['id'],
-          sesion['solicitud_id'],
-          sesion['estudiante_id'],
-          sesion['tutor_id'],
-          sesion['materia'],
-          sesion['tema'],
-          sesion['estado'],
-          sesion['fecha_inicio'],
-          sesion['fecha_fin'],
-          sesion['duracion_real'],
-          sesion['modalidad'],
-          sesion['notas'],
-        ].map((field) => '"${field.toString().replaceAll('"', '""')}"').join(','));
+        csvContent.writeln(
+          [
+                sesion['id'],
+                sesion['solicitud_id'],
+                sesion['estudiante_id'],
+                sesion['tutor_id'],
+                sesion['materia'],
+                sesion['tema'],
+                sesion['estado'],
+                sesion['fecha_inicio'],
+                sesion['fecha_fin'],
+                sesion['duracion_real'],
+                sesion['modalidad'],
+                sesion['notas'],
+              ]
+              .map((field) => '"${field.toString().replaceAll('"', '""')}"')
+              .join(','),
+        );
       }
 
-      final fileName = 'reporte_tutorias_${DateFormat('yyyyMMdd_HHmmss').format(generatedAt)}.csv';
+      final fileName =
+          'reporte_tutorias_${DateFormat('yyyyMMdd_HHmmss').format(generatedAt)}.csv';
 
       if (kIsWeb) {
         // Implementación para Web
@@ -498,7 +546,7 @@ class ReportService {
           ..href = url
           ..style.display = 'none'
           ..download = fileName;
-        
+
         html.document.body!.children.add(anchor);
         anchor.click();
         html.document.body!.children.remove(anchor);
@@ -584,4 +632,4 @@ class ReportService {
         return status;
     }
   }
-} 
+}

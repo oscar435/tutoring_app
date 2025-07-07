@@ -18,6 +18,9 @@ import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tutoring_app/features/tutorias/pages/historial_sesiones_page.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
+import 'package:tutoring_app/features/tutorias/widgets/encuesta_satisfaccion_modal.dart';
+import 'package:tutoring_app/features/tutorias/services/encuesta_satisfaccion_service.dart';
+import 'package:tutoring_app/core/models/encuesta_satisfaccion.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -438,6 +441,43 @@ class HomePage2 extends StatelessWidget {
           return const Center(child: Text('No tienes tutorías agendadas.'));
         }
         final sesiones = snapshot.data!;
+        // Buscar la primera sesión completada sin encuesta respondida
+        Future.microtask(() async {
+          for (final sesion in sesiones) {
+            if (sesion.estado == 'completada') {
+              final encuesta = await EncuestaSatisfaccionService()
+                  .obtenerEncuesta(
+                    sesionId: sesion.id,
+                    estudianteId: estudianteId,
+                  );
+              if (encuesta == null && context.mounted) {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (ctx) => EncuestaSatisfaccionModal(
+                    onSubmit: (calificacion, comentario) async {
+                      final nuevaEncuesta = EncuestaSatisfaccion(
+                        id: '',
+                        estudianteId: estudianteId,
+                        calificacion: calificacion,
+                        comentario: comentario,
+                        fechaRespuesta: DateTime.now(),
+                      );
+                      await EncuestaSatisfaccionService().guardarEncuesta(
+                        sesionId: sesion.id,
+                        encuesta: nuevaEncuesta,
+                      );
+                    },
+                    onCancel: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                );
+                break;
+              }
+            }
+          }
+        });
         return SizedBox(
           height: 120,
           child: ListView.separated(

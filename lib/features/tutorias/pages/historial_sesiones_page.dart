@@ -9,6 +9,8 @@ import '../services/registro_post_sesion_service.dart';
 import '../../../core/storage/preferencias_usuario.dart';
 import 'registro_post_sesion_page.dart';
 import 'resumen_post_sesion_page.dart';
+import 'package:tutoring_app/features/tutorias/services/encuesta_satisfaccion_service.dart';
+import 'package:tutoring_app/core/models/encuesta_satisfaccion.dart';
 
 class HistorialSesionesPage extends StatefulWidget {
   @override
@@ -171,6 +173,39 @@ class _HistorialSesionesPageState extends State<HistorialSesionesPage> {
                         '${sesion.horaInicio} - ${sesion.horaFin}',
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
+                      FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection(
+                              _userRole == 'tutor' ? 'estudiantes' : 'tutores',
+                            )
+                            .doc(
+                              _userRole == 'tutor'
+                                  ? sesion.estudianteId
+                                  : sesion.tutorId,
+                            )
+                            .get(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || !snapshot.data!.exists) {
+                            return SizedBox.shrink();
+                          }
+                          final data =
+                              snapshot.data!.data() as Map<String, dynamic>;
+                          final nombre = data['nombre'] ?? '';
+                          final apellidos = data['apellidos'] ?? '';
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 2.0),
+                            child: Text(
+                              _userRole == 'tutor'
+                                  ? 'Estudiante: $nombre $apellidos'
+                                  : 'Tutor: $nombre $apellidos',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -317,6 +352,24 @@ class _HistorialSesionesPageState extends State<HistorialSesionesPage> {
                           ),
                           SizedBox(height: 8),
                         ],
+                        if (registro.observaciones.isNotEmpty) ...[
+                          Text(
+                            'Observaciones:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            registro.observaciones,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                        ],
                         Row(
                           children: [
                             Icon(
@@ -346,6 +399,52 @@ class _HistorialSesionesPageState extends State<HistorialSesionesPage> {
                     );
                   },
                 ),
+            if (_userRole != 'tutor')
+              FutureBuilder<EncuestaSatisfaccion?>(
+                future: EncuestaSatisfaccionService().obtenerEncuesta(
+                  sesionId: sesion.id,
+                  estudianteId: sesion.estudianteId,
+                ),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return SizedBox.shrink();
+                  }
+                  final encuesta = snapshot.data;
+                  if (encuesta == null) return SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: List.generate(
+                            5,
+                            (i) => Icon(
+                              i < encuesta.calificacion
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              color: Colors.amber,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                        if (encuesta.comentario.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2.0, left: 2.0),
+                            child: Text(
+                              encuesta.comentario,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[500],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),

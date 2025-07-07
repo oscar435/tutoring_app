@@ -9,6 +9,7 @@ import 'user_management_page.dart';
 import 'audit_logs_page.dart';
 import 'package:tutoring_app/features/admin/pages/admin_sessions_page.dart';
 import 'package:tutoring_app/features/admin/pages/admin_requests_page.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -25,10 +26,29 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   AdminUser? _currentUser;
   bool _isLoading = true;
 
+  // NUEVO: Streams y datos para métricas
+  Stream<QuerySnapshot>? _sesionesStream;
+  Stream<QuerySnapshot>? _registrosPostSesionStream;
+  int _totalSesiones = 0;
+  int _aceptadas = 0;
+  int _canceladas = 0;
+  int _asistencias = 0;
+  int _registrosPostSesion = 0;
+  Stream<QuerySnapshot>? _solicitudesRechazadasStream;
+  int _rechazadas = 0;
+
   @override
   void initState() {
     super.initState();
     _loadInitialData();
+    _sesionesStream = _firestore.collection('sesiones_tutoria').snapshots();
+    _registrosPostSesionStream = _firestore
+        .collection('registros_post_sesion')
+        .snapshots();
+    _solicitudesRechazadasStream = _firestore
+        .collection('solicitudes_tutoria')
+        .where('estado', isEqualTo: 'rechazada')
+        .snapshots();
   }
 
   Future<void> _loadInitialData() async {
@@ -317,207 +337,554 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Resumen del Sistema',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: _isLoading ? null : _exportReport,
-                            icon: const Icon(Icons.download),
-                            label: const Text('Reporte Usuarios'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green[700],
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: _isLoading
-                                ? null
-                                : _exportTutoringReport,
-                            icon: const Icon(Icons.school),
-                            label: const Text('Reporte Tutorías'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange[700],
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const UserManagementPage(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.people),
-                            label: const Text('Gestionar Usuarios'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[700],
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const AdminSessionsPage(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.event_available),
-                            label: const Text('Sesiones Agendadas'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green[700],
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const AdminRequestsPage(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.history),
-                            label: const Text('Historial de Solicitudes'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.purple[700],
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Total de Usuarios',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey,
+          : StreamBuilder<QuerySnapshot>(
+              stream: _sesionesStream,
+              builder: (context, sesionesSnapshot) {
+                if (sesionesSnapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final sesiones = sesionesSnapshot.data?.docs ?? [];
+                _totalSesiones = sesiones.length;
+                _aceptadas = sesiones
+                    .where(
+                      (doc) =>
+                          doc['estado'] == 'aceptada' ||
+                          doc['estado'] == 'completada',
+                    )
+                    .length;
+                _canceladas = sesiones
+                    .where((doc) => doc['estado'] == 'cancelada')
+                    .length;
+
+                return StreamBuilder<QuerySnapshot>(
+                  stream: _registrosPostSesionStream,
+                  builder: (context, registrosSnapshot) {
+                    if (registrosSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final registros = registrosSnapshot.data?.docs ?? [];
+                    _registrosPostSesion = registros.length;
+                    _asistencias = registros
+                        .where((doc) => doc['asistioEstudiante'] == true)
+                        .length;
+
+                    return StreamBuilder<QuerySnapshot>(
+                      stream: _solicitudesRechazadasStream,
+                      builder: (context, solicitudesSnapshot) {
+                        if (solicitudesSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        final solicitudes =
+                            solicitudesSnapshot.data?.docs ?? [];
+                        _rechazadas = solicitudes.length;
+
+                        double pctAceptadas = _totalSesiones > 0
+                            ? (_aceptadas / _totalSesiones) * 100
+                            : 0;
+                        double pctCanceladas =
+                            (_totalSesiones + _rechazadas) > 0
+                            ? (_rechazadas / (_totalSesiones + _rechazadas)) *
+                                  100
+                            : 0;
+                        double pctAsistencia = _registrosPostSesion > 0
+                            ? (_asistencias / _registrosPostSesion) * 100
+                            : 0;
+
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'Resumen del Sistema',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${_roleReport['total'] ?? 0}',
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
+                                  const SizedBox(width: 16),
+                                  Wrap(
+                                    spacing: 12,
+                                    runSpacing: 8,
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: _isLoading
+                                            ? null
+                                            : _exportReport,
+                                        icon: const Icon(Icons.download),
+                                        label: const Text('Reporte Usuarios'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green[700],
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: _isLoading
+                                            ? null
+                                            : _exportTutoringReport,
+                                        icon: const Icon(Icons.school),
+                                        label: const Text('Reporte Tutorías'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.orange[700],
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const UserManagementPage(),
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.people),
+                                        label: const Text('Gestionar Usuarios'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue[700],
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const AdminSessionsPage(),
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.event_available),
+                                        label: const Text('Sesiones Agendadas'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green[700],
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const AdminRequestsPage(),
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.history),
+                                        label: const Text(
+                                          'Historial de Solicitudes',
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.purple[700],
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              // Tarjetas de métricas de usuarios
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Card(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Total de Usuarios',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              '${_roleReport['total'] ?? 0}',
+                                              style: const TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Card(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Tutores Activos',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              '${(_roleReport['byRole'] ?? {})['teacher'] ?? 0}',
+                                              style: const TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Card(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Estudiantes Registrados',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              '${(_roleReport['byRole'] ?? {})['student'] ?? 0}',
+                                              style: const TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              // Tarjetas de métricas de sesiones
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Card(
+                                      color: Colors.blue[50],
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Total de Sesiones',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              '$_totalSesiones',
+                                              style: TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Card(
+                                      color: Colors.green[50],
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              '% Sesiones Aceptadas',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              '${(_totalSesiones > 0 ? (_aceptadas / _totalSesiones) * 100 : 0).toStringAsFixed(1)}%',
+                                              style: TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Card(
+                                      color: Colors.red[50],
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              '% Solicitudes Rechazadas',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              '${(_rechazadas + _aceptadas > 0 ? (_rechazadas / (_rechazadas + _aceptadas)) * 100 : 0).toStringAsFixed(1)}%',
+                                              style: TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Card(
+                                      color: Colors.purple[50],
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              '% Asistencia',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              '${pctAsistencia.toStringAsFixed(1)}%',
+                                              style: TextStyle(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              // Fila de gráficos y actividad reciente en 2 columnas
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: Column(
+                                      children: [
+                                        Card(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                  'Distribución de Asistencias',
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 16),
+                                                Center(
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      SizedBox(
+                                                        height: 180,
+                                                        width: 180,
+                                                        child: PieChart(
+                                                          PieChartData(
+                                                            sections: [
+                                                              PieChartSectionData(
+                                                                value: _asistencias
+                                                                    .toDouble(),
+                                                                color:
+                                                                    Colors.blue,
+                                                                title:
+                                                                    _asistencias >
+                                                                        0
+                                                                    ? _asistencias
+                                                                          .toString()
+                                                                    : '',
+                                                                titleStyle: const TextStyle(
+                                                                  fontSize: 18,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  color: Colors
+                                                                      .white,
+                                                                ),
+                                                                radius: 60,
+                                                              ),
+                                                              PieChartSectionData(
+                                                                value:
+                                                                    (_registrosPostSesion -
+                                                                            _asistencias)
+                                                                        .toDouble(),
+                                                                color: Colors
+                                                                    .redAccent,
+                                                                title:
+                                                                    (_registrosPostSesion -
+                                                                            _asistencias) >
+                                                                        0
+                                                                    ? (_registrosPostSesion -
+                                                                              _asistencias)
+                                                                          .toString()
+                                                                    : '',
+                                                                titleStyle: const TextStyle(
+                                                                  fontSize: 18,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  color: Colors
+                                                                      .white,
+                                                                ),
+                                                                radius: 60,
+                                                              ),
+                                                            ],
+                                                            sectionsSpace: 2,
+                                                            centerSpaceRadius:
+                                                                40,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 16),
+                                                      // Leyenda
+                                                      Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Row(
+                                                            children: [
+                                                              Container(
+                                                                width: 16,
+                                                                height: 16,
+                                                                color:
+                                                                    Colors.blue,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 8,
+                                                              ),
+                                                              const Text(
+                                                                'Asistió',
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 8,
+                                                          ),
+                                                          Row(
+                                                            children: [
+                                                              Container(
+                                                                width: 16,
+                                                                height: 16,
+                                                                color: Colors
+                                                                    .redAccent,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 8,
+                                                              ),
+                                                              const Text(
+                                                                'No asistió',
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 24),
+                                        Card(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16),
+                                            child: RoleDistributionChart(
+                                              data: _roleReport['byRole'] ?? {},
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    flex: 3,
+                                    child: Card(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: RecentActivityWidget(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Tutores Activos',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${(_roleReport['byRole'] ?? {})['teacher'] ?? 0}',
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Estudiantes Registrados',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${(_roleReport['byRole'] ?? {})['student'] ?? 0}',
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: RoleDistributionChart(
-                          data: _roleReport['byRole'] ?? {},
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Expanded(flex: 3, child: RecentActivityWidget()),
-                    ],
-                  ),
-                ],
-              ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
             ),
     );
   }

@@ -8,6 +8,11 @@ import 'package:tutoring_app/features/admin/pages/admin_availability_page.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:tutoring_app/core/utils/validators.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
+import 'dart:typed_data';
+import 'package:flutter/services.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -1172,8 +1177,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
             title: Text('Detalles de ${user.fullName}'),
             content: SingleChildScrollView(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDetailRow('Nombre', user.nombre),
                   _buildDetailRow('Apellidos', user.apellidos),
@@ -1239,6 +1244,116 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       completeUserData['facultad'] ?? '-',
                     ),
                   ],
+
+                  SizedBox(height: 16),
+                  Center(
+                    child: ElevatedButton.icon(
+                      icon: Icon(Icons.picture_as_pdf),
+                      label: Text('Exportar historial a PDF'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                      onPressed: () async {
+                        // 1. Obtener sesiones confirmadas del estudiante
+                        final sesionesSnapshot = await FirebaseFirestore
+                            .instance
+                            .collection('sesiones_tutoria')
+                            .where('estudianteId', isEqualTo: user.id)
+                            .where(
+                              'estado',
+                              whereIn: ['completada', 'cancelada'],
+                            )
+                            .get();
+                        final sesiones = sesionesSnapshot.docs;
+
+                        // 2. Para cada sesión, obtener registro post-sesión (para observaciones y asistencia)
+                        List<List<String>> data = [];
+                        for (final doc in sesiones) {
+                          final sesion = doc.data();
+                          final fecha =
+                              (sesion['fechaSesion'] ??
+                                      sesion['fechaReserva']) !=
+                                  null
+                              ? DateFormat('dd/MM/yyyy').format(
+                                  (sesion['fechaSesion'] ??
+                                          sesion['fechaReserva'])
+                                      .toDate(),
+                                )
+                              : '';
+                          final registroSnapshot = await FirebaseFirestore
+                              .instance
+                              .collection('registros_post_sesion')
+                              .where('sesionId', isEqualTo: doc.id)
+                              .limit(1)
+                              .get();
+                          String asistencia = '';
+                          String observaciones = '';
+                          if (registroSnapshot.docs.isNotEmpty) {
+                            final registro = registroSnapshot.docs.first.data();
+                            asistencia = registro['asistioEstudiante'] == true
+                                ? 'Asistió'
+                                : 'No asistió';
+                            observaciones = registro['observaciones'] ?? '';
+                          } else {
+                            asistencia = 'No registrado';
+                            observaciones = '';
+                          }
+                          data.add([fecha, asistencia, observaciones]);
+                        }
+
+                        // 3. Generar PDF
+                        final pdf = pw.Document();
+                        pdf.addPage(
+                          pw.MultiPage(
+                            build: (context) => [
+                              pw.Column(
+                                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                children: [
+                                  pw.Text(
+                                    'Reporte de Asistencia y Desempeño',
+                                    style: pw.TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: pw.FontWeight.bold,
+                                    ),
+                                  ),
+                                  pw.Text(
+                                    'Estudiante: ${user.nombre} ${user.apellidos}',
+                                  ),
+                                  pw.Text(
+                                    'Fecha de generación: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}',
+                                  ),
+                                ],
+                              ),
+                              pw.SizedBox(height: 20),
+                              pw.Table.fromTextArray(
+                                headers: ['Fecha', 'Asistencia', 'Desempeño'],
+                                data: data,
+                                headerStyle: pw.TextStyle(
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
+                                cellAlignment: pw.Alignment.centerLeft,
+                                cellStyle: pw.TextStyle(fontSize: 11),
+                                border: pw.TableBorder.all(
+                                  width: 0.5,
+                                  color: PdfColors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        final pdfBytes = await pdf.save();
+                        await Printing.sharePdf(
+                          bytes: pdfBytes,
+                          filename: 'historial_asistencia_desempeno.pdf',
+                        );
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1286,4 +1401,10 @@ class _UserManagementPageState extends State<UserManagementPage> {
       ),
     );
   }
+}
+
+// Helper para cargar imagen desde assets
+Future<pw.ImageProvider> imageFromAssetBundle(String path) async {
+  final bytes = await rootBundle.load(path);
+  return pw.MemoryImage(bytes.buffer.asUint8List());
 }
