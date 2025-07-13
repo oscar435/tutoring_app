@@ -15,6 +15,7 @@ import '../features/perfil/pages/tutor_profile_page.dart';
 import '../features/admin/pages/admin_dashboard_page.dart';
 import '../features/admin/pages/user_management_page.dart';
 import '../features/admin/pages/audit_logs_page.dart';
+import '../features/gamification/pages/student_gamification_page.dart';
 
 class AppRoutes {
   // Rutas principales
@@ -43,6 +44,9 @@ class AppRoutes {
   // Rutas de administración
   static const String userManagement = '/user-management';
   static const String auditLogs = '/audit-logs';
+
+  // Rutas de gamificación
+  static const String gamification = '/gamification';
 
   // Rutas de autenticación específicas
   static const String loginTeacher = '/login-teacher';
@@ -76,6 +80,7 @@ class AppRoutes {
     tutorProfile: (context) => const TutorProfilePage(),
     userManagement: (context) => const UserManagementPage(),
     auditLogs: (context) => const AuditLogsPage(),
+    gamification: (context) => const StudentGamificationPage(),
   };
 
   // Página de error para rutas que requieren parámetros

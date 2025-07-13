@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'package:tutoring_app/core/models/registro_post_sesion.dart';
 import 'package:tutoring_app/core/models/sesion_tutoria.dart';
+import 'package:tutoring_app/features/gamification/services/gamification_service.dart';
 
 class RegistroPostSesionService {
   final CollectionReference _registrosRef = FirebaseFirestore.instance
@@ -32,6 +33,20 @@ class RegistroPostSesionService {
       'estado': 'completada',
       'registroPostSesionId': registroId,
     });
+
+    // Actualizar gamificación del estudiante
+    try {
+      final gamificationService = GamificationService();
+      await gamificationService.completarSesion(
+        registro.estudianteId,
+        sesionId: registro.sesionId,
+      );
+      print(
+        '✅ Gamificación actualizada para estudiante: ${registro.estudianteId}',
+      );
+    } catch (e) {
+      print('❌ Error actualizando gamificación: $e');
+    }
   }
 
   // Obtener registro post-sesión por ID

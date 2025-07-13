@@ -288,6 +288,15 @@ class HomePage2 extends StatelessWidget {
                           );
                         },
                       ),
+                      _buildDrawerItem(
+                        context,
+                        Icons.emoji_events,
+                        'Gamificación',
+                        () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, AppRoutes.gamification);
+                        },
+                      ),
                       ListTile(
                         leading: const Icon(Icons.flag, color: Colors.white),
                         title: const Text(
