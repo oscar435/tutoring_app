@@ -7,7 +7,6 @@ class SolicitudTutoria {
   final DateTime fechaHora;
   final String estado; // "pendiente", "aceptada", "rechazada"
   final String? curso;
-  final String? mensaje;
   final String? dia;
   final String? horaInicio;
   final String? horaFin;
@@ -20,7 +19,6 @@ class SolicitudTutoria {
     required this.fechaHora,
     required this.estado,
     this.curso,
-    this.mensaje,
     this.dia,
     this.horaInicio,
     this.horaFin,
@@ -34,7 +32,6 @@ class SolicitudTutoria {
     'fechaHora': Timestamp.fromDate(fechaHora),
     'estado': estado,
     'curso': curso,
-    'mensaje': mensaje,
     'dia': dia,
     'horaInicio': horaInicio,
     'horaFin': horaFin,
@@ -51,7 +48,6 @@ class SolicitudTutoria {
         fechaHora: _parseFechaSesion(map['fechaHora'])!,
         estado: map['estado'],
         curso: map['curso'],
-        mensaje: map['mensaje'],
         dia: map['dia'],
         horaInicio: map['horaInicio'],
         horaFin: map['horaFin'],

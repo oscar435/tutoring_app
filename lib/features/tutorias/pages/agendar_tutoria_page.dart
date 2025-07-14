@@ -24,7 +24,6 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
   Slot? _slotSeleccionado;
   bool _cargando = true;
   bool _guardando = false;
-  final _mensajeController = TextEditingController();
   DateTime? _fechaSeleccionada;
   List<String> _cursosTutor = [];
   String? _cursoSeleccionado;
@@ -67,16 +66,16 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
           _cargando = false;
 
           if (disponibilidad == null) {
-            _errorMensaje = 'El tutor no tiene disponibilidad registrada.';
+            _errorMensaje = 'El docente no tiene disponibilidad registrada.';
           } else if (disponibilidad.slots.isEmpty) {
-            _errorMensaje = 'El tutor no tiene horarios configurados.';
+            _errorMensaje = 'El docente no tiene horarios configurados.';
           } else {
             final slotsActivos = disponibilidad.slots
                 .where((slot) => slot.activo)
                 .toList();
             if (slotsActivos.isEmpty) {
               _errorMensaje =
-                  'El tutor no tiene horarios activos configurados.';
+                  'El docente no tiene horarios activos configurados.';
             }
           }
         });
@@ -139,7 +138,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
         return 1;
       case 'Martes':
         return 2;
-      case 'Miércoles':
+      case 3:
         return 3;
       case 'Jueves':
         return 4;
@@ -287,7 +286,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
         return;
       }
 
-      // Validar que el horario esté dentro de la disponibilidad del tutor
+      // Validar que el horario esté dentro de la disponibilidad del docente
       final esHorarioValido = await servicio.esHorarioValido(
         tutorId: widget.tutorId,
         dia: _slotSeleccionado!.dia,
@@ -299,7 +298,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'El horario seleccionado no está dentro de la disponibilidad del tutor.',
+              'El horario seleccionado no está dentro de la disponibilidad del docente.',
             ),
             backgroundColor: Colors.red,
           ),
@@ -321,7 +320,6 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
         fechaHora: DateTime.now(),
         estado: 'pendiente',
         curso: _cursoSeleccionado,
-        mensaje: _mensajeController.text,
         dia: _slotSeleccionado!.dia,
         horaInicio: _slotSeleccionado!.horaInicio,
         horaFin: _slotSeleccionado!.horaFin,
@@ -333,7 +331,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Solicitud enviada al tutor exitosamente'),
+            content: Text('Solicitud enviada al docente exitosamente'),
             backgroundColor: Colors.green,
           ),
         );
@@ -371,7 +369,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
             Expanded(
               child: Text(
                 _errorMensaje ??
-                    'No se pudo cargar la disponibilidad del tutor.',
+                    'No se pudo cargar la disponibilidad del docente.',
                 style: TextStyle(color: Colors.red[800]),
               ),
             ),
@@ -388,7 +386,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Disponibilidad del tutor:',
+          'Disponibilidad del docente:',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         SizedBox(height: 10),
@@ -406,7 +404,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'El tutor no tiene horarios activos configurados.',
+                    'El docente no tiene horarios activos configurados.',
                     style: TextStyle(color: Colors.orange[800]),
                   ),
                 ),
@@ -591,7 +589,7 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                             SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'No hay horarios disponibles para esta fecha. El tutor puede estar ocupado o no tener disponibilidad en este día.',
+                                'No hay horarios disponibles para esta fecha. El docente puede estar ocupado o no tener disponibilidad en este día.',
                                 style: TextStyle(color: Colors.orange[800]),
                               ),
                             ),
@@ -612,15 +610,6 @@ class _AgendarTutoriaPageState extends State<AgendarTutoriaPage> {
                       ),
                     SizedBox(height: 20),
                   ],
-                  TextField(
-                    controller: _mensajeController,
-                    decoration: InputDecoration(
-                      labelText: 'Mensaje para el tutor (opcional)',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                  ),
-                  SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
                     height: 50,

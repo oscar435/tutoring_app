@@ -145,8 +145,6 @@ class TodasTutoriasPage extends StatelessWidget {
                       : 'Sin hora',
                 ),
                 _buildInfoRow('Estado', tutoria.estado),
-                if (tutoria.mensaje != null && tutoria.mensaje!.isNotEmpty)
-                  _buildInfoRow('Mensaje', tutoria.mensaje!),
                 const SizedBox(height: 20),
                 FutureBuilder<DocumentSnapshot>(
                   future: FirebaseFirestore.instance
@@ -161,7 +159,7 @@ class TodasTutoriasPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Tutor',
+                            'Docente',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -263,7 +261,7 @@ class TodasTutoriasPage extends StatelessWidget {
                 );
                 if (disponibilidad == null) {
                   setState(() {
-                    error = 'El tutor no tiene disponibilidad.';
+                    error = 'El docente no tiene disponibilidad.';
                     cargando = false;
                   });
                   return;

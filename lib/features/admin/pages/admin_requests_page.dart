@@ -290,28 +290,6 @@ class _AdminRequestsPageState extends State<AdminRequestsPage> {
                             ),
                           ],
                         ),
-                        if ((s['mensaje'] ?? '').toString().isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.message,
-                                size: 18,
-                                color: Colors.blueGrey,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  s['mensaje'],
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ],
                     ),
                   ),

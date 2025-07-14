@@ -232,46 +232,45 @@ class _HistorialSesionesPageState extends State<HistorialSesionesPage> {
             ),
             SizedBox(height: 12),
             if (_userRole == 'tutor' && sesion.estado == 'completada')
-              FutureBuilder<bool>(
-                future: _registroService.sesionTieneRegistro(sesion.id),
-                builder: (context, snapshot) {
-                  final tieneRegistro = snapshot.data ?? false;
-                  return SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      icon: Icon(
-                        tieneRegistro ? Icons.visibility : Icons.assignment,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => tieneRegistro
-                                ? ResumenPostSesionPage(sesionId: sesion.id)
-                                : RegistroPostSesionPage(
-                                    sesionId: sesion.id,
-                                    sesion: sesion,
-                                  ),
-                          ),
-                        );
-                      },
-                      label: Text(
-                        tieneRegistro
-                            ? 'Ver resumen post-sesión'
-                            : 'Registrar Post-Sesión',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: tieneRegistro
-                            ? Colors.blue
-                            : Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  );
-                },
-              ),
+              if (sesion.estado == 'completada')
+                FutureBuilder<bool>(
+                  future: _registroService.sesionTieneRegistro(sesion.id),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      // Mostrar un espacio vacío del tamaño aproximado del botón para evitar saltos
+                      return SizedBox(
+                        width: double.infinity,
+                        height: 36, // Altura estándar de botón
+                      );
+                    }
+                    if (snapshot.hasData && snapshot.data == true) {
+                      return SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.description),
+                          label: const Text('Ver resumen post-sesión'),
+                          onPressed: () {
+                            _verResumenPostSesion(context, sesion.id);
+                          },
+                        ),
+                      );
+                    } else if (snapshot.hasData && snapshot.data == false) {
+                      return SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.edit_note),
+                          label: const Text('Registrar Post-Sesión'),
+                          onPressed: () {
+                            _registrarPostSesion(context, sesion.id, sesion);
+                          },
+                        ),
+                      );
+                    } else {
+                      // Si hay error o no hay datos, no mostrar nada
+                      return const SizedBox.shrink();
+                    }
+                  },
+                ),
             if (!(_userRole == 'tutor' && sesion.estado == 'completada'))
               if (sesion.estado == 'completada')
                 FutureBuilder<RegistroPostSesion?>(
@@ -447,6 +446,29 @@ class _HistorialSesionesPageState extends State<HistorialSesionesPage> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _verResumenPostSesion(BuildContext context, String sesionId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ResumenPostSesionPage(sesionId: sesionId),
+      ),
+    );
+  }
+
+  void _registrarPostSesion(
+    BuildContext context,
+    String sesionId,
+    SesionTutoria sesion,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            RegistroPostSesionPage(sesionId: sesionId, sesion: sesion),
       ),
     );
   }

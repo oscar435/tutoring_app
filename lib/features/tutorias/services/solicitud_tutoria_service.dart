@@ -109,7 +109,6 @@ class SolicitudTutoriaService {
         fechaReserva: DateTime.now(),
         curso: solicitud.curso,
         estado: 'aceptada',
-        mensaje: solicitud.mensaje,
         fechaSesion: fechaSesion,
       );
       await SesionTutoriaService().crearSesion(sesion, solicitudId);
@@ -168,11 +167,13 @@ class SolicitudTutoriaService {
   // Obtener nombre del tutor
   Future<String> obtenerNombreTutor(String tutorId) async {
     final doc = await _tutoresRef.doc(tutorId).get();
-    if (!doc.exists) return 'Tutor';
+    if (!doc.exists) return 'Docente';
     final data = doc.data() as Map<String, dynamic>;
     final nombre = data['nombre'] ?? '';
     final apellidos = data['apellidos'] ?? '';
-    return '$nombre $apellidos'.trim().isEmpty ? 'Tutor' : '$nombre $apellidos';
+    return '$nombre $apellidos'.trim().isEmpty
+        ? 'Docente'
+        : '$nombre $apellidos';
   }
 
   // Obtener solicitudes por tutor con nombres de estudiantes
@@ -313,7 +314,7 @@ class SolicitudTutoriaService {
 
             // Obtener detalles del tutor
             final tutorDoc = await _tutoresRef.doc(solicitud.tutorId).get();
-            String nombreTutor = 'Tutor';
+            String nombreTutor = 'Docente';
             String? photoUrl;
 
             if (tutorDoc.exists) {
@@ -321,7 +322,7 @@ class SolicitudTutoriaService {
               final nombre = data['nombre'] ?? '';
               final apellidos = data['apellidos'] ?? '';
               nombreTutor = '$nombre $apellidos'.trim().isEmpty
-                  ? 'Tutor'
+                  ? 'Docente'
                   : '$nombre $apellidos';
               photoUrl = data['photoUrl'];
             }

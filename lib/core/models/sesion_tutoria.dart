@@ -10,7 +10,6 @@ class SesionTutoria {
   final DateTime fechaReserva;
   final String? curso;
   final String estado; // aceptada, finalizada, cancelada
-  final String? mensaje;
   final DateTime? fechaSesion;
 
   SesionTutoria({
@@ -23,7 +22,6 @@ class SesionTutoria {
     required this.fechaReserva,
     this.curso,
     required this.estado,
-    this.mensaje,
     this.fechaSesion,
   });
 
@@ -37,8 +35,9 @@ class SesionTutoria {
     'fechaReserva': Timestamp.fromDate(fechaReserva),
     'curso': curso,
     'estado': estado,
-    'mensaje': mensaje,
-    'fechaSesion': fechaSesion != null ? Timestamp.fromDate(fechaSesion!) : null,
+    'fechaSesion': fechaSesion != null
+        ? Timestamp.fromDate(fechaSesion!)
+        : null,
   };
 
   factory SesionTutoria.fromMap(Map<String, dynamic> map) {
@@ -52,8 +51,9 @@ class SesionTutoria {
       fechaReserva: (map['fechaReserva'] as Timestamp).toDate(),
       curso: map['curso'],
       estado: map['estado'],
-      mensaje: map['mensaje'],
-      fechaSesion: map['fechaSesion'] != null ? (map['fechaSesion'] as Timestamp).toDate() : null,
+      fechaSesion: map['fechaSesion'] != null
+          ? (map['fechaSesion'] as Timestamp).toDate()
+          : null,
     );
   }
-} 
+}

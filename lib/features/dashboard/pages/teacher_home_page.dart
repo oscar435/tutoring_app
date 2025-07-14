@@ -1292,13 +1292,6 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       'Fecha y hora de la tutoría',
                       fechaHoraTexto,
                     ),
-                    if (solicitud.mensaje != null &&
-                        solicitud.mensaje!.isNotEmpty)
-                      _buildDetalleItem(
-                        Icons.message,
-                        'Mensaje',
-                        solicitud.mensaje!,
-                      ),
                     _buildDetalleItem(
                       Icons.access_time,
                       'Estado',
@@ -1502,12 +1495,6 @@ class _TeacherHomePageState extends State<TeacherHomePage> {
                       'Fecha y hora de la tutoría',
                       fechaHoraTexto,
                     ),
-                    if (sesion.mensaje != null && sesion.mensaje!.isNotEmpty)
-                      _buildDetalleItem(
-                        Icons.message,
-                        'Mensaje',
-                        sesion.mensaje!,
-                      ),
                     _buildDetalleItem(
                       Icons.access_time,
                       'Estado',

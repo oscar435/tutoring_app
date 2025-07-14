@@ -853,7 +853,7 @@ class HomePage2 extends StatelessWidget {
     SolicitudTutoria solicitud,
   ) async {
     // Obtener nombre del tutor
-    String nombreTutor = 'Tutor';
+    String nombreTutor = 'Docente';
     if (solicitud.tutorId.isNotEmpty) {
       final doc = await FirebaseFirestore.instance
           .collection('tutores')
@@ -864,7 +864,7 @@ class HomePage2 extends StatelessWidget {
         final nombre = data['nombre'] ?? '';
         final apellidos = data['apellidos'] ?? '';
         nombreTutor = ('$nombre $apellidos').trim().isEmpty
-            ? 'Tutor'
+            ? 'Docente'
             : '$nombre $apellidos';
       }
     }
@@ -880,14 +880,14 @@ class HomePage2 extends StatelessWidget {
       estadoTexto = 'RECHAZADA';
       estadoColor = Colors.red;
       chipBgColor = Colors.red.shade50;
-      infoMsg = 'Tu solicitud fue rechazada por el tutor.';
+      infoMsg = 'Tu solicitud fue rechazada por el docente.';
       infoIcon = Icons.cancel;
     } else {
       estadoTexto = 'PENDIENTE';
       estadoColor = Colors.orange;
       chipBgColor = Colors.orange.shade50;
       infoMsg =
-          'Tu solicitud está siendo revisada por el tutor. Te notificaremos cuando responda.';
+          'Tu solicitud está siendo revisada por el docente. Te notificaremos cuando responda.';
       infoIcon = Icons.info_outline;
     }
 
@@ -945,14 +945,12 @@ class HomePage2 extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              _buildDetailRow('Tutor:', nombreTutor),
+              _buildDetailRow('Docente:', nombreTutor),
               _buildDetailRow(
                 'Curso:',
                 solicitud.curso ?? 'Sin curso especificado',
               ),
               _buildDetailRow('Estado:', estadoTexto),
-              if (solicitud.mensaje != null && solicitud.mensaje!.isNotEmpty)
-                _buildDetailRow('Mensaje:', solicitud.mensaje!),
               if (solicitud.fechaSesion != null)
                 _buildDetailRow(
                   'Fecha:',
@@ -1025,7 +1023,7 @@ class HomePage2 extends StatelessWidget {
 
   void _mostrarDetalleSesion(BuildContext context, SesionTutoria sesion) async {
     // Obtener nombre del tutor
-    String nombreTutor = 'Tutor';
+    String nombreTutor = 'Docente';
     if (sesion.tutorId.isNotEmpty) {
       final doc = await FirebaseFirestore.instance
           .collection('tutores')
@@ -1036,7 +1034,7 @@ class HomePage2 extends StatelessWidget {
         final nombre = data['nombre'] ?? '';
         final apellidos = data['apellidos'] ?? '';
         nombreTutor = ('$nombre $apellidos').trim().isEmpty
-            ? 'Tutor'
+            ? 'Docente'
             : '$nombre $apellidos';
       }
     }
@@ -1237,9 +1235,7 @@ class HomePage2 extends StatelessWidget {
                   'Fecha y hora',
                   '${DateFormat('dd/MM/yyyy').format(sesion.fechaSesion!)} ${sesion.horaInicio} - ${sesion.horaFin}',
                 ),
-              if (sesion.mensaje != null && sesion.mensaje!.isNotEmpty)
-                _detalleItem('Mensaje', sesion.mensaje!),
-              _detalleItem('Tutor', nombreTutor),
+              _detalleItem('Docente', nombreTutor),
             ],
           ),
         ),
@@ -1482,7 +1478,7 @@ class HomePage2 extends StatelessWidget {
         final tutorData = snapshot.data!.data() as Map<String, dynamic>;
         final tutorId = snapshot.data!.id;
         final photoUrl = tutorData['photoUrl'] as String? ?? '';
-        final nombre = tutorData['nombre'] as String? ?? 'Tutor';
+        final nombre = tutorData['nombre'] as String? ?? 'Docente';
         final apellidos = tutorData['apellidos'] as String? ?? '';
         final especialidad =
             tutorData['especialidad'] as String? ?? 'Especialista';
@@ -1499,7 +1495,7 @@ class HomePage2 extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'MI TUTOR ASIGNADO',
+                  'MI DOCENTE ASIGNADO',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.deepPurple,
