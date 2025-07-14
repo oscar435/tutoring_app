@@ -27,6 +27,8 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:tutoring_app/features/perfil/pages/mis_reportes_page.dart';
+import 'package:tutoring_app/features/tutorias/services/solicitud_tutoria_service.dart';
+import 'package:tutoring_app/core/models/solicitud_tutoria.dart';
 
 class HomePage2 extends StatelessWidget {
   static const routeName = '/home2';
@@ -138,6 +140,18 @@ class HomePage2 extends StatelessWidget {
                       ),
                     ),
                     _buildSolicitudesEstudiante(user.uid),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle(
+                      'Mis Solicitudes Pendientes',
+                      trailing: TextButton(
+                        onPressed: () {
+                          // Aquí podrías navegar a una página específica de solicitudes del estudiante
+                          // Por ahora solo mostraremos las solicitudes en el dashboard
+                        },
+                        child: const Text('Ver todas'),
+                      ),
+                    ),
+                    _buildSolicitudesPendientesEstudiante(user.uid),
                     const SizedBox(height: 20),
                     _buildSectionTitle('Nuestros Servicios'),
                     Row(
@@ -657,6 +671,356 @@ class HomePage2 extends StatelessWidget {
               .map((doc) => SesionTutoria.fromMap(doc.data()))
               .toList();
         });
+  }
+
+  Widget _buildSolicitudesPendientesEstudiante(String estudianteId) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: SolicitudTutoriaService()
+          .getSolicitudesConDetallesEstudianteStream(estudianteId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No tienes solicitudes pendientes.'));
+        }
+
+        final solicitudes = snapshot.data!.where((s) {
+          final estado = (s['solicitud'] as SolicitudTutoria).estado;
+          return estado == 'pendiente' || estado == 'rechazada';
+        }).toList();
+
+        if (solicitudes.isEmpty) {
+          return const Center(child: Text('No tienes solicitudes pendientes.'));
+        }
+
+        return SizedBox(
+          height: 120,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: solicitudes.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final s = solicitudes[index];
+              final solicitud = s['solicitud'] as SolicitudTutoria;
+              final nombreTutor = s['nombreTutor'] as String;
+              final fotoUrl = s['photoUrl'] as String?;
+              final estado = solicitud.estado;
+
+              String fechaTexto = '';
+              if (solicitud.fechaSesion != null &&
+                  (solicitud.horaInicio ?? '').isNotEmpty) {
+                fechaTexto =
+                    '${solicitud.dia ?? ''} ${DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!)} - ${solicitud.horaInicio}';
+              } else {
+                fechaTexto =
+                    '${solicitud.dia ?? ''} - ${solicitud.horaInicio ?? ''}';
+              }
+
+              // Etiqueta y color según estado
+              Color tagColor;
+              Color tagTextColor;
+              String tagText;
+              if (estado == 'rechazada') {
+                tagColor = Colors.red.withAlpha((0.15 * 255).toInt());
+                tagTextColor = Colors.red;
+                tagText = 'RECHAZADA';
+              } else {
+                tagColor = Colors.orange.withAlpha((0.15 * 255).toInt());
+                tagTextColor = Colors.orange;
+                tagText = 'PENDIENTE';
+              }
+
+              return GestureDetector(
+                onTap: () => _mostrarDetalleSolicitud(context, solicitud),
+                child: Container(
+                  width: 180,
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(
+                    color: estado == 'rechazada'
+                        ? const Color(0xFFFFEBEE) // rojo claro
+                        : const Color(0xFFFFF3E0), // naranja claro
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: estado == 'rechazada'
+                          ? Colors.red.shade200
+                          : Colors.orange.shade300,
+                      width: 1,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          fotoUrl != null && fotoUrl.isNotEmpty
+                              ? CircleAvatar(
+                                  radius: 12,
+                                  backgroundImage: NetworkImage(fotoUrl),
+                                  onBackgroundImageError: (_, __) {},
+                                )
+                              : CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: estado == 'rechazada'
+                                      ? Colors.red.shade200
+                                      : Colors.orange.shade300,
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              nombreTutor,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: Colors.black87,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        solicitud.curso ?? 'Sin curso',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Colors.black,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              fechaTexto,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: tagColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              tagText,
+                              style: TextStyle(
+                                color: tagTextColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  void _mostrarDetalleSolicitud(
+    BuildContext context,
+    SolicitudTutoria solicitud,
+  ) async {
+    // Obtener nombre del tutor
+    String nombreTutor = 'Tutor';
+    if (solicitud.tutorId.isNotEmpty) {
+      final doc = await FirebaseFirestore.instance
+          .collection('tutores')
+          .doc(solicitud.tutorId)
+          .get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final nombre = data['nombre'] ?? '';
+        final apellidos = data['apellidos'] ?? '';
+        nombreTutor = ('$nombre $apellidos').trim().isEmpty
+            ? 'Tutor'
+            : '$nombre $apellidos';
+      }
+    }
+
+    // Estado y colores
+    final estado = solicitud.estado;
+    String estadoTexto;
+    Color estadoColor;
+    Color chipBgColor;
+    String infoMsg;
+    IconData infoIcon;
+    if (estado == 'rechazada') {
+      estadoTexto = 'RECHAZADA';
+      estadoColor = Colors.red;
+      chipBgColor = Colors.red.shade50;
+      infoMsg = 'Tu solicitud fue rechazada por el tutor.';
+      infoIcon = Icons.cancel;
+    } else {
+      estadoTexto = 'PENDIENTE';
+      estadoColor = Colors.orange;
+      chipBgColor = Colors.orange.shade50;
+      infoMsg =
+          'Tu solicitud está siendo revisada por el tutor. Te notificaremos cuando responda.';
+      infoIcon = Icons.info_outline;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.45,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    estado == 'rechazada' ? Icons.cancel : Icons.schedule,
+                    color: estadoColor,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Solicitud ${estadoTexto[0]}${estadoTexto.substring(1).toLowerCase()}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: estadoColor,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: chipBgColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      estadoTexto,
+                      style: TextStyle(
+                        color: estadoColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildDetailRow('Tutor:', nombreTutor),
+              _buildDetailRow(
+                'Curso:',
+                solicitud.curso ?? 'Sin curso especificado',
+              ),
+              _buildDetailRow('Estado:', estadoTexto),
+              if (solicitud.mensaje != null && solicitud.mensaje!.isNotEmpty)
+                _buildDetailRow('Mensaje:', solicitud.mensaje!),
+              if (solicitud.fechaSesion != null)
+                _buildDetailRow(
+                  'Fecha:',
+                  DateFormat('dd/MM/yyyy').format(solicitud.fechaSesion!),
+                ),
+              if (solicitud.horaInicio != null && solicitud.horaFin != null)
+                _buildDetailRow(
+                  'Horario:',
+                  '${solicitud.horaInicio} - ${solicitud.horaFin}',
+                ),
+              _buildDetailRow(
+                'Solicitada:',
+                DateFormat('dd/MM/yyyy HH:mm').format(solicitud.fechaHora),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: chipBgColor,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: estadoColor.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(infoIcon, color: estadoColor, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        infoMsg,
+                        style: TextStyle(color: estadoColor, fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _mostrarDetalleSesion(BuildContext context, SesionTutoria sesion) async {

@@ -189,6 +189,35 @@ class SolicitudTutoriaService {
     return solicitudesConNombres;
   }
 
+  // Obtener solicitudes por estudiante
+  Future<List<SolicitudTutoria>> obtenerSolicitudesPorEstudiante(
+    String estudianteId,
+  ) async {
+    final query = await _solicitudesRef
+        .where('estudianteId', isEqualTo: estudianteId)
+        .orderBy('fechaHora', descending: true)
+        .get();
+    return query.docs
+        .map(
+          (doc) => SolicitudTutoria.fromMap(doc.data() as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
+  // Obtener solicitudes por estudiante con nombres de tutores
+  Future<List<Map<String, dynamic>>> obtenerSolicitudesConNombresEstudiante(
+    String estudianteId,
+  ) async {
+    final solicitudes = await obtenerSolicitudesPorEstudiante(estudianteId);
+    final solicitudesConNombres = await Future.wait(
+      solicitudes.map((s) async {
+        final nombreTutor = await obtenerNombreTutor(s.tutorId);
+        return {'solicitud': s, 'nombreTutor': nombreTutor};
+      }),
+    );
+    return solicitudesConNombres;
+  }
+
   // Obtener stream de solicitudes por tutor
   Stream<List<SolicitudTutoria>> getSolicitudesPorTutorStream(String tutorId) {
     return _solicitudesRef
@@ -241,6 +270,65 @@ class SolicitudTutoriaService {
             solicitudesConDetalles.add({
               'solicitud': solicitud,
               'nombreEstudiante': nombreEstudiante,
+              'photoUrl': photoUrl,
+            });
+          }
+          return solicitudesConDetalles;
+        });
+  }
+
+  // Obtener stream de solicitudes por estudiante
+  Stream<List<SolicitudTutoria>> getSolicitudesPorEstudianteStream(
+    String estudianteId,
+  ) {
+    return _solicitudesRef
+        .where('estudianteId', isEqualTo: estudianteId)
+        .orderBy('fechaHora', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map(
+                (doc) => SolicitudTutoria.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                ),
+              )
+              .toList();
+        });
+  }
+
+  // Obtener stream de solicitudes por estudiante con detalles del tutor
+  Stream<List<Map<String, dynamic>>> getSolicitudesConDetallesEstudianteStream(
+    String estudianteId,
+  ) {
+    return _solicitudesRef
+        .where('estudianteId', isEqualTo: estudianteId)
+        .orderBy('fechaHora', descending: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+          final solicitudesConDetalles = <Map<String, dynamic>>[];
+          for (var doc in snapshot.docs) {
+            final solicitud = SolicitudTutoria.fromMap(
+              doc.data() as Map<String, dynamic>,
+            );
+
+            // Obtener detalles del tutor
+            final tutorDoc = await _tutoresRef.doc(solicitud.tutorId).get();
+            String nombreTutor = 'Tutor';
+            String? photoUrl;
+
+            if (tutorDoc.exists) {
+              final data = tutorDoc.data() as Map<String, dynamic>;
+              final nombre = data['nombre'] ?? '';
+              final apellidos = data['apellidos'] ?? '';
+              nombreTutor = '$nombre $apellidos'.trim().isEmpty
+                  ? 'Tutor'
+                  : '$nombre $apellidos';
+              photoUrl = data['photoUrl'];
+            }
+
+            solicitudesConDetalles.add({
+              'solicitud': solicitud,
+              'nombreTutor': nombreTutor,
               'photoUrl': photoUrl,
             });
           }
