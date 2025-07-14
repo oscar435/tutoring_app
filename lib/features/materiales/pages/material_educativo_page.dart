@@ -1,63 +1,215 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:open_file/open_file.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
-class MaterialEducativoPage extends StatelessWidget {
+class MaterialEducativoPage extends StatefulWidget {
   const MaterialEducativoPage({super.key});
 
   @override
+  State<MaterialEducativoPage> createState() => _MaterialEducativoPageState();
+}
+
+class _MaterialEducativoPageState extends State<MaterialEducativoPage> {
+  final storageRef = FirebaseStorage.instance.ref('material_educativo');
+  bool _loading = true;
+  Map<String, List<Reference>> _materiales = {
+    'Programación': [],
+    'Matemáticas': [],
+    'Otros': [],
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMateriales();
+  }
+
+  Future<void> _fetchMateriales() async {
+    final allFiles = await storageRef.listAll();
+    final Map<String, List<Reference>> temp = {
+      'Programación': [],
+      'Matemáticas': [],
+      'Otros': [],
+    };
+    for (final ref in allFiles.items) {
+      final name = ref.name.toLowerCase();
+      if (name.contains('java') || name.contains('programar')) {
+        temp['Programación']!.add(ref);
+      } else if (name.contains('calculo') || name.contains('mate')) {
+        temp['Matemáticas']!.add(ref);
+      } else {
+        temp['Otros']!.add(ref);
+      }
+    }
+    setState(() {
+      _materiales = temp;
+      _loading = false;
+    });
+  }
+
+  Future<void> _verPDF(Reference ref) async {
+    final url = await ref.getDownloadURL();
+    // Descargar a un archivo temporal y abrirlo
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/${ref.name}');
+    if (!await file.exists()) {
+      await Dio().download(url, file.path);
+    }
+    await OpenFile.open(file.path);
+  }
+
+  Future<void> _descargarPDF(Reference ref) async {
+    final url = await ref.getDownloadURL();
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/${ref.name}');
+    await Dio().download(url, file.path);
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Descargado en: ${file.path}')));
+    }
+  }
+
+  Widget _buildMaterialList(String categoria, List<Reference> archivos) {
+    if (archivos.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Text(
+          'No hay material disponible en este tema.',
+          style: TextStyle(color: Colors.grey[600]),
+        ),
+      );
+    }
+    return Column(
+      children: archivos.map((ref) {
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            leading: Image.asset(
+              'assets/pdf_icon.png',
+              width: 36,
+              height: 36,
+              errorBuilder: (_, __, ___) =>
+                  Icon(Icons.picture_as_pdf, color: Colors.red, size: 36),
+            ),
+            title: Text(
+              ref.name,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.visibility, color: Colors.purple),
+                  onPressed: () => _verPDF(ref),
+                  tooltip: 'Ver',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.download_rounded, color: Colors.green),
+                  onPressed: () => _descargarPDF(ref),
+                  tooltip: 'Descargar',
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final materiales = [
-      {
-        'titulo': 'Cálculo Diferencial - Apuntes PDF',
-        'tipo': 'PDF',
-      },
-      {
-        'titulo': 'Introducción a la Programación - Video',
-        'tipo': 'Video',
-      },
-      {
-        'titulo': 'Guía de Física Básica',
-        'tipo': 'PDF',
-      },
-      {
-        'titulo': 'Taller de Álgebra - Presentación',
-        'tipo': 'PPT',
-      },
-    ];
     return Scaffold(
       appBar: AppBar(title: const Text('Material Educativo')),
       backgroundColor: const Color(0xfff7f7f7),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: materiales.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final mat = materiales[index];
-          return Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: Icon(
-                mat['tipo'] == 'PDF'
-                    ? Icons.picture_as_pdf
-                    : mat['tipo'] == 'Video'
-                        ? Icons.play_circle_fill
-                        : Icons.insert_drive_file,
-                color: Colors.orange,
-                size: 32,
-              ),
-              title: Text(mat['titulo'] ?? ''),
-              subtitle: Text(mat['tipo'] ?? ''),
-              trailing: IconButton(
-                icon: const Icon(Icons.visibility, color: Colors.blue),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Función de visualizar aún no implementada')),
-                  );
-                },
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      'Programación',
+                      style: TextStyle(
+                        color: Colors.purple[700],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  _buildMaterialList(
+                    'Programación',
+                    _materiales['Programación']!,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      'Matemáticas',
+                      style: TextStyle(
+                        color: Colors.purple[700],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  _buildMaterialList(
+                    'Matemáticas',
+                    _materiales['Matemáticas']!,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      'Otros',
+                      style: TextStyle(
+                        color: Colors.purple[700],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  _buildMaterialList('Otros', _materiales['Otros']!),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.purple[50],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        '¡Más material educativo próximamente!',
+                        style: TextStyle(
+                          color: Colors.purple,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-          );
-        },
-      ),
     );
   }
-} 
+}
