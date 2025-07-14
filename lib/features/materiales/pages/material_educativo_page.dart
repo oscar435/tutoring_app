@@ -4,6 +4,7 @@ import 'package:open_file/open_file.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
 
 class MaterialEducativoPage extends StatefulWidget {
   const MaterialEducativoPage({super.key});
@@ -50,26 +51,70 @@ class _MaterialEducativoPageState extends State<MaterialEducativoPage> {
     });
   }
 
-  Future<void> _verPDF(Reference ref) async {
-    final url = await ref.getDownloadURL();
-    // Descargar a un archivo temporal y abrirlo
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/${ref.name}');
-    if (!await file.exists()) {
-      await Dio().download(url, file.path);
+  Future<bool> _checkStoragePermission() async {
+    final status = await Permission.storage.request();
+    if (status.isGranted) {
+      return true;
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Permiso de almacenamiento denegado. No se puede continuar.',
+            ),
+          ),
+        );
+      }
+      return false;
     }
-    await OpenFile.open(file.path);
+  }
+
+  Future<void> _verPDF(Reference ref) async {
+    if (!await _checkStoragePermission()) return;
+    try {
+      final url = await ref.getDownloadURL();
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/${ref.name}');
+      if (!await file.exists()) {
+        await Dio().download(url, file.path);
+      }
+      final result = await OpenFile.open(file.path);
+      if (result.type != ResultType.done && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'No se pudo abrir el PDF. ¿Tienes un visor de PDF instalado?',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al abrir el PDF: $e')));
+      }
+    }
   }
 
   Future<void> _descargarPDF(Reference ref) async {
-    final url = await ref.getDownloadURL();
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/${ref.name}');
-    await Dio().download(url, file.path);
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Descargado en: ${file.path}')));
+    if (!await _checkStoragePermission()) return;
+    try {
+      final url = await ref.getDownloadURL();
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/${ref.name}');
+      await Dio().download(url, file.path);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Descargado en: ${file.path}')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al descargar el PDF: $e')),
+        );
+      }
     }
   }
 
